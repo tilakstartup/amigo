@@ -253,147 +253,286 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 32: Row-Level Security Isolation**
     - **Validates: Requirements 107.3, 107.4, and all RLS requirements**
 
-- [ ] 6. User profile and onboarding
-  - [ ] 6.1 Implement profile management in KMP
+- [-] 6. AI integration for onboarding (Amazon Bedrock)
+  - [x] 6.1 Implement Bedrock infrastructure and client
+    - Create Lambda function in `infrastructure/lambda/bedrock-proxy/` to proxy Bedrock requests
+      - Implement Supabase JWT token verification for authentication
+      - Call Bedrock with IAM role (no hardcoded credentials)
+      - Implement rate limiting per user
+      - Return Claude AI responses
+    - Update CloudFormation template in `infrastructure/bedrock.yaml`
+      - Add Lambda function resource
+      - Add API Gateway for Lambda endpoint
+      - Add IAM roles for Lambda to access Bedrock
+      - Add environment variables for Supabase configuration
+    - Create BedrockClient class in KMP shared module
+      - Call Lambda API endpoint (not Bedrock directly)
+      - Send Supabase auth token in headers
+      - Implement request/response handling
+      - Implement retry logic with exponential backoff
+      - Implement error handling
+    - _Requirements: 109.1-109.8, 135.1-135.7_
+
+  - [x] 6.2 Implement AI onboarding conversation engine in KMP
+    - Create OnboardingConversationEngine class
+    - Implement Amigo personality instructions for onboarding
+    - Implement onboarding-specific prompts and context
+    - Implement response generation with Claude for onboarding questions
+    - Support goal-based question flow (less than 10 questions)
+    - Generate contextual feature introductions
+    - Generate personalized insights based on user responses
+    - Calculate and present health metrics (weight difference, BMI, etc.)
+    - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.7, 113.1-113.8, 128.1-128.8_
+
+  - [x] 6.3 Build iOS conversational onboarding UI (Swift)
+    - Create chat-style UI with message bubbles for Amigo and user
+    - Implement typing indicators for natural conversation feel
+    - Implement smooth message animations and transitions
+    - Integrate with OnboardingConversationEngine from KMP
+    - Implement quick-reply pills for predefined answer options
+      - Tappable button-style options below Amigo's questions
+      - Support for multiple-choice and single-choice selections
+      - Visual feedback on selection
+    - Implement text input for free-form responses
+      - Text field for numeric inputs (age, weight, height)
+      - Text field for name and other text responses
+      - Input validation with friendly error messages from Amigo
+    - Display AI-generated insights and visualizations
+      - Show simple charts (progress bars, weight difference)
+      - Display personalized health tips from AI
+      - Render contextual feature introductions
+    - Implement permission requests within conversation
+      - Amigo requests camera, notifications, HealthKit permissions conversationally
+      - Friendly AI-generated explanations
+      - Graceful handling of declined permissions
+    - Implement onboarding completion
+      - AI-generated warm completion message
+      - Summary of user's goals and journey ahead
+      - Save conversation history for later reference
+      - Navigate to Dashboard
+    - Update app navigation to show conversational onboarding on first launch
+    - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.7, 63.1-63.9, 64.1-64.6_
+
+  - [ ] 6.4 Build Android conversational onboarding UI (Kotlin/Compose)
+    - Create chat-style UI with message bubbles for Amigo and user
+    - Implement typing indicators for natural conversation feel
+    - Implement smooth message animations and transitions
+    - Integrate with OnboardingConversationEngine from KMP
+    - Implement quick-reply pills for predefined answer options
+      - Tappable button-style options below Amigo's questions
+      - Support for multiple-choice and single-choice selections
+      - Visual feedback on selection
+    - Implement text input for free-form responses
+      - Text field for numeric inputs (age, weight, height)
+      - Text field for name and other text responses
+      - Input validation with friendly error messages from Amigo
+    - Display AI-generated insights and visualizations
+      - Show simple charts (progress bars, weight difference)
+      - Display personalized health tips from AI
+      - Render contextual feature introductions
+    - Implement permission requests within conversation
+      - Amigo requests camera, notifications, Health Connect permissions conversationally
+      - Friendly AI-generated explanations
+      - Graceful handling of declined permissions
+    - Implement onboarding completion
+      - AI-generated warm completion message
+      - Summary of user's goals and journey ahead
+      - Save conversation history for later reference
+      - Navigate to Dashboard
+    - Update app navigation to show conversational onboarding on first launch
+    - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.7, 63.1-63.9, 64.1-64.6_
+
+- [ ] 7. Checkpoint - Verify AI-powered onboarding
+  - Build and launch both iOS and Android apps
+  - Test conversational onboarding flow on both platforms
+  - Verify AI generates appropriate questions based on goals
+  - Test quick-reply pills and text input
+  - Verify AI provides personalized insights and feature introductions
+  - Test permission requests within conversation
+  - Verify conversation history is saved
+  - Verify navigation to Dashboard after completion
+  - Create task summary in `task_summaries/task_6/summary.md`
+  - **STOP: Wait for user to verify both apps**
+  - **After approval: Ask for git commit message, commit changes, and push**
+  - **STOP: Wait for user confirmation before proceeding to task 8**
+
+- [ ] 8. User profile management
+  - [ ] 8.1 Implement profile management in KMP
     - Create ProfileManager class
     - Implement profile CRUD operations with Supabase
     - Implement unit preferences (metric/imperial)
+    - Store onboarding conversation data in user profile
     - _Requirements: 60.1-60.9, 87.1-87.7, 90.1-90.8_
 
-  - [ ] 6.2 Build iOS onboarding flow (Swift)
-    - Create welcome screens with feature introduction
-    - Create profile setup wizard (name, age, height, weight)
-    - Create health goal selection screen
-    - Create tutorial walkthrough
-    - Implement permission requests (camera, notifications, HealthKit)
-    - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.8, 63.1-63.9, 64.1-64.6_
+  - [ ] 8.2 Build goal management UI (iOS and Android)
+    - Create goal selection/change screen accessible from settings
+    - Display current active goal
+    - Allow users to create new goals or switch goals anytime
+    - Show goal history and past goal summaries
+    - Implement goal transition flow with context preservation
+    - _Requirements: 61.1-61.7, 62.1-62.8_
 
-  - [ ] 6.3 Build Android onboarding flow (Kotlin/Compose)
-    - Create welcome screens with feature introduction
-    - Create profile setup wizard (name, age, height, weight)
-    - Create health goal selection screen
-    - Create tutorial walkthrough
-    - Implement permission requests (camera, notifications, Health Connect)
-    - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.8, 63.1-63.9, 64.1-64.6_
-
-  - [ ]* 6.4 Write unit tests for profile validation
+  - [ ]* 8.3 Write unit tests for profile validation
     - Test age validation (13-120)
     - Test height/weight validation
     - Test unit conversion accuracy
 
-- [ ] 7. Subscription system
-  - [ ] 7.1 Implement subscription models in KMP
+- [ ] 9. Subscription system
+    - Create conversational onboarding interface with Amigo as the guide
+      - Chat-style UI with message bubbles for Amigo and user
+      - Typing indicators for natural conversation feel
+      - Smooth message animations and transitions
+    - Implement Amigo's welcome and introduction messages
+      - Friendly greeting explaining Amigo's role as health coach
+      - Brief explanation of what to expect during onboarding
+    - Implement goal-based question flow (less than 10 questions total)
+      - Start with health goal selection using quick-reply pills
+      - Ask goal-specific follow-up questions based on selection
+      - Collect basic profile info (name, age, height, weight) conversationally
+      - Ask activity level with quick-reply pills
+      - Ask dietary preferences with quick-reply pills
+    - Implement quick-reply pills for predefined answer options
+      - Tappable button-style options below Amigo's questions
+      - Support for multiple-choice and single-choice selections
+      - Visual feedback on selection
+    - Implement text input for free-form responses
+      - Text field for numeric inputs (age, weight, height)
+      - Text field for name and other text responses
+      - Input validation with friendly error messages from Amigo
+    - Implement contextual feature introductions
+      - Amigo mentions meal logging (photo, voice, text) when discussing nutrition
+      - Amigo mentions water tracking when discussing hydration
+      - Amigo mentions fasting when discussing weight goals
+      - Features introduced naturally within conversation flow (1-2 sentences)
+    - Implement personalized insights and analysis
+      - Calculate and display weight difference for weight goals
+      - Show simple visualizations (progress bars, charts) when relevant
+      - Provide encouraging feedback based on user responses
+      - Display context-appropriate health tips
+    - Implement permission requests within conversation
+      - Amigo requests camera, notifications, HealthKit permissions conversationally
+      - Friendly explanations of why each permission is needed
+      - Graceful handling of declined permissions
+    - Implement onboarding completion
+      - Warm completion message from Amigo
+      - Summary of user's goals and journey ahead
+      - Save conversation history for later reference
+      - Navigate to Dashboard
+    - Update app navigation to show conversational onboarding on first launch
+    - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.7, 63.1-63.9, 64.1-64.6_
+
+- [ ] 9. Subscription system
+  - [ ] 9.1 Implement subscription models in KMP
     - Create SubscriptionTier enum (Free, Pro)
     - Create SubscriptionManager class
     - Implement quota tracking logic
     - _Requirements: 13.1-13.6, 14.1-14.10, 15.1-15.6, 16.1-16.5_
 
-  - [ ]* 7.2 Write property test for quota tracking accuracy
+  - [ ] 9.1 Implement subscription models in KMP
+    - Create SubscriptionTier enum (Free, Pro)
+    - Create SubscriptionManager class
+    - Implement quota tracking logic
+    - _Requirements: 13.1-13.6, 14.1-14.10, 15.1-15.6, 16.1-16.5_
+
+  - [ ]* 9.2 Write property test for quota tracking accuracy
     - **Property 15: Usage Quota Tracking Accuracy**
     - **Validates: Requirements 17.1, 17.2**
 
-  - [ ] 7.3 Integrate iOS In-App Purchase
+  - [ ] 9.3 Integrate iOS In-App Purchase
     - Implement StoreKit integration for subscription purchase
     - Handle purchase flow and receipt validation
     - Implement purchase restoration
     - _Requirements: 65.1-65.6, 66.1-66.8, 67.1-67.7, 68.1-68.8, 71.1-71.8_
 
-  - [ ] 7.4 Integrate Google Play Billing
+  - [ ] 9.4 Integrate Google Play Billing
     - Implement Play Billing Library for subscription purchase
     - Handle purchase flow and receipt validation
     - Implement purchase restoration
     - _Requirements: 65.1-65.6, 66.1-66.8, 67.1-67.7, 68.1-68.8, 71.1-71.8_
 
-  - [ ] 7.5 Build subscription management UI (iOS and Android)
+  - [ ] 9.5 Build subscription management UI (iOS and Android)
     - Create subscription tier comparison screen
     - Create payment method management screen
     - Create subscription status and renewal screen
     - Display usage quotas and limits
     - _Requirements: 15.1-15.6, 66.1-66.8, 67.1-67.7_
 
-  - [ ]* 7.6 Write unit tests for subscription flows
+  - [ ]* 9.6 Write unit tests for subscription flows
     - Test quota enforcement at boundaries
     - Test upgrade/downgrade flows
     - Test trial period handling
 
-- [ ] 8. Checkpoint - Verify core infrastructure
+- [ ] 42. Checkpoint - Verify core infrastructure
   - Build and launch both iOS and Android apps
   - Test profile creation and updates on both platforms
   - Test subscription purchase flow on both platforms
   - Test quota tracking and enforcement
   - Verify all data persists correctly in Supabase
   - Run all tests and verify they pass
-  - Create task summary in `task_summaries/task_5-7/summary.md`
+  - Create task summary in `task_summaries/task_8-9/summary.md`
   - **STOP: Wait for user to verify both apps**
   - **After approval: Ask for git commit message, commit changes, and push**
-  - **STOP: Wait for user confirmation before proceeding to task 9**
+  - **STOP: Wait for user confirmation before proceeding to task 11**
 
 
-- [ ] 9. AI integration with Amazon Bedrock
-  - [ ] 9.1 Implement Bedrock client in KMP
-    - Create BedrockClient class with Claude AI integration
-    - Implement request/response handling
-    - Implement retry logic with exponential backoff
-    - Implement rate limiting and cost tracking
-    - _Requirements: 109.1-109.8, 135.1-135.7_
-
-  - [ ] 9.2 Implement AI image analyzer in KMP
+- [ ] 41. Additional AI capabilities (Amazon Bedrock)
+  - [ ] 41.1 Implement AI image analyzer in KMP
     - Create AIImageAnalyzer class
     - Implement food identification from images using Claude
     - Implement nutritional estimation
     - Return confidence scores
     - _Requirements: 110.1-110.8_
 
-  - [ ] 9.3 Implement AI text processor in KMP
+  - [ ] 41.2 Implement AI text processor in KMP
     - Create AITextProcessor class
     - Implement meal description parsing using Claude
     - Extract food items, quantities, and preparation methods
     - _Requirements: 111.1-111.8_
 
-  - [ ] 9.4 Implement AI speech transcriber in KMP
+  - [ ] 41.3 Implement AI speech transcriber in KMP
     - Create AISpeechTranscriber class
     - Implement audio transcription using Claude
     - Pass transcribed text to AITextProcessor
     - _Requirements: 112.1-112.8_
 
-  - [ ] 9.5 Implement AI conversation engine in KMP
-    - Create AIConversationEngine class
+  - [ ] 41.4 Implement AI conversation engine for Pro tier in KMP
+    - Extend AIConversationEngine class for full Pro tier chat
     - Implement context loading and management
-    - Implement Amigo personality instructions
-    - Implement response generation with Claude
+    - Implement full Amigo personality instructions
+    - Implement response generation with Claude for ongoing conversations
     - _Requirements: 113.1-113.8, 128.1-128.8_
 
-  - [ ] 9.6 Implement AI insight generator in KMP
+  - [ ] 41.5 Implement AI insight generator in KMP
     - Create AIInsightGenerator class
     - Implement health data analysis using Claude
     - Generate daily, weekly, and monthly insights
     - _Requirements: 114.1-114.8_
 
-  - [ ]* 9.7 Write property test for AI identification correction
+  - [ ]* 11.6 Write property test for AI identification correction
     - **Property 33: AI Identification Correction**
     - **Validates: Requirements 110.8**
 
-  - [ ]* 9.8 Write unit tests for AI error handling
+  - [ ]* 11.7 Write unit tests for AI error handling
     - Test AI service unavailability fallbacks
     - Test timeout handling
     - Test malformed response handling
 
-- [ ] 10. Meal logging - Image-based
-  - [ ] 10.1 Implement image logger in KMP
+- [ ] 42. Meal logging - Image-based
+  - [ ] 42.1 Implement image logger in KMP
     - Create ImageLogger class
     - Implement photo upload to Supabase Storage
     - Integrate with AIImageAnalyzer
     - Create MealLog with AI results
     - _Requirements: 10.1-10.5_
 
-  - [ ] 10.2 Build iOS camera interface (Swift)
+  - [ ] 42.2 Build iOS camera interface (Swift)
     - Create camera capture screen
     - Implement photo preview and confirmation
     - Handle camera permissions
     - Display AI analysis results
     - _Requirements: 10.1-10.5_
 
-  - [ ] 10.3 Build Android camera interface (Kotlin/Compose)
+  - [ ] 42.3 Build Android camera interface (Kotlin/Compose)
     - Create camera capture screen using CameraX
     - Implement photo preview and confirmation
     - Handle camera permissions
@@ -409,21 +548,21 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test file size limits
     - Test format validation
 
-- [ ] 11. Meal logging - Voice-based
-  - [ ] 11.1 Implement voice logger in KMP
+- [ ] 41. Meal logging - Voice-based
+  - [ ] 41.1 Implement voice logger in KMP
     - Create VoiceLogger class
     - Integrate with AISpeechTranscriber
     - Create MealLog with parsed results
     - _Requirements: 11.1-11.5_
 
-  - [ ] 11.2 Build iOS voice recording interface (Swift)
+  - [ ] 41.2 Build iOS voice recording interface (Swift)
     - Create voice recording screen
     - Implement audio recording with AVFoundation
     - Handle microphone permissions
     - Display transcription and parsing results
     - _Requirements: 11.1-11.5_
 
-  - [ ] 11.3 Build Android voice recording interface (Kotlin/Compose)
+  - [ ] 41.3 Build Android voice recording interface (Kotlin/Compose)
     - Create voice recording screen
     - Implement audio recording with MediaRecorder
     - Handle microphone permissions
@@ -434,14 +573,14 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 12: Voice Input Transcription**
     - **Validates: Requirements 11.1, 11.2**
 
-- [ ] 12. Meal logging - Text-based
-  - [ ] 12.1 Implement text logger in KMP
+- [ ] 42. Meal logging - Text-based
+  - [ ] 42.1 Implement text logger in KMP
     - Create TextLogger class
     - Integrate with AITextProcessor
     - Create MealLog with parsed results
     - _Requirements: 12.1-12.5_
 
-  - [ ] 12.2 Build text input UI (iOS and Android)
+  - [ ] 42.2 Build text input UI (iOS and Android)
     - Create text entry screen
     - Implement natural language input field
     - Display parsing results and confirmation
@@ -451,7 +590,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 13: Text Meal Description Parsing**
     - **Validates: Requirements 12.1**
 
-- [ ] 13. Checkpoint - Verify meal logging
+- [ ] 41. Checkpoint - Verify meal logging
   - Build and launch both iOS and Android apps
   - Test image-based meal logging on both platforms
   - Test voice-based meal logging on both platforms
@@ -466,22 +605,22 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **STOP: Wait for user confirmation before proceeding to task 14**
 
 
-- [ ] 14. USDA FoodData Central integration
-  - [ ] 14.1 Implement USDA API client in KMP
+- [ ] 42. USDA FoodData Central integration
+  - [ ] 42.1 Implement USDA API client in KMP
     - Create USDAClient class
     - Implement food search functionality
     - Implement food details retrieval
     - Implement caching strategy (30-day cache)
     - _Requirements: 31.1-31.6, 32.1-32.6_
 
-  - [ ] 14.2 Implement nutrition enricher in KMP
+  - [ ] 42.2 Implement nutrition enricher in KMP
     - Create NutritionEnricher class
     - Query USDA API for identified foods
     - Prioritize USDA data over AI estimates
     - Add data source indicators
     - _Requirements: 36.1-36.6, 37.1-37.5_
 
-  - [ ] 14.3 Build food search UI (iOS and Android)
+  - [ ] 42.3 Build food search UI (iOS and Android)
     - Create food search screen
     - Display search results with categories
     - Show detailed nutritional information
@@ -497,29 +636,29 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test caching behavior
     - Test rate limiting
 
-- [ ] 15. Barcode scanning
-  - [ ] 15.1 Implement barcode API client in KMP
+- [ ] 41. Barcode scanning
+  - [ ] 41.1 Implement barcode API client in KMP
     - Create BarcodeClient class
     - Integrate with Open Food Facts API
     - Implement fallback to UPC Database API
     - Implement caching (90-day cache)
     - _Requirements: 34.1-34.6_
 
-  - [ ] 15.2 Build iOS barcode scanner (Swift)
+  - [ ] 41.2 Build iOS barcode scanner (Swift)
     - Create barcode scanning screen with AVFoundation
     - Implement UPC/EAN barcode decoding
     - Display product information
     - Allow serving quantity input
     - _Requirements: 33.1-33.6, 35.1-35.6_
 
-  - [ ] 15.3 Build Android barcode scanner (Kotlin/Compose)
+  - [ ] 41.3 Build Android barcode scanner (Kotlin/Compose)
     - Create barcode scanning screen with ML Kit
     - Implement UPC/EAN barcode decoding
     - Display product information
     - Allow serving quantity input
     - _Requirements: 33.1-33.6, 35.1-35.6_
 
-  - [ ] 15.4 Implement manual barcode entry UI (iOS and Android)
+  - [ ] 41.4 Implement manual barcode entry UI (iOS and Android)
     - Create manual entry screen
     - Validate barcode format
     - Query barcode API
@@ -534,22 +673,22 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test API fallback logic
     - Test serving quantity scaling
 
-- [ ] 16. Custom foods
-  - [ ] 16.1 Implement custom food management in KMP
+- [ ] 42. Custom foods
+  - [ ] 42.1 Implement custom food management in KMP
     - Create CustomFoodManager class
     - Implement CRUD operations for custom foods
     - Store in Supabase custom_foods table
     - _Requirements: 40.1-40.6_
 
-  - [ ] 16.2 Build custom food UI (iOS and Android)
+  - [ ] 42.2 Build custom food UI (iOS and Android)
     - Create custom food creation screen
     - Create custom food list screen
     - Allow editing and deletion
     - Include custom foods in search results
     - _Requirements: 40.1-40.6_
 
-- [ ] 17. Water tracking
-  - [ ] 17.1 Implement water tracker in KMP
+- [ ] 41. Water tracking
+  - [ ] 41.1 Implement water tracker in KMP
     - Create WaterTracker class
     - Implement water log creation
     - Implement daily goal management
@@ -561,26 +700,26 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 22: Water Log Creation and Progress Update**
     - **Validates: Requirements 44.1, 44.6**
 
-  - [ ] 17.3 Build water logging UI (iOS and Android)
+  - [ ] 41.3 Build water logging UI (iOS and Android)
     - Create water logging screen with quick-add buttons
     - Display daily progress with visual indicator
     - Show remaining volume to goal
     - Allow custom volume entry
     - _Requirements: 43.1-43.8, 45.1-45.6_
 
-  - [ ] 17.4 Implement water reminders in KMP
+  - [ ] 41.4 Implement water reminders in KMP
     - Create WaterReminderScheduler class
     - Implement reminder frequency and active hours
     - Reset timer on water log creation
     - _Requirements: 46.1-46.7_
 
-  - [ ] 17.5 Implement water history and trends in KMP
+  - [ ] 41.5 Implement water history and trends in KMP
     - Create HydrationHistoryManager class
     - Calculate daily averages and trends
     - Generate 7-day and 30-day history
     - _Requirements: 47.1-47.7_
 
-  - [ ] 17.6 Build water history UI (iOS and Android)
+  - [ ] 41.6 Build water history UI (iOS and Android)
     - Create history screen with charts
     - Display goal achievement indicators
     - Show detailed logs by date
@@ -591,7 +730,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test goal achievement detection
     - Test reminder scheduling
 
-- [ ] 18. Checkpoint - Verify nutrition and water features
+- [ ] 42. Checkpoint - Verify nutrition and water features
   - Build and launch both iOS and Android apps
   - Test USDA food search functionality
   - Test barcode scanning on both platforms
@@ -605,8 +744,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **STOP: Wait for user confirmation before proceeding to task 19**
 
 
-- [ ] 19. Fasting tracking
-  - [ ] 19.1 Implement fasting tracker in KMP
+- [ ] 41. Fasting tracking
+  - [ ] 41.1 Implement fasting tracker in KMP
     - Create FastingTracker class
     - Implement fasting session start/stop
     - Implement fasting timer with real-time updates
@@ -618,7 +757,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 24: Fasting Session Duration Calculation**
     - **Validates: Requirements 49.1, 49.4**
 
-  - [ ] 19.3 Implement fasting streak calculator in KMP
+  - [ ] 41.3 Implement fasting streak calculator in KMP
     - Create FastingStreakCalculator class
     - Increment streak on goal completion
     - Reset streak on missed days
@@ -630,26 +769,26 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 26: Fasting Streak Reset**
     - **Validates: Requirements 52.5, 52.6**
 
-  - [ ] 19.5 Build fasting UI (iOS and Android)
+  - [ ] 41.5 Build fasting UI (iOS and Android)
     - Create fasting timer screen with protocol selection
     - Display elapsed time and progress
     - Show start/stop controls
     - Display fasting history and streaks
     - _Requirements: 48.1-48.8, 49.1-49.8, 50.1-50.6, 51.1-51.8_
 
-  - [ ] 19.6 Implement fasting notifications
+  - [ ] 41.6 Implement fasting notifications
     - Create FastingNotificationManager class
     - Send notification when fasting goal reached
     - Allow notification preferences configuration
     - _Requirements: 52.1-52.6_
 
-  - [ ] 19.7 Implement fasting and meal log integration
+  - [ ] 41.7 Implement fasting and meal log integration
     - Detect meals during fasting sessions
     - Prompt to end fast when meal logged
     - Display fasting/eating windows in timeline
     - _Requirements: 53.1-53.5_
 
-  - [ ] 19.8 Implement fasting statistics in KMP
+  - [ ] 41.8 Implement fasting statistics in KMP
     - Calculate total sessions, average duration, completion rate
     - Track longest single fast
     - Calculate weekly frequency
@@ -660,47 +799,47 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test protocol validation
     - Test streak calculation edge cases
 
-- [ ] 20. Health platform integrations
-  - [ ] 20.1 Implement platform connector base in KMP
+- [ ] 42. Health platform integrations
+  - [ ] 42.1 Implement platform connector base in KMP
     - Create PlatformConnector interface
     - Implement OAuth token storage and management
     - Implement sync scheduling (daily automatic sync)
     - _Requirements: 21.1-21.6, 29.1-29.5_
 
-  - [ ] 20.2 Implement Fitbit integration in KMP
+  - [ ] 42.2 Implement Fitbit integration in KMP
     - Create FitbitIntegration class
     - Implement OAuth 2.0 flow
     - Fetch steps, heart rate, sleep, exercise data
     - Respect rate limits (150 req/hour)
     - _Requirements: 22.1-22.5_
 
-  - [ ] 20.3 Implement Garmin integration in KMP
+  - [ ] 42.3 Implement Garmin integration in KMP
     - Create GarminIntegration class
     - Implement OAuth 1.0a flow
     - Fetch steps, heart rate, sleep, activities
     - _Requirements: 23.1-23.5_
 
-  - [ ] 20.4 Implement Apple Health integration (iOS)
+  - [ ] 42.4 Implement Apple Health integration (iOS)
     - Create AppleHealthIntegration class in iOS source set
     - Use HealthKit framework
     - Request permissions per data type
     - Fetch steps, heart rate, sleep, workouts
     - _Requirements: 24.1-24.5_
 
-  - [ ] 20.5 Implement Google Health Connect integration (Android)
+  - [ ] 42.5 Implement Google Health Connect integration (Android)
     - Create GoogleHealthIntegration class in Android source set
     - Use Health Connect API
     - Request permissions per data type
     - Fetch steps, heart rate, sleep, exercise
     - _Requirements: 25.1-25.5_
 
-  - [ ] 20.6 Implement health metrics storage in KMP
+  - [ ] 42.6 Implement health metrics storage in KMP
     - Create MetricStore class
     - Store metrics in Supabase health_metrics table
     - Prevent duplicates with unique constraints
     - _Requirements: 26.1-26.5_
 
-  - [ ] 20.7 Build health platform connection UI (iOS and Android)
+  - [ ] 42.7 Build health platform connection UI (iOS and Android)
     - Create platform selection screen
     - Implement OAuth flows for each platform
     - Display connection status
@@ -709,7 +848,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Allow disconnection
     - _Requirements: 21.1-21.6, 29.1-29.5_
 
-  - [ ] 20.8 Build health metrics display UI (iOS and Android)
+  - [ ] 42.8 Build health metrics display UI (iOS and Android)
     - Create metrics dashboard
     - Display steps, heart rate, sleep, exercise
     - Indicate source platform for each metric
@@ -720,7 +859,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test duplicate prevention
     - Test sync retry logic
 
-- [ ] 21. Checkpoint - Verify fasting and health integrations
+- [ ] 41. Checkpoint - Verify fasting and health integrations
   - Build and launch both iOS and Android apps
   - Test fasting timer and streak tracking
   - Test fasting notifications
@@ -734,14 +873,14 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **STOP: Wait for user confirmation before proceeding to task 22**
 
 
-- [ ] 22. AI personalization and context management
-  - [ ] 22.1 Implement AI context storage models in KMP
+- [ ] 42. AI personalization and context management
+  - [ ] 42.1 Implement AI context storage models in KMP
     - Create UserAIContext data class with PatternProfile
     - Create ConversationMessage data class
     - Create SessionContext data class
     - _Requirements: 115.1-115.8, 116.1-116.8_
 
-  - [ ] 22.2 Implement pattern analyzer in KMP
+  - [ ] 42.2 Implement pattern analyzer in KMP
     - Create PatternAnalyzer class
     - Analyze meal patterns (timing, foods, portions)
     - Analyze fasting patterns (protocols, success rates)
@@ -753,7 +892,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 36: Pattern Profile Updates**
     - **Validates: Requirements 117.7**
 
-  - [ ] 22.4 Implement preference tracker in KMP
+  - [ ] 42.4 Implement preference tracker in KMP
     - Create PreferenceTracker class
     - Learn meal logging method preferences
     - Track food preferences and dietary restrictions
@@ -761,7 +900,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Store in UserAIContext
     - _Requirements: 120.1-120.8_
 
-  - [ ] 22.5 Implement AI memory store in KMP
+  - [ ] 42.5 Implement AI memory store in KMP
     - Create AIMemoryStore class
     - Persist UserAIContext to Supabase
     - Persist ConversationHistory to Supabase
@@ -776,7 +915,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 35: Conversation History Storage**
     - **Validates: Requirements 116.4, 116.5**
 
-  - [ ] 22.8 Implement session context loader in KMP
+  - [ ] 42.8 Implement session context loader in KMP
     - Create SessionContextLoader class
     - Load conversation history (last 20 messages)
     - Load pattern profile
@@ -790,7 +929,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 37: Session Context Provision**
     - **Validates: Requirements 121.7**
 
-  - [ ] 22.10 Implement coaching adaptation engine in KMP
+  - [ ] 42.10 Implement coaching adaptation engine in KMP
     - Create CoachingAdaptationEngine class
     - Analyze user progress toward goals
     - Adjust coaching style (supportive/challenging/balanced)
@@ -798,7 +937,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Store coaching preferences in UserAIContext
     - _Requirements: 122.1-122.8_
 
-  - [ ] 22.11 Implement AI context summarization in KMP
+  - [ ] 42.11 Implement AI context summarization in KMP
     - Create ContextSummarizer class
     - Summarize old conversation history using Claude
     - Replace detailed data with summaries when thresholds exceeded
@@ -814,8 +953,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test fasting pattern calculation
     - Test hydration pattern recognition
 
-- [ ] 23. Goal-based personalization
-  - [ ] 23.1 Implement health goal management in KMP
+- [ ] 41. Goal-based personalization
+  - [ ] 41.1 Implement health goal management in KMP
     - Create HealthGoalManager class
     - Support goal types (weight_loss, muscle_gain, maintenance, improved_energy, better_sleep)
     - Implement goal creation with start date
@@ -827,7 +966,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 41: Health Goal Creation and Activation**
     - **Validates: Requirements 138.3, 138.4**
 
-  - [ ] 23.3 Implement goal transition logic in KMP
+  - [ ] 41.3 Implement goal transition logic in KMP
     - Create GoalTransitionManager class
     - Generate goal summary using Claude AI
     - Create goal_history record
@@ -839,7 +978,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 42: Goal Transition History Creation**
     - **Validates: Requirements 139.2, 139.3**
 
-  - [ ] 23.5 Implement goal context storage in KMP
+  - [ ] 41.5 Implement goal context storage in KMP
     - Store goal-specific patterns in GoalContext
     - Store goal-specific progress metrics
     - Store goal-specific coaching adaptations
@@ -850,7 +989,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 43: Goal Context Preservation**
     - **Validates: Requirements 140.5**
 
-  - [ ] 23.7 Implement active goal prioritization in KMP
+  - [ ] 41.7 Implement active goal prioritization in KMP
     - Update SessionContextLoader to prioritize active goal
     - Merge goal-specific patterns with general patterns
     - Load relevant goal history
@@ -860,7 +999,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 44: Active Goal Context Loading**
     - **Validates: Requirements 141.1, 141.2**
 
-  - [ ] 23.9 Implement goal-specific pattern analysis in KMP
+  - [ ] 41.9 Implement goal-specific pattern analysis in KMP
     - Update PatternAnalyzer for goal-specific analysis
     - Identify correlations with goal progress
     - Store in active goal's GoalContext
@@ -871,7 +1010,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 45: Goal-Specific Pattern Storage**
     - **Validates: Requirements 142.1, 142.5**
 
-  - [ ] 23.11 Implement cross-goal pattern recognition in KMP
+  - [ ] 41.11 Implement cross-goal pattern recognition in KMP
     - Identify patterns consistent across goals
     - Recognize behaviors supporting multiple goals
     - Identify optimal goal sequencing
@@ -882,14 +1021,14 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 51: Cross-Goal Pattern Recognition**
     - **Validates: Requirements 148.1, 148.2**
 
-  - [ ] 23.13 Build goal management UI (iOS and Android)
+  - [ ] 41.13 Build goal management UI (iOS and Android)
     - Create goal selection screen
     - Create goal history screen
     - Display active goal on dashboard
     - Allow goal switching with transition reason
     - _Requirements: 138.1-138.8, 139.1-139.7_
 
-- [ ] 24. Checkpoint - Verify AI personalization
+- [ ] 42. Checkpoint - Verify AI personalization
   - Build and launch both iOS and Android apps
   - Test pattern analysis and context accumulation
   - Test goal creation and transitions
@@ -903,8 +1042,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **STOP: Wait for user confirmation before proceeding to task 25**
 
 
-- [ ] 25. Amigo chat interface (Pro tier)
-  - [ ] 25.1 Implement conversation engine in KMP
+- [ ] 41. Amigo chat interface (Pro tier)
+  - [ ] 41.1 Implement conversation engine in KMP
     - Update AIConversationEngine with full context loading
     - Implement Amigo personality instructions
     - Generate responses using Claude with context
@@ -912,14 +1051,14 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Update AI context after each interaction
     - _Requirements: 17.1-17.5, 113.1-113.8, 123.1-123.8, 128.1-128.8_
 
-  - [ ] 25.2 Implement proactive coaching in KMP
+  - [ ] 41.2 Implement proactive coaching in KMP
     - Create ProactiveCoachingEngine class
     - Analyze patterns for coaching opportunities
     - Generate proactive messages
     - Limit frequency to avoid overwhelming
     - _Requirements: 129.1-129.8_
 
-  - [ ] 25.3 Implement feedback system in KMP
+  - [ ] 41.3 Implement feedback system in KMP
     - Create FeedbackManager class
     - Store feedback ratings with conversations
     - Analyze feedback patterns
@@ -930,7 +1069,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 40: Feedback Rating Storage**
     - **Validates: Requirements 137.1**
 
-  - [ ] 25.5 Build chat UI (iOS and Android)
+  - [ ] 41.5 Build chat UI (iOS and Android)
     - Create chat interface with message history
     - Display user and Amigo messages
     - Allow message input and sending
@@ -944,8 +1083,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test context loading
     - Test Pro tier restriction
 
-- [ ] 26. AI-powered insights and coaching
-  - [ ] 26.1 Implement insight generator in KMP
+- [ ] 42. AI-powered insights and coaching
+  - [ ] 42.1 Implement insight generator in KMP
     - Update AIInsightGenerator with goal-based logic
     - Generate daily, weekly, monthly insights
     - Focus insights on active goal
@@ -956,7 +1095,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 49: Goal-Focused Insight Generation**
     - **Validates: Requirements 146.1, 146.2**
 
-  - [ ] 26.3 Implement goal-based recommendations in KMP
+  - [ ] 42.3 Implement goal-based recommendations in KMP
     - Create GoalBasedRecommendationEngine class
     - Generate meal recommendations aligned with active goal
     - Generate fasting protocol suggestions for active goal
@@ -975,20 +1114,20 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 48: Goal-Based Water Target Adjustment**
     - **Validates: Requirements 145.2, 145.3**
 
-  - [ ] 26.7 Implement Amigo coaching for meal logs
+  - [ ] 42.7 Implement Amigo coaching for meal logs
     - Integrate AI_Coach with meal logging
     - Provide coaching based on meal patterns
     - Reference user's meal history
     - _Requirements: 9.1-9.5, 28.1-28.5_
 
-  - [ ] 26.8 Implement Amigo coaching for fasting
+  - [ ] 42.8 Implement Amigo coaching for fasting
     - Integrate AI_Coach with fasting tracking
     - Provide coaching based on fasting patterns
     - Suggest protocol adjustments
     - Provide positive reinforcement for streaks
     - _Requirements: 54.1-54.7_
 
-  - [ ] 26.9 Implement goal-specific coaching style in KMP
+  - [ ] 42.9 Implement goal-specific coaching style in KMP
     - Update CoachingAdaptationEngine for goal-based styles
     - Apply appropriate tone for each goal type
     - Store goal-specific coaching preferences
@@ -1003,8 +1142,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test insight generation frequency
     - Test Pro tier restriction
 
-- [ ] 27. Dashboard and navigation
-  - [ ] 27.1 Implement dashboard data aggregation in KMP
+- [ ] 41. Dashboard and navigation
+  - [ ] 41.1 Implement dashboard data aggregation in KMP
     - Create DashboardDataManager class
     - Calculate daily summary (calories, macros, water, fasting)
     - Generate activity feed (recent logs)
@@ -1016,7 +1155,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 53: Goal Progress Metrics Tracking**
     - **Validates: Requirements 150.1, 150.7**
 
-  - [ ] 27.3 Build iOS dashboard (Swift)
+  - [ ] 41.3 Build iOS dashboard (Swift)
     - Create main dashboard screen
     - Display daily summary with visual indicators
     - Show activity feed with recent logs
@@ -1026,7 +1165,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Implement navigation to all features
     - _Requirements: 77.1-77.7, 78.1-78.8, 79.1-79.8, 80.1-80.7, 81.1-81.9_
 
-  - [ ] 27.4 Build Android dashboard (Kotlin/Compose)
+  - [ ] 41.4 Build Android dashboard (Kotlin/Compose)
     - Create main dashboard screen
     - Display daily summary with visual indicators
     - Show activity feed with recent logs
@@ -1041,7 +1180,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test quick stats calculations
     - Test activity feed ordering
 
-- [ ] 28. Checkpoint - Verify AI coaching and dashboard
+- [ ] 42. Checkpoint - Verify AI coaching and dashboard
   - Build and launch both iOS and Android apps
   - Test Amigo chat conversations with full context
   - Test insight generation and recommendations
@@ -1055,8 +1194,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **STOP: Wait for user confirmation before proceeding to task 29**
 
 
-- [ ] 29. Notifications system
-  - [ ] 29.1 Implement notification scheduler in KMP
+- [ ] 41. Notifications system
+  - [ ] 41.1 Implement notification scheduler in KMP
     - Create NotificationScheduler interface (expect/actual)
     - Implement scheduling logic for water reminders
     - Implement scheduling logic for fasting notifications
@@ -1064,21 +1203,21 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Respect quiet hours and user preferences
     - _Requirements: 72.1-72.7, 73.1-73.8, 74.1-74.7, 75.1-75.7_
 
-  - [ ] 29.2 Implement iOS notifications (Swift)
+  - [ ] 41.2 Implement iOS notifications (Swift)
     - Use UserNotifications framework
     - Request notification permissions
     - Implement APNs integration
     - Handle notification taps with deep links
     - _Requirements: 72.1-72.7, 76.1-76.7_
 
-  - [ ] 29.3 Implement Android notifications (Kotlin)
+  - [ ] 41.3 Implement Android notifications (Kotlin)
     - Use NotificationManager and WorkManager
     - Request notification permissions
     - Implement FCM integration
     - Handle notification taps with deep links
     - _Requirements: 72.1-72.7, 76.1-76.7_
 
-  - [ ] 29.4 Build notification preferences UI (iOS and Android)
+  - [ ] 41.4 Build notification preferences UI (iOS and Android)
     - Create notification settings screen
     - Allow enable/disable for each notification type
     - Configure water reminder frequency and active hours
@@ -1090,8 +1229,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test quiet hours enforcement
     - Test notification cancellation
 
-- [ ] 30. Real-time synchronization
-  - [ ] 30.1 Implement Realtime sync in KMP
+- [ ] 42. Real-time synchronization
+  - [ ] 42.1 Implement Realtime sync in KMP
     - Create RealtimeManager class
     - Subscribe to Supabase Realtime channels
     - Handle meal_logs, water_logs, fasting_sessions updates
@@ -1103,7 +1242,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 38: Cross-Device AI Context Sync**
     - **Validates: Requirements 130.2**
 
-  - [ ] 30.3 Implement offline queue in KMP
+  - [ ] 42.3 Implement offline queue in KMP
     - Create OfflineQueueManager class
     - Queue operations when offline
     - Sync queued operations when online
@@ -1119,8 +1258,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test update propagation
     - Test conflict resolution
 
-- [ ] 31. Data export and privacy
-  - [ ] 31.1 Implement data exporter in KMP
+- [ ] 41. Data export and privacy
+  - [ ] 41.1 Implement data exporter in KMP
     - Create DataExporter class
     - Export all user data (meals, water, fasting, profile, goals)
     - Support JSON format
@@ -1136,7 +1275,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 28: Data Export Completeness**
     - **Validates: Requirements 82.10**
 
-  - [ ] 31.4 Implement account deletion in KMP
+  - [ ] 41.4 Implement account deletion in KMP
     - Create AccountDeletionManager class
     - Delete all user data from all tables
     - Delete food photos from storage
@@ -1148,20 +1287,20 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 29: Account Deletion Cascade**
     - **Validates: Requirements 84.4, 84.5**
 
-  - [ ] 31.6 Build data export UI (iOS and Android)
+  - [ ] 41.6 Build data export UI (iOS and Android)
     - Create data export screen
     - Allow format selection (JSON/CSV)
     - Allow data type selection
     - Provide download/share functionality
     - _Requirements: 82.1-82.10_
 
-  - [ ] 31.7 Build account deletion UI (iOS and Android)
+  - [ ] 41.7 Build account deletion UI (iOS and Android)
     - Create account deletion screen
     - Display warning about data loss
     - Require authentication confirmation
     - _Requirements: 84.1-84.11_
 
-  - [ ] 31.8 Implement privacy policy and terms acceptance
+  - [ ] 41.8 Implement privacy policy and terms acceptance
     - Display privacy policy and terms during sign-up
     - Require acceptance before account creation
     - Store acceptance date and version
@@ -1172,8 +1311,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test CSV format validity
     - Test data completeness
 
-- [ ] 32. Settings and preferences
-  - [ ] 32.1 Implement settings management in KMP
+- [ ] 42. Settings and preferences
+  - [ ] 42.1 Implement settings management in KMP
     - Create SettingsManager class
     - Manage unit preferences (metric/imperial)
     - Manage language settings
@@ -1184,7 +1323,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 30: Unit Conversion Accuracy**
     - **Validates: Requirements 87.5**
 
-  - [ ] 32.3 Build settings UI (iOS and Android)
+  - [ ] 42.3 Build settings UI (iOS and Android)
     - Create settings screen with sections
     - Account settings (profile, email, password)
     - Unit preferences
@@ -1204,7 +1343,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test theme switching
     - Test preference persistence
 
-- [ ] 33. Checkpoint - Verify notifications, sync, and settings
+- [ ] 41. Checkpoint - Verify notifications, sync, and settings
   - Build and launch both iOS and Android apps
   - Test notification delivery and deep links
   - Test real-time sync across multiple devices
@@ -1219,29 +1358,29 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **STOP: Wait for user confirmation before proceeding to task 34**
 
 
-- [ ] 34. Error handling and graceful degradation
-  - [ ] 34.1 Implement error handling in KMP
+- [ ] 42. Error handling and graceful degradation
+  - [ ] 42.1 Implement error handling in KMP
     - Create ErrorHandler class
     - Define error types (network, auth, API, validation, storage)
     - Implement user-friendly error messages
     - Log errors for monitoring
     - _Requirements: 95.1-95.8_
 
-  - [ ] 34.2 Implement network connectivity handling in KMP
+  - [ ] 42.2 Implement network connectivity handling in KMP
     - Create NetworkHandler class (expect/actual)
     - Monitor connectivity status
     - Display offline indicator
     - Enable offline features (cached data)
     - _Requirements: 96.1-96.8_
 
-  - [ ] 34.3 Implement graceful degradation in KMP
+  - [ ] 42.3 Implement graceful degradation in KMP
     - Handle USDA API unavailability (use cache or AI estimates)
     - Handle Barcode API unavailability (fallback to manual search)
     - Handle Bedrock unavailability (allow manual entry)
     - Handle health platform API failures (show last sync)
     - _Requirements: 97.1-97.9, 132.1-132.8_
 
-  - [ ] 34.4 Build error UI (iOS and Android)
+  - [ ] 42.4 Build error UI (iOS and Android)
     - Display error messages with clear explanations
     - Provide actionable next steps
     - Show offline indicator
@@ -1253,21 +1392,21 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test API error fallbacks
     - Test validation error messages
 
-- [ ] 35. Performance optimization
-  - [ ] 35.1 Optimize AI request performance in KMP
+- [ ] 41. Performance optimization
+  - [ ] 41.1 Optimize AI request performance in KMP
     - Implement request caching for repeated queries
     - Implement streaming responses for long outputs
     - Set timeouts for AI requests (5 seconds)
     - Allow cancellation of long-running requests
     - _Requirements: 131.1-131.8_
 
-  - [ ] 35.2 Optimize database queries in KMP
+  - [ ] 41.2 Optimize database queries in KMP
     - Add indexes for common queries
     - Implement pagination for large result sets
     - Cache frequently accessed data
     - _Requirements: 134.1-134.8_
 
-  - [ ] 35.3 Optimize image uploads
+  - [ ] 41.3 Optimize image uploads
     - Compress images before upload
     - Implement progress indicators
     - Set size limits (10MB)
@@ -1278,22 +1417,22 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test dashboard load time (< 2 seconds)
     - Test Amigo response time (< 3 seconds)
 
-- [ ] 36. Accessibility
-  - [ ] 36.1 Implement iOS accessibility (Swift)
+- [ ] 42. Accessibility
+  - [ ] 42.1 Implement iOS accessibility (Swift)
     - Add VoiceOver labels and hints
     - Support Dynamic Type
     - Ensure color contrast ratios (WCAG AA)
     - Support keyboard navigation
     - _Requirements: Accessibility compliance_
 
-  - [ ] 36.2 Implement Android accessibility (Kotlin)
+  - [ ] 42.2 Implement Android accessibility (Kotlin)
     - Add TalkBack content descriptions
     - Support font scaling
     - Ensure color contrast ratios (WCAG AA)
     - Support keyboard navigation
     - _Requirements: Accessibility compliance_
 
-- [ ] 37. Testing and quality assurance
+- [ ] 41. Testing and quality assurance
   - [ ]* 37.1 Write remaining property-based tests
     - Property 2: Email Uniqueness Enforcement
     - Property 3: Account Creation Completeness
@@ -1338,8 +1477,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test Realtime channel scalability
     - Measure AI service costs
 
-- [ ] 38. Monitoring and observability
-  - [ ] 38.1 Implement monitoring in KMP
+- [ ] 42. Monitoring and observability
+  - [ ] 42.1 Implement monitoring in KMP
     - Track error rates by feature
     - Track API response times
     - Track AI service costs
@@ -1347,7 +1486,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Track user engagement metrics
     - _Requirements: 98.1-98.8_
 
-  - [ ] 38.2 Set up alerting
+  - [ ] 42.2 Set up alerting
     - Alert on error rate > 5%
     - Alert on API response time > 5 seconds
     - Alert on database query time > 2 seconds
@@ -1355,32 +1494,32 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Alert on payment processing failures
     - _Requirements: 98.1-98.8_
 
-  - [ ] 38.3 Implement analytics tracking
+  - [ ] 42.3 Implement analytics tracking
     - Track feature usage
     - Track subscription conversions
     - Track meal logging method preferences
     - Track user retention
 
-- [ ] 39. Documentation
-  - [ ] 39.1 Write API documentation
+- [ ] 41. Documentation
+  - [ ] 41.1 Write API documentation
     - Document KMP shared module APIs in `docs/api/`
     - Document platform-specific interfaces in `docs/api/`
     - Document data models and schemas in `docs/api/`
 
-  - [ ] 39.2 Write deployment documentation
+  - [ ] 41.2 Write deployment documentation
     - Document Supabase setup and configuration in `docs/deployment/supabase-setup.md`
     - Document Amazon Bedrock setup in `docs/deployment/bedrock-setup.md`
     - Document CloudFormation deployment in `docs/deployment/cloudformation.md`
     - Document environment variables and secrets in `docs/deployment/environment.md`
     - Document CI/CD pipeline in `docs/deployment/ci-cd.md`
 
-  - [ ] 39.3 Write user documentation
+  - [ ] 41.3 Write user documentation
     - Create in-app help content
     - Create FAQ in `docs/user/faq.md`
     - Create feature tutorials in `docs/user/tutorials/`
     - _Requirements: 91.1-91.8_
 
-- [ ] 40. Final checkpoint and deployment preparation
+- [ ] 42. Final checkpoint and deployment preparation
   - Build final production versions for iOS and Android
   - Run full test suite (unit, property, integration, UI) and verify all pass
   - Test all features on both iOS and Android platforms

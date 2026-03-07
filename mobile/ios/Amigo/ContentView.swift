@@ -35,6 +35,19 @@ struct ContentView: View {
                 Spacer()
                 
                 Button(action: {
+                    resetOnboarding()
+                }) {
+                    Text("Reset Onboarding")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.orange)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal)
+                
+                Button(action: {
                     Task {
                         await viewModel.signOut()
                     }
@@ -52,6 +65,16 @@ struct ContentView: View {
             }
             .padding()
             .navigationTitle("Dashboard")
+        }
+    }
+    
+    private func resetOnboarding() {
+        if let user = viewModel.getCurrentUser() {
+            let userKey = "hasCompletedOnboarding_\(user.id)"
+            UserDefaults.standard.removeObject(forKey: userKey)
+            
+            // Force app to restart by exiting
+            exit(0)
         }
     }
 }

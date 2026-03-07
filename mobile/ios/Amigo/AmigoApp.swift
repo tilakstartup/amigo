@@ -4,6 +4,11 @@ import shared
 @main
 struct AmigoApp: App {
     @StateObject private var authViewModel: AuthViewModel
+    @State private var hasCompletedOnboarding: Bool
+    @State private var hasCompletedWelcome: Bool
+    
+    // Shared session manager instance
+    private let sessionManager: SessionManager
     
     init() {
         // Initialize Supabase client
@@ -15,28 +20,72 @@ struct AmigoApp: App {
         let emailAuthenticator = AuthFactory.shared.createEmailAuthenticator()
         let oauthAuthenticator = AuthFactory.shared.createOAuthAuthenticator()
         let secureStorage = SecureStorage()
-        let sessionManager = AuthFactory.shared.createSessionManager(secureStorage: secureStorage)
+        let sharedSessionManager = AuthFactory.shared.createSessionManager(secureStorage: secureStorage)
+        
+        // Store session manager for use in onboarding
+        self.sessionManager = sharedSessionManager
         
         // Initialize view model
         _authViewModel = StateObject(wrappedValue: AuthViewModel(
             emailAuthenticator: emailAuthenticator,
             oauthAuthenticator: oauthAuthenticator,
-            sessionManager: sessionManager
+            sessionManager: sharedSessionManager
         ))
+        
+        // Check onboarding status (device-level for welcome, will check user-level for onboarding)
+        _hasCompletedWelcome = State(initialValue: UserDefaults.standard.bool(forKey: "hasCompletedWelcome"))
+        _hasCompletedOnboarding = State(initialValue: false) // Will be checked per-user
     }
     
     var body: some Scene {
         WindowGroup {
             Group {
-                if authViewModel.isAuthenticated {
-                    ContentView(viewModel: authViewModel)
-                } else {
+                if !hasCompletedWelcome {
+                    // Show pre-auth welcome screens
+                    WelcomeView(currentPage: .constant(0)) {
+                        UserDefaults.standard.set(true, forKey: "hasCompletedWelcome")
+                        hasCompletedWelcome = true
+                    }
+                } else if !authViewModel.isAuthenticated {
+                    // Show authentication screens
                     LoginView(viewModel: authViewModel)
+                } else if !hasCompletedOnboarding {
+                    // Show post-auth onboarding
+                    OnboardingCoordinator(
+                        isOnboardingComplete: $hasCompletedOnboarding,
+                        sessionManager: sessionManager
+                    )
+                } else {
+                    // Show main app
+                    ContentView(viewModel: authViewModel)
                 }
             }
             .onOpenURL { url in
                 handleDeepLink(url)
             }
+            .onChange(of: authViewModel.isAuthenticated) { isAuthenticated in
+                if isAuthenticated {
+                    // Check user-specific onboarding status when user logs in
+                    checkUserOnboardingStatus()
+                } else {
+                    // Reset onboarding status when user logs out
+                    hasCompletedOnboarding = false
+                }
+            }
+            .onAppear {
+                // Check onboarding status on app launch if already authenticated
+                if authViewModel.isAuthenticated {
+                    checkUserOnboardingStatus()
+                }
+            }
+        }
+    }
+    
+    private func checkUserOnboardingStatus() {
+        // Check if current user has completed onboarding
+        if let user = authViewModel.getCurrentUser() {
+            let userKey = "hasCompletedOnboarding_\(user.id)"
+            hasCompletedOnboarding = UserDefaults.standard.bool(forKey: userKey)
         }
     }
     

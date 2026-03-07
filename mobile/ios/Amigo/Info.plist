@@ -28,5 +28,30 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Amigo needs access to your camera to take photos of your meals for AI-powered nutritional analysis.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Amigo needs access to your photo library to select meal photos for analysis.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Amigo needs access to your microphone to record voice descriptions of your meals.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Amigo would like to access your health data to provide personalized coaching based on your activity, heart rate, sleep, and exercise metrics.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Amigo would like to update your health data with meal and water intake information.</string>
+	<key>BEDROCK_API_ENDPOINT</key>
+	<string>https://n96755fzqk.execute-api.us-east-1.amazonaws.com/dev/invoke</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.amigoai.ios</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>amigo</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

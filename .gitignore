@@ -67,8 +67,16 @@ GoogleService-Info.plist
 AuthKey_*.p8
 generate_apple_jwt.js
 
-# Task summaries (optional - uncomment if you don't want to commit these)
-# task_summaries/
+# Test scripts with credentials
+check_models.py
+test_gemma.py
+test_gpt_oss.sh
+test_nova.sh
+capture_onboarding_logs.sh
+view_logs.sh
+
+# Documentation with credentials
+task_summaries/
 
 # Documentation build outputs
 docs/_build/

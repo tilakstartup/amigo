@@ -872,93 +872,93 @@ Amigo is an AI-first personal health coaching application centered around "Amigo
 5. WHERE Pro tier is active, Amigo SHALL provide enhanced water and fasting statistics
 6. Amigo SHALL not apply Usage_Quota limits to water logging or fasting tracking
 
-### Requirement 59: First-Time User Onboarding
+### Requirement 59: AI-Powered Conversational Onboarding
 
-**User Story:** As a first-time user, I want a guided onboarding experience, so that I can quickly understand and set up the app
-
-#### Acceptance Criteria
-
-1. WHEN a user opens Amigo for the first time, THE Onboarding_Flow SHALL display welcome screens
-2. THE Onboarding_Flow SHALL explain the core features of Amigo including meal logging, water tracking, and fasting
-3. THE Onboarding_Flow SHALL explain Amigo and the AI coaching capabilities
-4. THE Onboarding_Flow SHALL display the available Subscription_Tiers and their features
-5. THE Onboarding_Flow SHALL allow users to skip the welcome screens and proceed directly to Profile_Setup
-6. WHEN the welcome screens are completed, THE Onboarding_Flow SHALL proceed to Profile_Setup
-7. Amigo SHALL not display the Onboarding_Flow to returning users
-
-### Requirement 60: Profile Setup Wizard
-
-**User Story:** As a new user, I want to set up my profile with basic information, so that the app can provide personalized guidance
+**User Story:** As a first-time user, I want to have a natural AI-powered conversation with Amigo during onboarding, so that I can set up my profile in an engaging and personalized way
 
 #### Acceptance Criteria
 
-1. WHEN Profile_Setup begins, Amigo SHALL prompt the user to enter their name
-2. Amigo SHALL prompt the user to enter their age
-3. Amigo SHALL prompt the user to enter their height with Unit_Preferences selection
-4. Amigo SHALL prompt the user to enter their weight with Unit_Preferences selection
-5. Amigo SHALL validate that age is a positive number between 13 and 120
-6. Amigo SHALL validate that height and weight are positive numbers within reasonable ranges
-7. WHEN profile information is complete, THE Data_Store SHALL persist the user profile data
-8. Amigo SHALL allow users to skip optional profile fields
-9. IF required profile fields are missing, THEN Amigo SHALL prevent completion of Profile_Setup
+1. WHEN a user opens Amigo for the first time, THE Onboarding_Flow SHALL present a chat interface with Amigo (powered by Claude AI) as the onboarding guide
+2. Amigo SHALL introduce itself with a friendly AI-generated welcome message explaining its role as the user's health coach
+3. THE Chat_Interface SHALL display Amigo's messages in chat bubbles with typing indicators for a natural conversation feel
+4. Amigo SHALL use Claude AI to generate contextually appropriate questions to collect user information progressively (less than 10 questions total)
+5. THE Chat_Interface SHALL provide quick-reply "pills" (button options) for questions with predefined answers
+6. THE Chat_Interface SHALL allow users to type free-form text responses when appropriate
+7. Amigo SHALL adapt its conversation flow based on user responses using AI intelligence
+8. Amigo SHALL not display the Onboarding_Flow to returning users
 
-### Requirement 61: Health Goal Setting
+### Requirement 60: Goal-Based Question Flow
 
-**User Story:** As a new user, I want to set my health goals during onboarding, so that the app can track my progress toward those goals
-
-#### Acceptance Criteria
-
-1. WHEN Profile_Setup is complete, THE Onboarding_Flow SHALL prompt the user to set a Water_Goal
-2. THE Onboarding_Flow SHALL prompt the user to select a Fasting_Protocol or skip fasting setup
-3. THE Onboarding_Flow SHALL prompt the user to set daily calorie or nutrition goals
-4. Amigo SHALL provide recommended goal values based on the user's age, height, weight, and activity level
-5. Amigo SHALL allow users to customize recommended goals
-6. WHEN health goals are set, THE Data_Store SHALL persist the goal data
-7. Amigo SHALL allow users to skip goal setting and configure goals later
-
-### Requirement 62: Feature Tutorial and Walkthrough
-
-**User Story:** As a new user, I want an interactive tutorial of key features, so that I understand how to use the app effectively
+**User Story:** As a new user, I want Amigo to ask me relevant questions based on my health goals, so that the onboarding feels personalized and efficient
 
 #### Acceptance Criteria
 
-1. WHEN Profile_Setup is complete, THE Onboarding_Flow SHALL offer an interactive Tutorial
-2. THE Tutorial SHALL demonstrate how to log meals using image, voice, and text methods
-3. THE Tutorial SHALL demonstrate how to log water intake
-4. THE Tutorial SHALL demonstrate how to start and stop a Fasting_Session
-5. THE Tutorial SHALL demonstrate how to access the Dashboard
-6. WHERE Pro tier is active, THE Tutorial SHALL demonstrate how to chat with Amigo
-7. Amigo SHALL allow users to skip the Tutorial
-8. Amigo SHALL provide access to the Tutorial from app settings for returning users
+1. Amigo SHALL start by asking the user about their primary health goal using quick-reply pills (Weight Loss, Muscle Gain, Maintenance, Improved Energy, Better Sleep)
+2. BASED ON the selected goal, Amigo SHALL ask goal-specific follow-up questions (e.g., target weight for weight loss, sleep hours for better sleep)
+3. Amigo SHALL ask for basic profile information (name, age, height, weight) through conversational messages
+4. Amigo SHALL ask for activity level using quick-reply pills (Sedentary, Lightly Active, Moderately Active, Very Active, Extremely Active)
+5. Amigo SHALL ask for dietary preferences using quick-reply pills (No Restrictions, Vegetarian, Vegan, Gluten-Free, Keto, Paleo)
+6. Amigo SHALL validate that age is a positive number between 13 and 120
+7. Amigo SHALL validate that height and weight are positive numbers within reasonable ranges
+8. WHEN profile information is complete, THE Data_Store SHALL persist the user profile data
+9. Amigo SHALL ask no more than 10 questions total during onboarding
+
+### Requirement 61: Contextual Feature Introduction
+
+**User Story:** As a new user, I want Amigo to naturally introduce app features during our conversation, so that I understand what the app can do without feeling overwhelmed
+
+#### Acceptance Criteria
+
+1. DURING the onboarding conversation, Amigo SHALL contextually introduce relevant features based on the user's responses
+2. WHEN discussing meal tracking, Amigo SHALL mention the ability to log meals with photos, voice, or text
+3. WHEN discussing hydration, Amigo SHALL mention water tracking with smart reminders
+4. WHEN discussing weight goals, Amigo SHALL mention fasting tracking capabilities
+5. Amigo SHALL explain features in 1-2 sentences within the natural conversation flow
+6. Amigo SHALL not interrupt the question flow with lengthy feature explanations
+7. Amigo SHALL provide visual examples or icons when introducing features where appropriate
+
+### Requirement 62: AI-Generated Personalized Insights and Analysis
+
+**User Story:** As a new user, I want Amigo to provide AI-generated insights based on my responses, so that I feel the app understands my health journey
+
+#### Acceptance Criteria
+
+1. WHEN a user provides their current and target weight, Amigo SHALL use Claude AI to calculate and present the weight difference with personalized commentary
+2. WHEN a user provides their activity level and goals, Amigo SHALL use AI to generate encouraging feedback or recommendations
+3. Amigo SHALL use Claude AI to generate simple visualizations descriptions (charts, progress indicators) when relevant to the conversation
+4. Amigo SHALL acknowledge user responses with AI-generated personalized, supportive messages
+5. Amigo SHALL use Claude AI to provide context-appropriate health tips based on the user's goal and responses
+6. Amigo SHALL maintain a friendly, encouraging tone throughout the AI-generated conversation
+7. Amigo SHALL avoid overwhelming users with too much information at once in AI responses
 
 ### Requirement 63: Device Permission Requests
 
-**User Story:** As a new user, I want to be asked for necessary device permissions, so that I understand why the app needs access to certain features
+**User Story:** As a new user, I want Amigo to naturally request necessary device permissions during our conversation, so that I understand why the app needs access to certain features
 
 #### Acceptance Criteria
 
-1. WHEN the Tutorial is complete, THE Onboarding_Flow SHALL request camera permission with an explanation
-2. Amigo SHALL explain that camera access is needed for food photo logging and barcode scanning
-3. THE Onboarding_Flow SHALL request notification permission with an explanation
+1. AFTER the conversational onboarding questions are complete, Amigo SHALL request camera permission with a conversational explanation
+2. Amigo SHALL explain that camera access enables food photo logging and barcode scanning
+3. Amigo SHALL request notification permission with a conversational explanation
 4. Amigo SHALL explain that notifications are used for water reminders and fasting alerts
-5. WHERE iOS platform is active, THE Onboarding_Flow SHALL request Apple Health permission with an explanation
-6. WHERE Android platform is active, THE Onboarding_Flow SHALL request Google Health Connect permission with an explanation
+5. WHERE iOS platform is active, Amigo SHALL request Apple Health permission with a conversational explanation
+6. WHERE Android platform is active, Amigo SHALL request Google Health Connect permission with a conversational explanation
 7. Amigo SHALL allow users to decline permissions and continue using the app with limited functionality
-8. IF a user declines a permission, THEN Amigo SHALL explain which features will be unavailable
+8. IF a user declines a permission, THEN Amigo SHALL explain which features will be unavailable in a friendly manner
 9. Amigo SHALL provide instructions for enabling permissions later in device settings
 
 ### Requirement 64: Onboarding Completion
 
-**User Story:** As a new user, I want to complete onboarding and start using the app, so that I can begin tracking my health
+**User Story:** As a new user, I want to complete the conversational onboarding and start using the app, so that I can begin tracking my health with Amigo
 
 #### Acceptance Criteria
 
-1. WHEN all Onboarding_Flow steps are complete, Amigo SHALL display a completion message
-2. WHEN onboarding is complete, Amigo SHALL navigate to the Dashboard
-3. Amigo SHALL mark the user account as having completed onboarding
-4. WHEN a user reopens Amigo, Amigo SHALL navigate directly to the Dashboard without showing Onboarding_Flow
-5. Amigo SHALL allow users to exit Onboarding_Flow at any time and resume later
-6. IF a user exits Onboarding_Flow before completion, THEN Amigo SHALL resume from the last completed step on next launch
+1. WHEN all onboarding questions and permissions are complete, Amigo SHALL display a warm completion message
+2. Amigo SHALL summarize the user's goals and express excitement about the health journey ahead
+3. WHEN onboarding is complete, Amigo SHALL navigate to the Dashboard
+4. Amigo SHALL mark the user account as having completed onboarding
+5. WHEN a user reopens Amigo, Amigo SHALL navigate directly to the Dashboard without showing Onboarding_Flow
+6. THE onboarding conversation history SHALL be saved and accessible to the user later
 
 ### Requirement 65: Payment Gateway Integration
 
