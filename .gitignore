@@ -1,0 +1,69 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/*.xcworkspace/xcuserdata/
+mobile/ios/*.xcodeproj/xcuserdata/
+mobile/ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+mobile/ios/build/
+mobile/ios/DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Android
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/android/.idea/
+mobile/android/*.iml
+*.apk
+*.aab
+
+# Kotlin Multiplatform
+mobile/shared/build/
+mobile/shared/.gradle/
+
+# Node modules (if using any JS tooling)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+
+# Build outputs
+dist/
+out/
+*.log
+
+# Secrets and credentials
+*.pem
+*.key
+*.p12
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+
+# Task summaries (optional - uncomment if you don't want to commit these)
+# task_summaries/
+
+# Documentation build outputs
+docs/_build/
