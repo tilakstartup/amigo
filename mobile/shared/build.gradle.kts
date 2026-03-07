@@ -59,6 +59,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-client-android:2.3.7")
+                implementation("androidx.security:security-crypto:1.1.0-alpha06")
             }
         }
         

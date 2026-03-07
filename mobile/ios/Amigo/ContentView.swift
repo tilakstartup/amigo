@@ -2,20 +2,73 @@ import SwiftUI
 import shared
 
 struct ContentView: View {
-    let greeting = Greeting().greet()
+    @ObservedObject var viewModel: AuthViewModel
     
     var body: some View {
-        VStack {
-            Image(systemName: "heart.fill")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text(greeting)
-                .padding()
+        NavigationView {
+            VStack(spacing: 20) {
+                Image(systemName: "heart.fill")
+                    .imageScale(.large)
+                    .font(.system(size: 60))
+                    .foregroundStyle(.pink)
+                
+                Text("Welcome to Amigo!")
+                    .font(.title)
+                    .fontWeight(.bold)
+                
+                if let user = viewModel.getCurrentUser() {
+                    Text("Signed in as:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Text(user.email)
+                        .font(.body)
+                        .fontWeight(.medium)
+                }
+                
+                Text("Your AI health coach is ready to help you achieve your goals.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                
+                Spacer()
+                
+                Button(action: {
+                    Task {
+                        await viewModel.signOut()
+                    }
+                }) {
+                    Text("Sign Out")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.pink)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 40)
+            }
+            .padding()
+            .navigationTitle("Dashboard")
         }
-        .padding()
     }
 }
 
 #Preview {
-    ContentView()
+    let supabaseUrl = "https://your-project.supabase.co"
+    let supabaseKey = "your-anon-key"
+    AuthFactory.shared.initializeSupabase(supabaseUrl: supabaseUrl, supabaseKey: supabaseKey)
+    let emailAuthenticator = AuthFactory.shared.createEmailAuthenticator()
+    let oauthAuthenticator = AuthFactory.shared.createOAuthAuthenticator()
+    let secureStorage = SecureStorage()
+    let sessionManager = AuthFactory.shared.createSessionManager(secureStorage: secureStorage)
+    let viewModel = AuthViewModel(
+        emailAuthenticator: emailAuthenticator,
+        oauthAuthenticator: oauthAuthenticator,
+        sessionManager: sessionManager
+    )
+    
+    return ContentView(viewModel: viewModel)
 }

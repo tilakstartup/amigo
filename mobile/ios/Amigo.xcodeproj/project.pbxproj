@@ -8,17 +8,34 @@
 
 /* Begin PBXBuildFile section */
 		052EE3AE8A4856D3524B5394 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA351020F48AAEB24F28875 /* ContentView.swift */; };
+		7600A09E7C7D23D70A0CD5B3 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6CA8FCCEB894A0DFAB738F /* LoginView.swift */; };
+		7E62FCEDA148E32A662C9A93 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80DECC1C1F7E8667BD37F5F /* AuthViewModel.swift */; };
+		973E3C3747329ABE7C868C99 /* SignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3795444891A845954C7EA39D /* SignUpView.swift */; };
 		F3CD57C143FB853C489FBCC8 /* AmigoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E79E57DD71B2E862187BB38C /* AmigoApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		3305E04868BC111AB25AEB08 /* Amigo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Amigo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3795444891A845954C7EA39D /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
 		4BA351020F48AAEB24F28875 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7B6B027DCA3E47CC52B69507 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9E6CA8FCCEB894A0DFAB738F /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		B80DECC1C1F7E8667BD37F5F /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		E79E57DD71B2E862187BB38C /* AmigoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmigoApp.swift; sourceTree = "<group>"; };
+		ECFF3DA1B6222E3F067DA77B /* Amigo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Amigo.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		33D80055B0D7278B54C658FE /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				B80DECC1C1F7E8667BD37F5F /* AuthViewModel.swift */,
+				9E6CA8FCCEB894A0DFAB738F /* LoginView.swift */,
+				3795444891A845954C7EA39D /* SignUpView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
 		6C342F9E6DDD525B1A0C394B /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -38,9 +55,11 @@
 		A7F305F3480D1C0736B15C2B /* Amigo */ = {
 			isa = PBXGroup;
 			children = (
+				ECFF3DA1B6222E3F067DA77B /* Amigo.entitlements */,
 				E79E57DD71B2E862187BB38C /* AmigoApp.swift */,
 				4BA351020F48AAEB24F28875 /* ContentView.swift */,
 				7B6B027DCA3E47CC52B69507 /* Info.plist */,
+				33D80055B0D7278B54C658FE /* Auth */,
 			);
 			path = Amigo;
 			sourceTree = "<group>";
@@ -124,7 +143,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				F3CD57C143FB853C489FBCC8 /* AmigoApp.swift in Sources */,
+				7E62FCEDA148E32A662C9A93 /* AuthViewModel.swift in Sources */,
 				052EE3AE8A4856D3524B5394 /* ContentView.swift in Sources */,
+				7600A09E7C7D23D70A0CD5B3 /* LoginView.swift in Sources */,
+				973E3C3747329ABE7C868C99 /* SignUpView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -264,7 +286,7 @@
 					"@executable_path/Frameworks",
 				);
 				OTHER_LDFLAGS = "$(inherited) -framework shared";
-				PRODUCT_BUNDLE_IDENTIFIER = com.amigo.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.amigoai.ios;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -285,7 +307,7 @@
 					"@executable_path/Frameworks",
 				);
 				OTHER_LDFLAGS = "$(inherited) -framework shared";
-				PRODUCT_BUNDLE_IDENTIFIER = com.amigo.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.amigoai.ios;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";

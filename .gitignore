@@ -32,11 +32,13 @@ mobile/android/*.iml
 # Kotlin Multiplatform
 mobile/shared/build/
 mobile/shared/.gradle/
+mobile/.gradle/
 
 # Node modules (if using any JS tooling)
 node_modules/
 npm-debug.log
 yarn-error.log
+package-lock.json
 
 # IDE
 .idea/
@@ -58,9 +60,12 @@ out/
 *.pem
 *.key
 *.p12
+*.p8
 *.mobileprovision
 google-services.json
 GoogleService-Info.plist
+AuthKey_*.p8
+generate_apple_jwt.js
 
 # Task summaries (optional - uncomment if you don't want to commit these)
 # task_summaries/

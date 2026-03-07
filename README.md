@@ -44,7 +44,19 @@ amigo/
 
 ## Getting Started
 
-See the [implementation plan](.kiro/specs/health-app/tasks.md) for detailed setup instructions.
+### Quick Setup
+
+1. **Clone the repository**
+2. **Set up Supabase** - See [Supabase Setup](docs/infrastructure/supabase-setup.md)
+3. **Configure SendGrid SMTP** - See [SENDGRID-SETUP.md](SENDGRID-SETUP.md) for email authentication
+4. **Set up AWS Bedrock** - See [AWS Bedrock Setup](docs/infrastructure/aws-bedrock.md)
+5. **Build and run** - See [implementation plan](.kiro/specs/health-app/tasks.md)
+
+### Email Configuration
+
+For authentication emails, we use SendGrid (free tier: 100 emails/day):
+- Quick setup: [SENDGRID-SETUP.md](SENDGRID-SETUP.md)
+- Full guide: [docs/infrastructure/sendgrid-smtp-setup.md](docs/infrastructure/sendgrid-smtp-setup.md)
 
 ## Documentation
 

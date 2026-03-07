@@ -16,7 +16,7 @@ targets:
       path: Amigo/Info.plist
       properties:
         CFBundleDisplayName: Amigo
-        CFBundleIdentifier: com.amigo.ios
+        CFBundleIdentifier: com.amigoai.ios
         CFBundleShortVersionString: "1.0"
         CFBundleVersion: "1"
         UILaunchScreen: {}
@@ -26,7 +26,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.amigo.ios
+        PRODUCT_BUNDLE_IDENTIFIER: com.amigoai.ios
         SWIFT_VERSION: "5.9"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         OTHER_LDFLAGS: "$(inherited) -framework shared"

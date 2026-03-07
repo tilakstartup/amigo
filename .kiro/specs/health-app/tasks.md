@@ -121,7 +121,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Configure platform-specific crash reporters (iOS/Android)
     - _Requirements: 93.1, 94.1_
 
-- [ ] 2. Checkpoint - Verify project structure
+- [x] 2. Checkpoint - Verify project structure
   - Build iOS app from `mobile/ios/` and verify it launches successfully
   - Build Android app from `mobile/android/` and verify it launches successfully
   - Verify KMP framework from `mobile/shared/` integrates with both platforms
@@ -134,13 +134,13 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **After approval: Ask for git commit message, commit changes, and push**
   - **STOP: Wait for user confirmation before proceeding to task 3**
 
-- [ ] 3. Authentication system (Supabase Auth)
-  - [ ] 3.1 Implement authentication data models in KMP
+- [x] 3. Authentication system (Supabase Auth)
+  - [x] 3.1 Implement authentication data models in KMP
     - Create User, Session, AuthCredentials data classes in `mobile/shared/`
     - Define AuthResult sealed class for success/error states
     - _Requirements: 1.3, 2.1_
 
-  - [ ] 3.2 Implement email/password authentication in KMP
+  - [x] 3.2 Implement email/password authentication in KMP
     - Create EmailAuthenticator class in `mobile/shared/` using Supabase Auth
     - Implement signUp(email, password) function
     - Implement signIn(email, password) function
@@ -156,13 +156,13 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 4: Password Hashing Security**
     - **Validates: Requirements 1.4**
 
-  - [ ] 3.5 Implement OAuth authentication in KMP
+  - [x] 3.5 Implement OAuth authentication in KMP
     - Create GoogleAuthenticator class in `mobile/shared/` using Supabase Auth
     - Create AppleAuthenticator class in `mobile/shared/` using Supabase Auth
     - Implement OAuth flow handling with platform-specific redirects
     - _Requirements: 3.1, 3.2, 4.1, 4.2, 5.1, 5.2, 6.1, 6.2, 100.2_
 
-  - [ ] 3.6 Implement session management in KMP
+  - [x] 3.6 Implement session management in KMP
     - Create SessionManager class in `mobile/shared/`
     - Implement session token storage (expect/actual for platform-specific secure storage)
     - Implement session validation and refresh logic
@@ -173,7 +173,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - **Property 5: Session Token Generation on Authentication**
     - **Validates: Requirements 1.5, 2.3**
 
-  - [ ] 3.8 Build iOS authentication UI (Swift)
+  - [x] 3.8 Build iOS authentication UI (Swift)
     - Create login screen in `mobile/ios/` with email/password fields
     - Create sign-up screen
     - Add Google Sign-In button with OAuth flow
@@ -181,7 +181,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Implement form validation and error display
     - _Requirements: 1.1-1.8, 2.1-2.7, 3.1-3.7, 4.1-4.7, 5.1-5.8, 6.1-6.7_
 
-  - [ ] 3.9 Build Android authentication UI (Kotlin/Compose)
+  - [x] 3.9 Build Android authentication UI (Kotlin/Compose)
     - Create login screen in `mobile/android/` with email/password fields
     - Create sign-up screen
     - Add Google Sign-In button with OAuth flow
@@ -193,27 +193,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Test invalid email/password handling
     - Test OAuth flow error handling
     - Test session persistence
-    - Create login screen with email/password fields
-    - Create sign-up screen
-    - Add Google Sign-In button with OAuth flow
-    - Add Sign in with Apple button
-    - Implement form validation and error display
-    - _Requirements: 1.1-1.8, 2.1-2.7, 3.1-3.7, 4.1-4.7, 5.1-5.8, 6.1-6.7_
 
-  - [ ] 3.9 Build Android authentication UI (Kotlin/Compose)
-    - Create login screen with email/password fields
-    - Create sign-up screen
-    - Add Google Sign-In button with OAuth flow
-    - Implement form validation and error display
-    - _Requirements: 1.1-1.8, 2.1-2.7, 3.1-3.7, 4.1-4.7_
-
-  - [ ]* 3.10 Write unit tests for authentication flows
-    - Test successful sign-up and sign-in
-    - Test invalid email/password handling
-    - Test OAuth flow error handling
-    - Test session persistence
-
-- [ ] 4. Checkpoint - Verify authentication
+- [x] 4. Checkpoint - Verify authentication
   - Build and launch iOS app from `mobile/ios/`
   - Test sign-up with email/password on iOS
   - Test sign-in with email/password on iOS
