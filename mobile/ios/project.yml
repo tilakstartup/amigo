@@ -1,0 +1,39 @@
+name: Amigo
+options:
+  bundleIdPrefix: com.amigo
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: en
+  
+targets:
+  Amigo:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - Amigo
+    info:
+      path: Amigo/Info.plist
+      properties:
+        CFBundleDisplayName: Amigo
+        CFBundleIdentifier: com.amigo.ios
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.amigo.ios
+        SWIFT_VERSION: "5.9"
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        OTHER_LDFLAGS: "$(inherited) -framework shared"
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/bin/iosSimulatorArm64/debugFramework"
+    preBuildScripts:
+      - script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+        name: Build KMP Framework
+        basedOnDependencyAnalysis: false

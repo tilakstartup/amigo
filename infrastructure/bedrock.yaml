@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Amigo - AWS Bedrock Infrastructure for Claude AI Access'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+Resources:
+  # IAM Role for Bedrock Access
+  BedrockAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'amigo-bedrock-access-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: BedrockInvokePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'bedrock:InvokeModel'
+                  - 'bedrock:InvokeModelWithResponseStream'
+                Resource:
+                  - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-*'
+
+  # IAM User for Mobile App Access (for development)
+  BedrockMobileUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub 'amigo-mobile-bedrock-${Environment}'
+      Policies:
+        - PolicyName: BedrockInvokePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'bedrock:InvokeModel'
+                  - 'bedrock:InvokeModelWithResponseStream'
+                Resource:
+                  - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-*'
+
+  # Access Key for Mobile User
+  BedrockMobileUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref BedrockMobileUser
+
+Outputs:
+  BedrockAccessRoleArn:
+    Description: ARN of the Bedrock access role
+    Value: !GetAtt BedrockAccessRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BedrockAccessRoleArn'
+
+  BedrockMobileUserAccessKeyId:
+    Description: Access Key ID for mobile app (store in .env)
+    Value: !Ref BedrockMobileUserAccessKey
+
+  BedrockMobileUserSecretAccessKey:
+    Description: Secret Access Key for mobile app (store in .env)
+    Value: !GetAtt BedrockMobileUserAccessKey.SecretAccessKey
+
+  Region:
+    Description: AWS Region for Bedrock
+    Value: !Ref AWS::Region
