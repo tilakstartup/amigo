@@ -212,8 +212,8 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **STOP: Wait for user confirmation before proceeding to task 5**
 
 
-- [ ] 5. Database schema and models
-  - [ ] 5.1 Create Supabase database schema with migrations
+- [x] 5. Database schema and models
+  - [x] 5.1 Create Supabase database schema with migrations
     - Create migration file in `supabase/migrations/` for users_profiles table with RLS policies
     - Create migration file for meal_logs table with RLS policies
     - Create migration file for water_logs table with RLS policies
@@ -230,7 +230,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Run `supabase db push` to apply migrations
     - _Requirements: 101.1-101.8, 102.1-102.8, 103.1-103.8, 104.1-104.9, 105.1-105.8, 115.1-115.3, 138.4, 139.1_
 
-  - [ ] 5.2 Implement data models in KMP
+  - [x] 5.2 Implement data models in KMP
     - Create UserProfile data class
     - Create MealLog data class with FoodItem and NutritionalData
     - Create WaterLog data class
@@ -242,7 +242,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Create ConversationMessage data class
     - _Requirements: 101.2-101.5, 102.2-102.5, 103.2-103.7_
 
-  - [ ] 5.3 Configure Supabase Storage bucket for food photos
+  - [x] 5.3 Configure Supabase Storage bucket for food photos
     - Create storage bucket configuration in `supabase/` or via Supabase CLI
     - Create food-photos storage bucket
     - Configure RLS policies for user-specific access
