@@ -105,27 +105,71 @@ class MainActivity : ComponentActivity() {
 fun AmigoApp(viewModel: AuthViewModel) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val navController = rememberNavController()
+    val context = androidx.compose.ui.platform.LocalContext.current
     
-    if (isAuthenticated) {
-        MainScreen(viewModel)
-    } else {
-        NavHost(navController = navController, startDestination = "login") {
-            composable("login") {
-                LoginScreen(
-                    viewModel = viewModel,
-                    onNavigateToSignUp = {
-                        navController.navigate("signup")
-                    }
+    // Check onboarding status
+    var hasCompletedOnboarding by remember { mutableStateOf(false) }
+    
+    // Update onboarding status when authentication changes
+    LaunchedEffect(isAuthenticated) {
+        if (isAuthenticated) {
+            // Check user-specific onboarding status
+            val user = viewModel.getCurrentUser()
+            if (user != null) {
+                val prefs = context.getSharedPreferences("amigo_prefs", android.content.Context.MODE_PRIVATE)
+                hasCompletedOnboarding = prefs.getBoolean("hasCompletedOnboarding_${user.id}", false)
+            }
+        } else {
+            hasCompletedOnboarding = false
+        }
+    }
+    
+    when {
+        !isAuthenticated -> {
+            // Show authentication screens
+            NavHost(navController = navController, startDestination = "login") {
+                composable("login") {
+                    LoginScreen(
+                        viewModel = viewModel,
+                        onNavigateToSignUp = {
+                            navController.navigate("signup")
+                        }
+                    )
+                }
+                composable("signup") {
+                    SignUpScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+            }
+        }
+        !hasCompletedOnboarding -> {
+            // Show conversational onboarding
+            val onboardingViewModel = remember {
+                com.amigo.android.onboarding.ConversationalOnboardingViewModel(
+                    sessionManager = viewModel.sessionManager
                 )
             }
-            composable("signup") {
-                SignUpScreen(
-                    viewModel = viewModel,
-                    onNavigateBack = {
-                        navController.popBackStack()
+            
+            com.amigo.android.onboarding.ConversationalOnboardingScreen(
+                viewModel = onboardingViewModel,
+                onComplete = {
+                    // Mark onboarding as complete for this user
+                    val user = viewModel.getCurrentUser()
+                    if (user != null) {
+                        val prefs = context.getSharedPreferences("amigo_prefs", android.content.Context.MODE_PRIVATE)
+                        prefs.edit().putBoolean("hasCompletedOnboarding_${user.id}", true).apply()
+                        hasCompletedOnboarding = true
                     }
-                )
-            }
+                }
+            )
+        }
+        else -> {
+            // Show main app
+            MainScreen(viewModel)
         }
     }
 }

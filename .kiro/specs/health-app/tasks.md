@@ -313,7 +313,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Update app navigation to show conversational onboarding on first launch
     - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.7, 63.1-63.9, 64.1-64.6_
 
-  - [ ] 6.4 Build Android conversational onboarding UI (Kotlin/Compose)
+  - [x] 6.4 Build Android conversational onboarding UI (Kotlin/Compose)
     - Create chat-style UI with message bubbles for Amigo and user
     - Implement typing indicators for natural conversation feel
     - Implement smooth message animations and transitions
@@ -342,7 +342,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - Update app navigation to show conversational onboarding on first launch
     - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.7, 63.1-63.9, 64.1-64.6_
 
-- [ ] 7. Checkpoint - Verify AI-powered onboarding
+- [x] 7. Checkpoint - Verify AI-powered onboarding
   - Build and launch both iOS and Android apps
   - Test conversational onboarding flow on both platforms
   - Verify AI generates appropriate questions based on goals

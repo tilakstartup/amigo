@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 class AuthViewModel(
     private val emailAuthenticator: EmailAuthenticator,
     private val oauthAuthenticator: OAuthAuthenticator,
-    private val sessionManager: SessionManager
+    val sessionManager: SessionManager
 ) : ViewModel() {
     
     private val _email = MutableStateFlow("")
@@ -206,5 +206,9 @@ class AuthViewModel(
         } finally {
             _isLoading.value = false
         }
+    }
+    
+    fun getCurrentUser(): com.amigo.shared.auth.models.User? {
+        return sessionManager.getCurrentUser()
     }
 }
