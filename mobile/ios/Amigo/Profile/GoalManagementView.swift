@@ -116,13 +116,13 @@ struct GoalManagementView: View {
         }
         .sheet(isPresented: $showTalkToAmigo) {
             if let currentGoal = viewModel.currentGoalType {
-                TalkToAmigoGoalView(
+                SmartGoalPlanningView(
                     sessionManager: viewModel.sessionManager,
                     goalType: goalTypeToString(currentGoal)
                 )
             } else {
                 // Default to weight_loss if no current goal
-                TalkToAmigoGoalView(
+                SmartGoalPlanningView(
                     sessionManager: viewModel.sessionManager,
                     goalType: "weight_loss"
                 )
