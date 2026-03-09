@@ -23,7 +23,7 @@ class OAuthAuthenticator(private val supabase: SupabaseClient) {
             val session = supabase.auth.currentSessionOrNull()
             if (session != null) {
                 val user = User(
-                    id = session.user?.id ?: "",
+                    id = normalizeUserId(session.user?.id),
                     email = session.user?.email ?: "",
                     displayName = session.user?.userMetadata?.get("full_name") as? String
                         ?: session.user?.userMetadata?.get("name") as? String,
@@ -37,7 +37,7 @@ class OAuthAuthenticator(private val supabase: SupabaseClient) {
                     Session(
                         accessToken = session.accessToken,
                         refreshToken = session.refreshToken ?: "",
-                        expiresAt = (session.expiresAt as? Long) ?: 0L,
+                        expiresAt = normalizeEpochSeconds(session.expiresAt),
                         user = user
                     )
                 )
@@ -66,7 +66,7 @@ class OAuthAuthenticator(private val supabase: SupabaseClient) {
             val session = supabase.auth.currentSessionOrNull()
             if (session != null) {
                 val user = User(
-                    id = session.user?.id ?: "",
+                    id = normalizeUserId(session.user?.id),
                     email = session.user?.email ?: "",
                     displayName = session.user?.userMetadata?.get("full_name") as? String
                         ?: session.user?.userMetadata?.get("name") as? String,
@@ -79,7 +79,7 @@ class OAuthAuthenticator(private val supabase: SupabaseClient) {
                     Session(
                         accessToken = session.accessToken,
                         refreshToken = session.refreshToken ?: "",
-                        expiresAt = (session.expiresAt as? Long) ?: 0L,
+                        expiresAt = normalizeEpochSeconds(session.expiresAt),
                         user = user
                     )
                 )
@@ -105,7 +105,7 @@ class OAuthAuthenticator(private val supabase: SupabaseClient) {
             val session = supabase.auth.currentSessionOrNull()
             if (session != null) {
                 val user = User(
-                    id = session.user?.id ?: "",
+                    id = normalizeUserId(session.user?.id),
                     email = session.user?.email ?: "",
                     displayName = session.user?.userMetadata?.get("full_name") as? String
                         ?: session.user?.userMetadata?.get("name") as? String,
@@ -119,7 +119,7 @@ class OAuthAuthenticator(private val supabase: SupabaseClient) {
                     Session(
                         accessToken = session.accessToken,
                         refreshToken = session.refreshToken ?: "",
-                        expiresAt = (session.expiresAt as? Long) ?: 0L,
+                        expiresAt = normalizeEpochSeconds(session.expiresAt),
                         user = user
                     )
                 )

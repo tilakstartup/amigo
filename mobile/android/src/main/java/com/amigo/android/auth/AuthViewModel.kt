@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 class AuthViewModel(
     private val emailAuthenticator: EmailAuthenticator,
@@ -210,5 +211,41 @@ class AuthViewModel(
     
     fun getCurrentUser(): com.amigo.shared.auth.models.User? {
         return sessionManager.getCurrentUser()
+    }
+    
+    fun saveOnboardingProfile(userId: String, profileData: Map<String, String>) {
+        viewModelScope.launch {
+            try {
+                val profileManager = com.amigo.shared.profile.ProfileManagerFactory.create()
+                
+                // Convert profile data to ProfileUpdate
+                val goalType = profileData["goalType"]?.let { 
+                    com.amigo.shared.data.models.GoalType.Companion.fromString(it)
+                }
+                
+                val activityLevel = profileData["activityLevel"]?.let {
+                    com.amigo.shared.data.models.ActivityLevel.Companion.fromString(it)
+                }
+                
+                val profileUpdate = com.amigo.shared.profile.ProfileUpdate(
+                    displayName = profileData["name"],
+                    age = profileData["age"]?.toIntOrNull(),
+                    heightCm = profileData["height"]?.toDoubleOrNull(),
+                    weightKg = profileData["weight"]?.toDoubleOrNull(),
+                    goalType = goalType,
+                    goalByWhen = profileData["goalByWhen"],
+                    activityLevel = activityLevel,
+                    dietaryPreferences = profileData["dietaryPreferences"]?.split(",")?.map { it.trim() },
+                    onboardingCompleted = true,
+                    onboardingCompletedAt = Instant.now().toString()
+                )
+                
+                profileManager.updateProfile(userId, profileUpdate)
+                println("Profile updated successfully with onboarding data")
+            } catch (e: Exception) {
+                println("Error updating profile: ${e.message}")
+                _errorMessage.value = "Failed to save profile: ${e.message}"
+            }
+        }
     }
 }

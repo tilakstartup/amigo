@@ -1,0 +1,360 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Amigo Data Queries API",
+    "version": "1.0.0",
+    "description": "Query user data, meal history, patterns, and goal progress"
+  },
+  "paths": {
+    "/get-user-profile": {
+      "post": {
+        "summary": "Get user profile information",
+        "description": "Retrieves user profile data including demographics, preferences, and current health metrics",
+        "operationId": "getUserProfile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID from Supabase auth)"
+                  },
+                  "include_health_metrics": {
+                    "type": "boolean",
+                    "description": "Include latest health metrics (weight, BMI, etc.)",
+                    "default": true
+                  }
+                },
+                "required": ["user_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User profile data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {"type": "string"},
+                    "age": {"type": "integer"},
+                    "gender": {"type": "string", "enum": ["male", "female"]},
+                    "height_cm": {"type": "number"},
+                    "current_weight_kg": {"type": "number"},
+                    "activity_level": {"type": "string", "enum": ["sedentary", "lightly_active", "moderately_active", "very_active", "extra_active"]},
+                    "dietary_preferences": {"type": "array", "items": {"type": "string"}},
+                    "health_conditions": {"type": "array", "items": {"type": "string"}},
+                    "created_at": {"type": "string", "format": "date-time"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-recent-meals": {
+      "post": {
+        "summary": "Get recent meal logs",
+        "description": "Retrieves user's meal history for a specified time period",
+        "operationId": "getRecentMeals",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "days": {
+                    "type": "integer",
+                    "description": "Number of days to look back",
+                    "minimum": 1,
+                    "maximum": 90,
+                    "default": 7
+                  },
+                  "meal_type": {
+                    "type": "string",
+                    "description": "Filter by meal type",
+                    "enum": ["breakfast", "lunch", "dinner", "snack", "all"],
+                    "default": "all"
+                  }
+                },
+                "required": ["user_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of meal logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "meal_id": {"type": "string"},
+                          "logged_at": {"type": "string", "format": "date-time"},
+                          "meal_type": {"type": "string"},
+                          "foods": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "food_name": {"type": "string"},
+                                "serving_size": {"type": "number"},
+                                "calories": {"type": "number"},
+                                "protein_g": {"type": "number"},
+                                "carbs_g": {"type": "number"},
+                                "fat_g": {"type": "number"}
+                              }
+                            }
+                          },
+                          "total_calories": {"type": "number"},
+                          "total_protein_g": {"type": "number"},
+                          "total_carbs_g": {"type": "number"},
+                          "total_fat_g": {"type": "number"},
+                          "notes": {"type": "string"}
+                        }
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "total_meals": {"type": "integer"},
+                        "avg_calories_per_day": {"type": "number"},
+                        "avg_protein_per_day": {"type": "number"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-patterns": {
+      "post": {
+        "summary": "Get user behavioral patterns",
+        "description": "Retrieves identified patterns in eating, fasting, or exercise behavior",
+        "operationId": "getPatterns",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "pattern_type": {
+                    "type": "string",
+                    "description": "Type of pattern to retrieve",
+                    "enum": ["eating", "fasting", "exercise", "sleep", "all"],
+                    "default": "all"
+                  },
+                  "lookback_days": {
+                    "type": "integer",
+                    "description": "Days to analyze",
+                    "minimum": 7,
+                    "maximum": 90,
+                    "default": 30
+                  }
+                },
+                "required": ["user_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Identified patterns",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "patterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "pattern_type": {"type": "string"},
+                          "description": {"type": "string"},
+                          "frequency": {"type": "string"},
+                          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                          "first_observed": {"type": "string", "format": "date"},
+                          "last_observed": {"type": "string", "format": "date"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-goal-progress": {
+      "post": {
+        "summary": "Get goal progress metrics",
+        "description": "Retrieves current user's goal and progress toward it",
+        "operationId": "getGoalProgress",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "goal_id": {
+                    "type": "string",
+                    "description": "Specific goal ID (optional, defaults to active goal)"
+                  }
+                },
+                "required": ["user_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Goal progress information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "goal_id": {"type": "string"},
+                    "goal_type": {"type": "string", "enum": ["weight_loss", "weight_gain", "muscle_gain", "maintenance"]},
+                    "start_date": {"type": "string", "format": "date"},
+                    "target_date": {"type": "string", "format": "date"},
+                    "start_weight_kg": {"type": "number"},
+                    "current_weight_kg": {"type": "number"},
+                    "target_weight_kg": {"type": "number"},
+                    "progress_percentage": {"type": "number"},
+                    "days_elapsed": {"type": "integer"},
+                    "days_remaining": {"type": "integer"},
+                    "expected_weight_kg": {"type": "number", "description": "Expected weight at this point based on plan"},
+                    "ahead_behind_kg": {"type": "number", "description": "How far ahead (+) or behind (-) target pace"},
+                    "daily_calorie_target": {"type": "number"},
+                    "avg_daily_calories": {"type": "number", "description": "Average over last 7 days"},
+                    "compliance_rate": {"type": "number", "description": "Percentage of days on track"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-fasting-history": {
+      "post": {
+        "summary": "Get water fasting history",
+        "description": "Retrieves user's water fasting sessions and statistics",
+        "operationId": "getFastingHistory",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "days": {
+                    "type": "integer",
+                    "description": "Number of days to look back",
+                    "minimum": 1,
+                    "maximum": 365,
+                    "default": 30
+                  },
+                  "include_active": {
+                    "type": "boolean",
+                    "description": "Include currently active fasting session",
+                    "default": true
+                  }
+                },
+                "required": ["user_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fasting history and statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fasting_sessions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "session_id": {"type": "string"},
+                          "start_time": {"type": "string", "format": "date-time"},
+                          "end_time": {"type": "string", "format": "date-time"},
+                          "duration_hours": {"type": "number"},
+                          "protocol": {"type": "string", "enum": ["16:8", "18:6", "20:4", "omad", "36_hour", "custom"]},
+                          "completed": {"type": "boolean"},
+                          "notes": {"type": "string"}
+                        }
+                      }
+                    },
+                    "statistics": {
+                      "type": "object",
+                      "properties": {
+                        "total_sessions": {"type": "integer"},
+                        "completed_sessions": {"type": "integer"},
+                        "completion_rate": {"type": "number"},
+                        "avg_duration_hours": {"type": "number"},
+                        "longest_fast_hours": {"type": "number"},
+                        "current_streak_days": {"type": "integer"}
+                      }
+                    },
+                    "active_session": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "session_id": {"type": "string"},
+                        "start_time": {"type": "string", "format": "date-time"},
+                        "elapsed_hours": {"type": "number"},
+                        "target_hours": {"type": "number"},
+                        "progress_percentage": {"type": "number"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

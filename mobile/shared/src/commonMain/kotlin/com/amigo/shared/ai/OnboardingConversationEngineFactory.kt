@@ -20,7 +20,9 @@ object OnboardingConversationEngineFactory {
     ): OnboardingConversationEngine {
         val bedrockClient = BedrockClientFactory.create(
             apiEndpoint = apiEndpoint,
-            getAuthToken = { sessionManager.getAccessToken() }
+            getAuthToken = {
+                sessionManager.getAccessToken() ?: ""
+            }
         )
         
         return OnboardingConversationEngine(

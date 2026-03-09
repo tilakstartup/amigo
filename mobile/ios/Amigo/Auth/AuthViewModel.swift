@@ -14,7 +14,7 @@ class AuthViewModel: ObservableObject {
     
     private let emailAuthenticator: EmailAuthenticator
     private let oauthAuthenticator: OAuthAuthenticator
-    private let sessionManager: SessionManager
+    internal let sessionManager: SessionManager
     
     init(emailAuthenticator: EmailAuthenticator, oauthAuthenticator: OAuthAuthenticator, sessionManager: SessionManager) {
         self.emailAuthenticator = emailAuthenticator

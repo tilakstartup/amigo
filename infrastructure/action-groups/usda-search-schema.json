@@ -1,0 +1,417 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Amigo USDA Search API",
+    "version": "1.0.0",
+    "description": "Search USDA FoodData Central database for food nutrition information"
+  },
+  "paths": {
+    "/search-foods": {
+      "post": {
+        "summary": "Search for foods",
+        "description": "Search USDA FoodData Central database by keyword",
+        "operationId": "searchFoods",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Search query (e.g., 'chicken breast', 'apple')",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "data_type": {
+                    "type": "string",
+                    "description": "Type of food data",
+                    "enum": ["Foundation", "SR Legacy", "Survey (FNDDS)", "Branded", "all"],
+                    "default": "all"
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "description": "Number of results per page",
+                    "minimum": 1,
+                    "maximum": 50,
+                    "default": 10
+                  },
+                  "page_number": {
+                    "type": "integer",
+                    "description": "Page number (1-indexed)",
+                    "minimum": 1,
+                    "default": 1
+                  },
+                  "sort_by": {
+                    "type": "string",
+                    "description": "Sort order",
+                    "enum": ["relevance", "dataType.keyword", "lowercaseDescription.keyword", "fdcId"],
+                    "default": "relevance"
+                  },
+                  "brand_owner": {
+                    "type": "string",
+                    "description": "Filter by brand owner (for branded foods)"
+                  }
+                },
+                "required": ["query"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_hits": {
+                      "type": "integer",
+                      "description": "Total number of matching foods"
+                    },
+                    "current_page": {
+                      "type": "integer"
+                    },
+                    "total_pages": {
+                      "type": "integer"
+                    },
+                    "foods": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fdc_id": {
+                            "type": "integer",
+                            "description": "USDA FoodData Central ID"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Food name/description"
+                          },
+                          "data_type": {
+                            "type": "string",
+                            "description": "Type of food data (Foundation, Branded, etc.)"
+                          },
+                          "brand_owner": {
+                            "type": "string",
+                            "description": "Brand owner (for branded foods)"
+                          },
+                          "brand_name": {
+                            "type": "string",
+                            "description": "Brand name (for branded foods)"
+                          },
+                          "ingredients": {
+                            "type": "string",
+                            "description": "Ingredient list (for branded foods)"
+                          },
+                          "serving_size": {
+                            "type": "number",
+                            "description": "Serving size"
+                          },
+                          "serving_size_unit": {
+                            "type": "string",
+                            "description": "Serving size unit (g, ml, etc.)"
+                          },
+                          "household_serving": {
+                            "type": "string",
+                            "description": "Household serving description (e.g., '1 cup', '1 medium')"
+                          },
+                          "score": {
+                            "type": "number",
+                            "description": "Search relevance score"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-food-details": {
+      "post": {
+        "summary": "Get detailed nutrition information",
+        "description": "Get complete nutrition data for a specific food by FDC ID",
+        "operationId": "getFoodDetails",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fdc_id": {
+                    "type": "integer",
+                    "description": "USDA FoodData Central ID"
+                  },
+                  "format": {
+                    "type": "string",
+                    "description": "Response format",
+                    "enum": ["full", "abridged"],
+                    "default": "abridged"
+                  }
+                },
+                "required": ["fdc_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Detailed food information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fdc_id": {
+                      "type": "integer"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "data_type": {
+                      "type": "string"
+                    },
+                    "brand_owner": {
+                      "type": "string"
+                    },
+                    "brand_name": {
+                      "type": "string"
+                    },
+                    "ingredients": {
+                      "type": "string"
+                    },
+                    "serving_size": {
+                      "type": "number"
+                    },
+                    "serving_size_unit": {
+                      "type": "string"
+                    },
+                    "household_serving": {
+                      "type": "string"
+                    },
+                    "food_nutrients": {
+                      "type": "array",
+                      "description": "List of nutrients",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "nutrient_id": {
+                            "type": "integer"
+                          },
+                          "nutrient_name": {
+                            "type": "string",
+                            "description": "Nutrient name (e.g., 'Protein', 'Energy')"
+                          },
+                          "nutrient_number": {
+                            "type": "string",
+                            "description": "USDA nutrient number (e.g., '203' for protein)"
+                          },
+                          "unit_name": {
+                            "type": "string",
+                            "description": "Unit (g, mg, kcal, etc.)"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Amount per serving"
+                          }
+                        }
+                      }
+                    },
+                    "nutrition_summary": {
+                      "type": "object",
+                      "description": "Quick access to common nutrients",
+                      "properties": {
+                        "calories": {
+                          "type": "number",
+                          "description": "Energy in kcal"
+                        },
+                        "protein_g": {
+                          "type": "number",
+                          "description": "Protein in grams"
+                        },
+                        "total_carbs_g": {
+                          "type": "number",
+                          "description": "Total carbohydrates in grams"
+                        },
+                        "total_fat_g": {
+                          "type": "number",
+                          "description": "Total fat in grams"
+                        },
+                        "fiber_g": {
+                          "type": "number",
+                          "description": "Dietary fiber in grams"
+                        },
+                        "sugar_g": {
+                          "type": "number",
+                          "description": "Total sugars in grams"
+                        },
+                        "sodium_mg": {
+                          "type": "number",
+                          "description": "Sodium in milligrams"
+                        },
+                        "cholesterol_mg": {
+                          "type": "number",
+                          "description": "Cholesterol in milligrams"
+                        },
+                        "saturated_fat_g": {
+                          "type": "number",
+                          "description": "Saturated fat in grams"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-food-portion-sizes": {
+      "post": {
+        "summary": "Get available portion sizes",
+        "description": "Get common serving sizes and portions for a food",
+        "operationId": "getFoodPortionSizes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fdc_id": {
+                    "type": "integer",
+                    "description": "USDA FoodData Central ID"
+                  }
+                },
+                "required": ["fdc_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Available portion sizes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fdc_id": {
+                      "type": "integer"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "portions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "portion_description": {
+                            "type": "string",
+                            "description": "Portion description (e.g., '1 cup', '100g')"
+                          },
+                          "gram_weight": {
+                            "type": "number",
+                            "description": "Weight in grams"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Amount"
+                          },
+                          "modifier": {
+                            "type": "string",
+                            "description": "Modifier (e.g., 'chopped', 'diced')"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-popular-foods": {
+      "post": {
+        "summary": "Get popular foods",
+        "description": "Get a list of commonly logged foods for quick access",
+        "operationId": "getPopularFoods",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "description": "Food category",
+                    "enum": ["all", "proteins", "vegetables", "fruits", "grains", "dairy", "snacks"],
+                    "default": "all"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "Number of foods to return",
+                    "minimum": 1,
+                    "maximum": 50,
+                    "default": 20
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of popular foods",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "category": {
+                      "type": "string"
+                    },
+                    "foods": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fdc_id": {"type": "integer"},
+                          "description": {"type": "string"},
+                          "category": {"type": "string"},
+                          "popularity_score": {"type": "number"},
+                          "quick_nutrition": {
+                            "type": "object",
+                            "properties": {
+                              "calories": {"type": "number"},
+                              "protein_g": {"type": "number"},
+                              "carbs_g": {"type": "number"},
+                              "fat_g": {"type": "number"}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -24,6 +24,11 @@ targets:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: com.amigoai.ios
+            CFBundleURLSchemes:
+              - amigo
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.amigoai.ios

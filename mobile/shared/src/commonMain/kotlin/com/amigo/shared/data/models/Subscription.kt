@@ -14,10 +14,17 @@ data class Subscription(
     val autoRenew: Boolean = true,
     val platform: Platform? = null,
     val platformSubscriptionId: String? = null,
-    val usageQuotas: UsageQuotas,
+    val monthlyAiRequestsUsed: Int = 0,
+    val monthlyAiRequestsLimit: Int = 50,
     val createdAt: String,
     val updatedAt: String
-)
+) {
+    val usageQuotas: UsageQuotas
+        get() = UsageQuotas(
+            monthlyAiRequestsUsed = monthlyAiRequestsUsed,
+            monthlyAiRequestsLimit = monthlyAiRequestsLimit
+        )
+}
 
 @Serializable
 enum class SubscriptionTier {

@@ -1,0 +1,18 @@
+{
+  "environment": "dev",
+  "region": "us-east-1",
+  "agentId": "4XLAIQ6BUY",
+  "agentArn": "arn:aws:bedrock:us-east-1:334856751928:agent/4XLAIQ6BUY",
+  "knowledgeBaseBucket": "amigo-knowledge-base-dev-334856751928",
+  "stackName": "amigo-bedrock-agent-dev",
+  "lambdaFunctions": {
+    "healthCalculations": "arn:aws:lambda:us-east-1:334856751928:function:amigo-health-calculations-dev",
+    "dataQueries": "arn:aws:lambda:us-east-1:334856751928:function:amigo-data-queries-dev",
+    "dataMutations": "arn:aws:lambda:us-east-1:334856751928:function:amigo-data-mutations-dev",
+    "usdaSearch": "arn:aws:lambda:us-east-1:334856751928:function:amigo-usda-search-dev",
+    "patternAnalysis": "arn:aws:lambda:us-east-1:334856751928:function:amigo-pattern-analysis-dev"
+  },
+  "deployedAt": "2026-03-08T21:56:00Z",
+  "status": "deployed",
+  "notes": "Initial deployment. Agent prepared. Alias creation in progress."
+}

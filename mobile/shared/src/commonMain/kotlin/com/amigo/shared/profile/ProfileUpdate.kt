@@ -2,6 +2,8 @@ package com.amigo.shared.profile
 
 import com.amigo.shared.data.models.UnitPreference
 import com.amigo.shared.data.models.Theme
+import com.amigo.shared.data.models.GoalType
+import com.amigo.shared.data.models.ActivityLevel
 
 data class ProfileUpdate(
     val displayName: String? = null,
@@ -9,6 +11,12 @@ data class ProfileUpdate(
     val age: Int? = null,
     val heightCm: Double? = null,
     val weightKg: Double? = null,
+    val goalType: GoalType? = null,
+    val goalByWhen: String? = null,
+    val activityLevel: ActivityLevel? = null,
+    val dietaryPreferences: List<String>? = null,
+    val onboardingCompleted: Boolean? = null,
+    val onboardingCompletedAt: String? = null,
     val unitPreference: UnitPreference? = null,
     val language: String? = null,
     val theme: Theme? = null
@@ -20,6 +28,12 @@ data class ProfileUpdate(
         age?.let { map["age"] = it }
         heightCm?.let { map["height_cm"] = it }
         weightKg?.let { map["weight_kg"] = it }
+        goalType?.let { map["goal_type"] = it.name.lowercase() }
+        goalByWhen?.let { map["goal_by_when"] = it }
+        activityLevel?.let { map["activity_level"] = it.name.lowercase() }
+        dietaryPreferences?.let { map["dietary_preferences"] = it }
+        onboardingCompleted?.let { map["onboarding_completed"] = it }
+        onboardingCompletedAt?.let { map["onboarding_completed_at"] = it }
         unitPreference?.let { map["unit_preference"] = it.name.lowercase() }
         language?.let { map["language"] = it }
         theme?.let { map["theme"] = it.name.lowercase() }

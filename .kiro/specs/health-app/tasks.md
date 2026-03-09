@@ -357,20 +357,184 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
   - **STOP: Wait for user confirmation before proceeding to task 8**
 
 - [ ] 8. User profile management
-  - [ ] 8.1 Implement profile management in KMP
+  - [x] 8.1 Implement profile management in KMP
     - Create ProfileManager class
     - Implement profile CRUD operations with Supabase
     - Implement unit preferences (metric/imperial)
     - Store onboarding conversation data in user profile
     - _Requirements: 60.1-60.9, 87.1-87.7, 90.1-90.8_
 
-  - [ ] 8.2 Build goal management UI (iOS and Android)
-    - Create goal selection/change screen accessible from settings
-    - Display current active goal
-    - Allow users to create new goals or switch goals anytime
-    - Show goal history and past goal summaries
-    - Implement goal transition flow with context preservation
-    - _Requirements: 61.1-61.7, 62.1-62.8_
+  - [ ] 8.2 Build smart goal planning with AI-guided calculations (iOS and Android)
+    - [ ] 8.2.1 Implement goal calculation engine in KMP
+      - [ ]Create GoalCalculationEngine class in `mobile/shared/`
+      - [ ]Implement BMI calculation (weight in kg / (height in m)^2)
+      - [ ]Implement BMR calculation using Mifflin-St Jeor equation
+        - [ ]Men: BMR = 10 × weight(kg) + 6.25 × height(cm) - [ ]5 × age(years) + 5
+        - [ ]Women: BMR = 10 × weight(kg) + 6.25 × height(cm) - [ ]5 × age(years) - [ ]161
+      - [ ]Implement TDEE calculation (BMR × activity multiplier)
+      - [ ]Implement safe weight loss rate calculation (0.5-1 kg per week / 1-2 lbs per week)
+      - [ ]Implement daily calorie requirement calculation for weight loss
+      - [ ]Implement target date validation based on safe weight loss rate
+      - [ ]Implement USDA minimum calorie validation (1200 cal women, 1500 cal men)
+      - [ ]Implement alternative target date calculation when calories too low
+      - [ ]Implement progress projection calculation (weekly milestones)
+      - [ ]_Requirements: 61.1-61.7, 62.1-62.8_
+    
+    - [ ] 8.2.2 Enhance health_goals table schema
+      - [ ]Update migration to add goal-specific fields to health_goals table:
+        - [ ]target_weight (numeric, nullable) - [ ]for weight loss/gain goals
+        - [ ]target_date (date, nullable) - [ ]target completion date
+        - [ ]current_weight (numeric, nullable) - [ ]weight at goal creation
+        - [ ]current_height (numeric, nullable) - [ ]height at goal creation
+        - [ ]gender (text, nullable) - [ ]for BMR calculation
+        - [ ]activity_level (text, nullable) - [ ]sedentary, light, moderate, active, very_active
+        - [ ]calculated_bmr (numeric, nullable) - [ ]basal metabolic rate
+        - [ ]calculated_tdee (numeric, nullable) - [ ]total daily energy expenditure
+        - [ ]calculated_daily_calories (numeric, nullable) - [ ]target daily calories
+        - [ ]calculated_bmi_start (numeric, nullable) - [ ]BMI at goal start
+        - [ ]calculated_bmi_target (numeric, nullable) - [ ]BMI at target weight
+        - [ ]weekly_milestones (jsonb, nullable) - [ ]projected weekly progress
+        - [ ]is_realistic (boolean, default true) - [ ]whether target date is realistic
+        - [ ]recommended_target_date (date, nullable) - [ ]alternative date if unrealistic
+      - [ ]Run `supabase db push` to apply migration
+      - [ ]_Requirements: 61.1-61.7, 62.1-62.8_
+    
+    - [ ] 8.2.3 Implement Amigo shared tools framework in KMP
+      - [ ]Create AmigoToolRegistry class to register and manage available tools
+      - [ ]Create AmigoTool interface with:
+        - [ ]name: String - [ ]unique tool identifier
+        - [ ]description: String - [ ]what the tool does
+        - [ ]parameters: Map<String, ToolParameter> - [ ]input parameters with types and descriptions
+        - [ ]execute(params: Map<String, Any>): ToolResult - [ ]executes the tool
+      - [ ]Implement core tools:
+        - [ ]GetUserProfileTool - [ ]retrieves current user profile (weight, height, age, goals)
+        - [ ]GetCurrentGoalsTool - [ ]retrieves active health goals
+        - [ ]GetMealHistoryTool - [ ]retrieves recent meal logs (last N days)
+        - [ ]GetWaterIntakeTool - [ ]retrieves water intake for date range
+        - [ ]GetFastingSessionsTool - [ ]retrieves fasting sessions
+        - [ ]GetHealthMetricsTool - [ ]retrieves health metrics (weight, BMI history)
+        - [ ]CalculateBMITool - [ ]calculates BMI from weight and height
+        - [ ]CalculateBMRTool - [ ]calculates BMR from profile data
+        - [ ]CalculateTDEETool - [ ]calculates TDEE from BMR and activity level
+        - [ ]ValidateGoalTool - [ ]validates if a goal is realistic
+      - [ ]Create ToolResult sealed class for success/error responses
+      - [ ]Create ToolParameter data class for parameter definitions
+      - [ ]Integrate tool registry with BedrockClient for AI tool calling
+      - [ ]_Requirements: 61.1-61.7, 62.1-62.8, 113.1-113.8_
+    
+    - [ ] 8.2.4 Implement AI-guided goal planning conversation with tool calling in KMP
+      - [ ]Extend GoalPlanningConversationEngine to use AmigoToolRegistry
+      - [ ]Update system prompt to include available tools and when to use them
+      - [ ]Implement tool call detection in AI responses
+      - [ ]Implement tool execution and result injection back to AI
+      - [ ]Update conversation flow:
+        - [ ]AI can invoke GetUserProfileTool to get current metrics instead of asking
+        - [ ]AI can invoke GetCurrentGoalsTool to see existing goals
+        - [ ]AI can invoke CalculateBMITool, CalculateBMRTool, CalculateTDEETool for calculations
+        - [ ]AI can invoke ValidateGoalTool to check if target is realistic
+        - [ ]AI asks user only for information not available in system
+      - [ ]Implement weight loss goal conversation flow:
+        - [ ]AI checks user profile first (tool call)
+        - [ ]Ask for target weight
+        - [ ]Ask for target date
+        - [ ]AI calculates BMI, BMR, TDEE using tools
+        - [ ]AI validates target date using ValidateGoalTool
+        - [ ]If calories below USDA minimum:
+          - [ ]Explain health risks of very low calorie diets
+          - [ ]Calculate and suggest realistic target date
+          - [ ]Show comparison (user's date vs recommended date)
+        - [ ]Present calculated plan with:
+          - [ ]Daily calorie target
+          - [ ]Weekly weight loss rate
+          - [ ]BMI change (current → target)
+          - [ ]Weekly milestones
+        - [ ]Allow user to accept or adjust
+      - [ ]Implement similar flows for muscle gain, maintenance goals
+      - [ ]Store all calculations in health_goals table
+      - [ ]_Requirements: 61.1-61.7, 62.1-62.8, 113.1-113.8_
+    
+    - [ ] 8.2.5 Implement manual goal planning forms in KMP
+      - [ ]Create ManualGoalPlanningManager class
+      - [ ]Implement real-time calculation as user inputs values
+      - [ ]Validate inputs (weight ranges, date ranges)
+      - [ ]Calculate and update all metrics on each input change
+      - [ ]Detect when target date is unrealistic
+      - [ ]Show warnings for very low calorie targets
+      - [ ]Generate alternative recommendations
+      - [ ]_Requirements: 61.1-61.7, 62.1-62.8_
+    
+    - [ ] 8.2.6 Implement progress projection visualizations in KMP
+      - [ ]Create ProgressProjectionGenerator class
+      - [ ]Generate weekly milestone data points
+      - [ ]Calculate projected weight for each week
+      - [ ]Calculate projected BMI for each week
+      - [ ]Generate timeline data for charts
+      - [ ]Support different goal types (weight loss, muscle gain, maintenance)
+      - [ ]_Requirements: 61.1-61.7, 62.1-62.8_
+    
+    - [ ] 8.2.7 Build iOS goal management UI with smart planning
+      - [ ]Create goal selection/change screen accessible from Profile tab
+      - [ ]Display current active goal with progress
+      - [ ]Implement "Talk to Amigo" option:
+        - [ ]Open conversational interface
+        - [ ]Guide through goal-specific questions
+        - [ ]Show real-time calculations during conversation
+        - [ ]Display final plan with all metrics
+        - [ ]Show progress projection graph
+        - [ ]Allow accept/adjust
+      - [ ]Implement "Set Manually" option:
+        - [ ]Create form with fields: target weight, target date, activity level
+        - [ ]Show real-time calculations as user types
+        - [ ]Display BMI, BMR, TDEE, daily calories
+        - [ ]Show warning badge if target date unrealistic
+        - [ ]Display recommended alternative date
+        - [ ]Show progress projection graph
+        - [ ]Validate all inputs
+      - [ ]Display goal history and past goal summaries
+      - [ ]Implement goal transition flow with context preservation
+      - [ ]Show visual progress indicators (progress bars, charts)
+      - [ ]_Requirements: 61.1-61.7, 62.1-62.8_
+    
+    - [ ] 8.2.8 Build Android goal management UI with smart planning
+      - [ ]Create goal selection/change screen accessible from Profile tab
+      - [ ]Display current active goal with progress
+      - [ ]Implement "Talk to Amigo" option:
+        - [ ]Open conversational interface (dialog or full screen)
+        - [ ]Guide through goal-specific questions
+        - [ ]Show real-time calculations during conversation
+        - [ ]Display final plan with all metrics
+        - [ ]Show progress projection graph using Compose charts
+        - [ ]Allow accept/adjust
+      - [ ]Implement "Set Manually" option:
+        - [ ]Create form with fields: target weight, target date, activity level
+        - [ ]Show real-time calculations as user types
+        - [ ]Display BMI, BMR, TDEE, daily calories
+        - [ ]Show warning badge if target date unrealistic
+        - [ ]Display recommended alternative date
+        - [ ]Show progress projection graph using Compose charts
+        - [ ]Validate all inputs
+      - [ ]Display goal history and past goal summaries
+      - [ ]Implement goal transition flow with context preservation
+      - [ ]Show visual progress indicators (progress bars, charts)
+      - [ ]_Requirements: 61.1-61.7, 62.1-62.8_
+
+    - [ ] 8.2.9 Enforce conversational JSON schema and reply-type rendering
+      - [ ]Strengthen GoalSettingContext system prompt with strict JSON contract:
+        - [ ]Required keys: `message`, `replyType`, `replies`, `data`, `toolCalls`, `nextAction`
+        - [ ]Allowed `replyType` values only: `TEXT`, `QUICK_PILLS`, `DATE`, `NUMBER`, `YES_NO`
+        - [ ]No markdown/prose outside JSON
+      - [ ]Lower generation temperature for structured response consistency
+      - [ ]Implement resilient parser fallback in `AmigoConversationEngine` for schema variants:
+        - [ ]Support `replyType` and `reply_type`
+        - [ ]Support `replies`, `options`, `choices`
+        - [ ]Normalize casing and enum aliases
+      - [ ]Normalize response before rendering:
+        - [ ]`YES_NO` -> canonical replies `Yes/No`
+        - [ ]Invalid `QUICK_PILLS` payload -> fallback to `TEXT`
+        - [ ]Trim/cap replies for stable UI behavior
+      - [ ]Sanitize malformed JSON/text outputs to prevent raw JSON from rendering in chat
+      - [ ]Verify iOS Talk to Amigo renders controls by `replyType` (pills/date/yes-no/text) as in onboarding
+      - [ ]_Requirements: 59.3-59.7, 61.1-61.7, 113.1-113.8_
 
   - [ ]* 8.3 Write unit tests for profile validation
     - Test age validation (13-120)
@@ -422,7 +586,7 @@ Do NOT proceed to the next task until the user gives you the go-ahead.
     - _Requirements: 59.1-59.7, 60.1-60.9, 61.1-61.7, 62.1-62.7, 63.1-63.9, 64.1-64.6_
 
 - [ ] 9. Subscription system
-  - [ ] 9.1 Implement subscription models in KMP
+  - [x] 9.1 Implement subscription models in KMP
     - Create SubscriptionTier enum (Free, Pro)
     - Create SubscriptionManager class
     - Implement quota tracking logic

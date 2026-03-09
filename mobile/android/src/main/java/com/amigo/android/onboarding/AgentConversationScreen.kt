@@ -26,10 +26,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
-fun ConversationalOnboardingScreen(
-    viewModel: ConversationalOnboardingViewModel,
+fun AgentConversationScreen(
+    viewModel: AgentConversationViewModel,
     onComplete: () -> Unit
 ) {
     val messages by viewModel.messages.collectAsState()
@@ -263,12 +264,19 @@ fun MessageBubble(
                             }
                             "yes_no" -> {
                                 YesNoButtons(
+                                    options = message.replies,
                                     onSelect = onQuickReply,
                                     isDisabled = message.isDisabled
                                 )
                             }
                             "date" -> {
                                 DatePicker(
+                                    onSelect = onQuickReply,
+                                    isDisabled = message.isDisabled
+                                )
+                            }
+                            "weight" -> {
+                                WeightPicker(
                                     onSelect = onQuickReply,
                                     isDisabled = message.isDisabled
                                 )
@@ -400,30 +408,39 @@ fun QuickReplyPills(
 
 @Composable
 fun YesNoButtons(
+    options: List<String>?,
     onSelect: (String) -> Unit,
     isDisabled: Boolean
 ) {
+    val labels = options
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.distinct()
+        ?.take(2)
+        ?.takeIf { it.size == 2 }
+        ?: listOf("Yes", "No")
+
     Row(
         modifier = Modifier.fillMaxWidth(0.7f),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Button(
-            onClick = { if (!isDisabled) onSelect("Yes") },
+            onClick = { if (!isDisabled) onSelect(labels[0]) },
             enabled = !isDisabled,
             modifier = Modifier.weight(1f),
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isDisabled) Color.Gray else Color(0xFFE91E63)
             )
         ) {
-            Text("Yes")
+            Text(labels[0])
         }
         
         OutlinedButton(
-            onClick = { if (!isDisabled) onSelect("No") },
+            onClick = { if (!isDisabled) onSelect(labels[1]) },
             enabled = !isDisabled,
             modifier = Modifier.weight(1f)
         ) {
-            Text("No")
+            Text(labels[1])
         }
     }
 }
@@ -542,6 +559,64 @@ fun DatePicker(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun WeightPicker(
+    onSelect: (String) -> Unit,
+    isDisabled: Boolean
+) {
+    var selectedWeight by remember { mutableStateOf(70f) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = String.format("%.1f kg", selectedWeight),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Text(
+            text = "Use the slider to set your weight",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Slider(
+            value = selectedWeight,
+            onValueChange = { value ->
+                if (!isDisabled) {
+                    selectedWeight = (value * 2f).roundToInt() / 2f
+                }
+            },
+            valueRange = 30f..200f,
+            enabled = !isDisabled,
+            colors = SliderDefaults.colors(
+                activeTrackColor = Color(0xFFE91E63),
+                thumbColor = Color(0xFFE91E63)
+            )
+        )
+
+        Button(
+            onClick = { if (!isDisabled) onSelect(String.format("%.1f", selectedWeight)) },
+            enabled = !isDisabled,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isDisabled) Color.Gray else Color(0xFFE91E63)
+            )
+        ) {
+            Text("Confirm weight")
         }
     }
 }

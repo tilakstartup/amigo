@@ -166,7 +166,7 @@ class ProfileSetupViewModel: ObservableObject {
         
         do {
             // Get current user ID
-            guard let userId = sessionManager.getCurrentUser()?.id else {
+            guard let userId = sessionManager.getCurrentUser()?.id, !userId.isEmpty else {
                 errorMessage = "No user session found"
                 isSaving = false
                 return
@@ -192,15 +192,22 @@ class ProfileSetupViewModel: ObservableObject {
                 age: KotlinInt(value: Int32(age)),
                 heightCm: KotlinDouble(value: heightInCm),
                 weightKg: KotlinDouble(value: weightInKg),
+                goalType: nil,
+                goalByWhen: nil,
+                activityLevel: nil,
+                dietaryPreferences: nil,
+                onboardingCompleted: nil,
+                onboardingCompletedAt: nil,
                 unitPreference: unitSystem == .metric ? .metric : .imperial,
                 language: nil,
                 theme: nil
             )
             
-            let result = try await profileManager.updateProfile(userId: userId, updates: update)
-            
-            // Kotlin Result is exposed as Any? in Swift, we need to handle success/failure differently
-            isProfileSaved = true
+            if try await profileManager.updateProfileOrNull(userId: userId, updates: update) != nil {
+                isProfileSaved = true
+            } else {
+                errorMessage = "Failed to save profile"
+            }
         } catch {
             errorMessage = "Failed to save profile: \(error.localizedDescription)"
         }

@@ -149,12 +149,12 @@ fun AmigoApp(viewModel: AuthViewModel) {
         !hasCompletedOnboarding -> {
             // Show conversational onboarding
             val onboardingViewModel = remember {
-                com.amigo.android.onboarding.ConversationalOnboardingViewModel(
+                com.amigo.android.onboarding.AgentConversationViewModel(
                     sessionManager = viewModel.sessionManager
                 )
             }
             
-            com.amigo.android.onboarding.ConversationalOnboardingScreen(
+            com.amigo.android.onboarding.AgentConversationScreen(
                 viewModel = onboardingViewModel,
                 onComplete = {
                     // Mark onboarding as complete for this user
@@ -162,14 +162,28 @@ fun AmigoApp(viewModel: AuthViewModel) {
                     if (user != null) {
                         val prefs = context.getSharedPreferences("amigo_prefs", android.content.Context.MODE_PRIVATE)
                         prefs.edit().putBoolean("hasCompletedOnboarding_${user.id}", true).apply()
+                        
+                        // Save profile data to Supabase
+                        val profileData = onboardingViewModel.getProfileData()
+                        viewModel.saveOnboardingProfile(user.id, profileData)
+                        
                         hasCompletedOnboarding = true
                     }
                 }
             )
         }
         else -> {
-            // Show main app
-            MainScreen(viewModel)
+            // Show main app with bottom navigation
+            MainScreen(
+                authViewModel = viewModel,
+                sessionManager = viewModel.sessionManager,
+                onSignOut = {
+                    // Sign out logic
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                        viewModel.signOut()
+                    }
+                }
+            )
         }
     }
 }

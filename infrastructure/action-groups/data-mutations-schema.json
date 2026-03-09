@@ -1,0 +1,467 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Amigo Data Mutations API",
+    "version": "1.0.0",
+    "description": "Save and update user data, goals, preferences, and conversation history"
+  },
+  "paths": {
+    "/save-goal": {
+      "post": {
+        "summary": "Save a new health goal",
+        "description": "Creates a new goal for the user with all calculated parameters",
+        "operationId": "saveGoal",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "goal_type": {
+                    "type": "string",
+                    "description": "Type of goal",
+                    "enum": ["weight_loss", "weight_gain", "muscle_gain", "maintenance"]
+                  },
+                  "current_weight_kg": {
+                    "type": "number",
+                    "description": "Current weight in kilograms",
+                    "minimum": 30,
+                    "maximum": 300
+                  },
+                  "target_weight_kg": {
+                    "type": "number",
+                    "description": "Target weight in kilograms",
+                    "minimum": 30,
+                    "maximum": 300
+                  },
+                  "target_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Target completion date (YYYY-MM-DD)"
+                  },
+                  "bmr": {
+                    "type": "number",
+                    "description": "Basal Metabolic Rate (calculated)"
+                  },
+                  "tdee": {
+                    "type": "number",
+                    "description": "Total Daily Energy Expenditure (calculated)"
+                  },
+                  "daily_calories": {
+                    "type": "number",
+                    "description": "Daily calorie target"
+                  },
+                  "protein_g": {
+                    "type": "number",
+                    "description": "Daily protein target in grams"
+                  },
+                  "carbs_g": {
+                    "type": "number",
+                    "description": "Daily carbohydrate target in grams"
+                  },
+                  "fat_g": {
+                    "type": "number",
+                    "description": "Daily fat target in grams"
+                  },
+                  "weekly_rate_kg": {
+                    "type": "number",
+                    "description": "Expected weekly weight change in kg"
+                  },
+                  "is_realistic": {
+                    "type": "boolean",
+                    "description": "Whether the goal is realistic and healthy"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Additional notes or context"
+                  }
+                },
+                "required": [
+                  "user_id",
+                  "goal_type",
+                  "current_weight_kg",
+                  "target_weight_kg",
+                  "target_date",
+                  "daily_calories"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Goal saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "goal_id": {
+                      "type": "string",
+                      "description": "Unique ID of the created goal"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update-preferences": {
+      "post": {
+        "summary": "Update user preferences",
+        "description": "Updates user's dietary preferences, restrictions, or other settings",
+        "operationId": "updatePreferences",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "dietary_preferences": {
+                    "type": "array",
+                    "description": "Dietary preferences (vegetarian, vegan, etc.)",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "allergies": {
+                    "type": "array",
+                    "description": "Food allergies",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "health_conditions": {
+                    "type": "array",
+                    "description": "Health conditions affecting diet",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "meal_reminder_times": {
+                    "type": "array",
+                    "description": "Times for meal reminders (HH:MM format)",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$"
+                    }
+                  },
+                  "notification_preferences": {
+                    "type": "object",
+                    "description": "Notification settings",
+                    "properties": {
+                      "meal_reminders": {"type": "boolean"},
+                      "weight_reminders": {"type": "boolean"},
+                      "progress_updates": {"type": "boolean"}
+                    }
+                  },
+                  "activity_level": {
+                    "type": "string",
+                    "description": "Activity level",
+                    "enum": ["sedentary", "lightly_active", "moderately_active", "very_active", "extra_active"]
+                  }
+                },
+                "required": ["user_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preferences updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "updated_fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/save-conversation": {
+      "post": {
+        "summary": "Save conversation history",
+        "description": "Saves a conversation turn for context and history tracking",
+        "operationId": "saveConversation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "session_id": {
+                    "type": "string",
+                    "description": "Conversation session ID"
+                  },
+                  "context_type": {
+                    "type": "string",
+                    "description": "Type of conversation",
+                    "enum": ["onboarding", "goal_setting", "meal_logging", "coaching", "general"]
+                  },
+                  "user_message": {
+                    "type": "string",
+                    "description": "User's message"
+                  },
+                  "assistant_message": {
+                    "type": "string",
+                    "description": "Amigo's response"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Additional context (tools called, data collected, etc.)",
+                    "properties": {
+                      "tools_called": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                      },
+                      "data_collected": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "sentiment": {
+                        "type": "string",
+                        "enum": ["positive", "neutral", "negative", "unknown"]
+                      }
+                    }
+                  }
+                },
+                "required": ["user_id", "session_id", "context_type"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversation saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation_id": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/log-meal": {
+      "post": {
+        "summary": "Log a meal",
+        "description": "Records a meal with foods and nutrition information",
+        "operationId": "logMeal",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "meal_type": {
+                    "type": "string",
+                    "description": "Type of meal",
+                    "enum": ["breakfast", "lunch", "dinner", "snack"]
+                  },
+                  "logged_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the meal was consumed (defaults to now)"
+                  },
+                  "foods": {
+                    "type": "array",
+                    "description": "List of foods in the meal",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "food_name": {"type": "string"},
+                        "food_id": {"type": "string", "description": "USDA food ID if available"},
+                        "serving_size": {"type": "number"},
+                        "serving_unit": {"type": "string"},
+                        "calories": {"type": "number"},
+                        "protein_g": {"type": "number"},
+                        "carbs_g": {"type": "number"},
+                        "fat_g": {"type": "number"},
+                        "fiber_g": {"type": "number"}
+                      },
+                      "required": ["food_name", "calories"]
+                    }
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Additional notes about the meal"
+                  },
+                  "photo_url": {
+                    "type": "string",
+                    "description": "URL of meal photo (if uploaded)"
+                  }
+                },
+                "required": ["user_id", "meal_type", "foods"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Meal logged successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meal_id": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "total_calories": {
+                      "type": "number"
+                    },
+                    "total_protein_g": {
+                      "type": "number"
+                    },
+                    "daily_totals": {
+                      "type": "object",
+                      "description": "User's totals for the day so far",
+                      "properties": {
+                        "calories": {"type": "number"},
+                        "protein_g": {"type": "number"},
+                        "carbs_g": {"type": "number"},
+                        "fat_g": {"type": "number"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update-weight": {
+      "post": {
+        "summary": "Update user's current weight",
+        "description": "Records a new weight measurement",
+        "operationId": "updateWeight",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID (UUID)"
+                  },
+                  "weight_kg": {
+                    "type": "number",
+                    "description": "Weight in kilograms",
+                    "minimum": 30,
+                    "maximum": 300
+                  },
+                  "measured_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the measurement was taken (defaults to now)"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Notes about the measurement"
+                  }
+                },
+                "required": ["user_id", "weight_kg"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Weight updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "weight_kg": {
+                      "type": "number"
+                    },
+                    "change_from_previous_kg": {
+                      "type": "number",
+                      "description": "Change from last measurement"
+                    },
+                    "goal_progress_percentage": {
+                      "type": "number",
+                      "description": "Progress toward current goal"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

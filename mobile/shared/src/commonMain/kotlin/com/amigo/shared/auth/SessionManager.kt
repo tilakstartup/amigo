@@ -34,11 +34,16 @@ class SessionManager(
         // Try to restore session from secure storage
         val savedSession = restoreSession()
         if (savedSession != null) {
-            _currentSession.value = savedSession
+            syncSupabaseSession(savedSession)
+            val hydratedSession = hydrateSessionIfNeeded(savedSession)
+            _currentSession.value = hydratedSession
             _isAuthenticated.value = true
+            if (hydratedSession != savedSession) {
+                saveSession(hydratedSession)
+            }
             
             // Validate and refresh if needed
-            if (isSessionExpired(savedSession)) {
+            if (isSessionExpired(hydratedSession)) {
                 refreshSession()
             }
         } else {
@@ -48,9 +53,9 @@ class SessionManager(
                 val session = Session(
                     accessToken = supabaseSession.accessToken,
                     refreshToken = supabaseSession.refreshToken ?: "",
-                    expiresAt = (supabaseSession.expiresAt as? Long) ?: 0L,
+                    expiresAt = normalizeEpochSeconds(supabaseSession.expiresAt),
                     user = User(
-                        id = supabaseSession.user?.id ?: "",
+                        id = normalizeUserId(supabaseSession.user?.id),
                         email = supabaseSession.user?.email ?: "",
                         displayName = supabaseSession.user?.userMetadata?.get("display_name") as? String,
                         avatarUrl = supabaseSession.user?.userMetadata?.get("avatar_url") as? String,
@@ -131,7 +136,7 @@ class SessionManager(
                 val newSession = Session(
                     accessToken = newSupabaseSession.accessToken,
                     refreshToken = newSupabaseSession.refreshToken ?: currentSession.refreshToken,
-                    expiresAt = (newSupabaseSession.expiresAt as? Long) ?: 0L,
+                    expiresAt = normalizeEpochSeconds(newSupabaseSession.expiresAt),
                     user = currentSession.user
                 )
                 
@@ -188,18 +193,120 @@ class SessionManager(
      * Get current user
      */
     fun getCurrentUser(): User? {
-        return _currentSession.value?.user
+        val user = _currentSession.value?.user
+        return if (user?.id?.isNotBlank() == true) user else null
+    }
+
+    private suspend fun hydrateSessionIfNeeded(session: Session): Session {
+        if (session.user.id.isNotBlank()) {
+            return session
+        }
+
+        return try {
+            val supabaseSession = supabase.auth.currentSessionOrNull()
+            val hydratedUser = User(
+                id = normalizeUserId(supabaseSession?.user?.id).ifBlank { session.user.id },
+                email = supabaseSession?.user?.email ?: session.user.email,
+                displayName = supabaseSession?.user?.userMetadata?.get("display_name") as? String
+                    ?: session.user.displayName,
+                avatarUrl = supabaseSession?.user?.userMetadata?.get("avatar_url") as? String
+                    ?: session.user.avatarUrl,
+                createdAt = supabaseSession?.user?.createdAt?.toString() ?: session.user.createdAt,
+                emailVerified = supabaseSession?.user?.emailConfirmedAt != null || session.user.emailVerified
+            )
+
+            if (hydratedUser.id.isBlank()) {
+                session
+            } else {
+                session.copy(user = hydratedUser)
+            }
+        } catch (_: Exception) {
+            session
+        }
+    }
+
+    private suspend fun syncSupabaseSession(session: Session) {
+        try {
+            val expiresIn = if (session.expiresAt > 0) {
+                val now = Clock.System.now().epochSeconds
+                val remaining = session.expiresAt - now
+                if (remaining > 0) remaining else 3600L
+            } else {
+                3600L
+            }
+
+            supabase.auth.importSession(
+                io.github.jan.supabase.gotrue.user.UserSession(
+                    accessToken = session.accessToken,
+                    refreshToken = session.refreshToken,
+                    expiresIn = expiresIn,
+                    tokenType = "Bearer",
+                    user = null
+                )
+            )
+        } catch (e: Exception) {
+            println("Failed to sync Supabase session: ${e.message}")
+        }
     }
     
     /**
      * Get access token
      */
     suspend fun getAccessToken(): String? {
-        val session = _currentSession.value
-        if (session != null && !isSessionExpired(session)) {
-            return session.accessToken
+        var session = _currentSession.value
+
+        if (session == null) {
+            val restoredSession = restoreSession()
+            if (restoredSession != null) {
+                session = restoredSession
+                _currentSession.value = restoredSession
+                _isAuthenticated.value = true
+                syncSupabaseSession(restoredSession)
+            }
         }
-        
+
+        if (session != null && !isSessionExpired(session)) {
+            if (session.accessToken.isNotBlank()) {
+                return session.accessToken
+            }
+
+            val supabaseToken = try {
+                supabase.auth.currentSessionOrNull()?.accessToken
+            } catch (_: Exception) {
+                null
+            }
+            if (!supabaseToken.isNullOrBlank()) {
+                val updatedSession = session.copy(accessToken = supabaseToken)
+                _currentSession.value = updatedSession
+                saveSession(updatedSession)
+                return supabaseToken
+            }
+
+            val storedAccessToken = secureStorage.getString(ACCESS_TOKEN_KEY)
+            if (!storedAccessToken.isNullOrBlank()) {
+                val updatedSession = session.copy(accessToken = storedAccessToken)
+                _currentSession.value = updatedSession
+                return storedAccessToken
+            }
+        }
+
+        if (session == null) {
+            val supabaseToken = try {
+                supabase.auth.currentSessionOrNull()?.accessToken
+            } catch (_: Exception) {
+                null
+            }
+            if (!supabaseToken.isNullOrBlank()) {
+                return supabaseToken
+            }
+
+            val storedAccessToken = secureStorage.getString(ACCESS_TOKEN_KEY)
+            if (!storedAccessToken.isNullOrBlank()) {
+                return storedAccessToken
+            }
+            return null
+        }
+
         // Try to refresh if expired
         val result = refreshSession()
         return if (result is AuthResult.Success) {
@@ -215,6 +322,9 @@ class SessionManager(
      */
     suspend fun handleDeepLinkSession(accessToken: String, refreshToken: String): AuthResult {
         return try {
+            println("📱 SessionManager: Importing session with tokens")
+            println("📱 Access token prefix: ${accessToken.take(20)}...")
+            
             // Import the session into Supabase using UserSession
             supabase.auth.importSession(
                 io.github.jan.supabase.gotrue.user.UserSession(
@@ -226,15 +336,21 @@ class SessionManager(
                 )
             )
             
+            println("📱 SessionManager: Session imported, getting current session")
+            
             // Get the imported session
             val supabaseSession = supabase.auth.currentSessionOrNull()
             if (supabaseSession != null) {
+                println("📱 SessionManager: Got Supabase session")
+                println("📱 User ID: ${supabaseSession.user?.id}")
+                println("📱 User email: ${supabaseSession.user?.email}")
+                
                 val session = Session(
                     accessToken = supabaseSession.accessToken,
                     refreshToken = supabaseSession.refreshToken ?: refreshToken,
-                    expiresAt = (supabaseSession.expiresAt as? Long) ?: 0L,
+                    expiresAt = normalizeEpochSeconds(supabaseSession.expiresAt),
                     user = User(
-                        id = supabaseSession.user?.id ?: "",
+                        id = normalizeUserId(supabaseSession.user?.id),
                         email = supabaseSession.user?.email ?: "",
                         displayName = supabaseSession.user?.userMetadata?.get("display_name") as? String,
                         avatarUrl = supabaseSession.user?.userMetadata?.get("avatar_url") as? String,
@@ -243,15 +359,20 @@ class SessionManager(
                     )
                 )
                 
+                println("📱 SessionManager: Created session with user ID: ${session.user.id}")
                 saveSession(session)
+                println("✅ SessionManager: Session saved")
                 AuthResult.Success(session)
             } else {
+                println("❌ SessionManager: No Supabase session after import")
                 AuthResult.Error(
                     message = "Failed to import session",
                     code = AuthErrorCode.INVALID_TOKEN
                 )
             }
         } catch (e: Exception) {
+            println("❌ SessionManager: Error importing session: ${e.message}")
+            e.printStackTrace()
             AuthResult.Error(
                 message = e.message ?: "Failed to handle deep link session",
                 code = AuthErrorCode.INVALID_TOKEN

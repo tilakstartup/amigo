@@ -10,13 +10,13 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ConversationalOnboardingViewModel(
+class AgentConversationViewModel(
     private val sessionManager: SessionManager
 ) : ViewModel() {
     
-    private val engine: OnboardingConversationEngine by lazy {
+    private val engine: AmigoAgentConversation by lazy {
         val apiEndpoint = "https://n96755fzqk.execute-api.us-east-1.amazonaws.com/dev/invoke"
-        OnboardingConversationEngineFactory.create(apiEndpoint, sessionManager)
+        AmigoAgentConversationFactory.create(apiEndpoint, sessionManager)
     }
     
     val messages: StateFlow<List<MessageViewModel>> = engine.messages
@@ -93,7 +93,22 @@ class ConversationalOnboardingViewModel(
     fun startOnboarding() {
         viewModelScope.launch {
             try {
-                engine.startOnboarding()
+                engine.startSession(
+                    cap = "onboarding",
+                    responsibilities = listOf(
+                        "Collect onboarding profile information from user",
+                        "Validate and normalize collected onboarding fields",
+                        "Summarize the onboarding details and review with the user",
+                        "Save onboarding data only after user confirmation",
+                        "Mark onboarding as complete and close the onboarding chat"
+                    ),
+                    collectData = listOf(
+                        "first_name", "last_name", "age", "weight", "height",
+                        "gender", "activity_level", "goal_type", "goal_detail", "goal_by_when"
+                    ),
+                    collectMetrics = listOf("bmr", "tdee", "daily_calories"),
+                    initialMessage = "I want to start onboarding."
+                )
             } catch (e: Exception) {
                 println("Error starting onboarding: ${e.message}")
             }

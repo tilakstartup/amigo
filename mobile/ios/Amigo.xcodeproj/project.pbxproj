@@ -20,6 +20,8 @@
 		FE172BA0D3B4EB2FFF64A1C8 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E08E499A5940388D437F4DA /* WelcomeView.swift */; };
 		AA11BB22CC33DD44EE55FF66 /* ConversationalOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11AA22BB33CC44DD55EE66FF /* ConversationalOnboardingView.swift */; };
 		BB22CC33DD44EE55FF66AA77 /* ConversationalOnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BB33CC44DD55EE66FF77AA /* ConversationalOnboardingViewModel.swift */; };
+		C1D2E3F40123456789ABCDEF /* AgentConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40123456789ABCDEF /* AgentConversationView.swift */; };
+		D1E2F3A40123456789ABCDEF /* AgentConversationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E40123456789ABCDEF /* AgentConversationViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +36,8 @@
 		9E6CA8FCCEB894A0DFAB738F /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		A6067645CE2950E4CD6FEBD4 /* GoalSelectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoalSelectionView.swift; sourceTree = "<group>"; };
 		ACF96AAA18FE153C9BCA1B82 /* ProfileSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileSetupView.swift; sourceTree = "<group>"; };
+		A1B2C3D40123456789ABCDEF /* AgentConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentConversationView.swift; sourceTree = "<group>"; };
+		B1C2D3E40123456789ABCDEF /* AgentConversationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentConversationViewModel.swift; sourceTree = "<group>"; };
 		B80DECC1C1F7E8667BD37F5F /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		CBA08EBF32B3FF48DE8DC193 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		D8E2F1A3B4C5D6E7F8901234 /* BedrockTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BedrockTestView.swift; sourceTree = "<group>"; };
@@ -83,6 +87,15 @@
 			);
 			sourceTree = "<group>";
 		};
+		7A8B9C0D1234567890ABCDEF /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D40123456789ABCDEF /* AgentConversationView.swift */,
+				B1C2D3E40123456789ABCDEF /* AgentConversationViewModel.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		A7F305F3480D1C0736B15C2B /* Amigo */ = {
 			isa = PBXGroup;
 			children = (
@@ -93,6 +106,7 @@
 				7B6B027DCA3E47CC52B69507 /* Info.plist */,
 				33D80055B0D7278B54C658FE /* Auth */,
 				1A028E834B3CD47D1F54BF19 /* Onboarding */,
+				7A8B9C0D1234567890ABCDEF /* Shared */,
 			);
 			path = Amigo;
 			sourceTree = "<group>";
@@ -186,6 +200,8 @@
 				828498296F3F4DBBB4438432 /* OnboardingCoordinator.swift in Sources */,
 				AA11BB22CC33DD44EE55FF66 /* ConversationalOnboardingView.swift in Sources */,
 				BB22CC33DD44EE55FF66AA77 /* ConversationalOnboardingViewModel.swift in Sources */,
+				C1D2E3F40123456789ABCDEF /* AgentConversationView.swift in Sources */,
+				D1E2F3A40123456789ABCDEF /* AgentConversationViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

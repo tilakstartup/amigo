@@ -82,21 +82,80 @@ struct AmigoApp: App {
     }
     
     private func checkUserOnboardingStatus() {
-        // Check if current user has completed onboarding
-        if let user = authViewModel.getCurrentUser() {
-            let userKey = "hasCompletedOnboarding_\(user.id)"
-            hasCompletedOnboarding = UserDefaults.standard.bool(forKey: userKey)
+        Task {
+            do {
+                try await sessionManager.initialize()
+                _ = try await sessionManager.validateSession()
+
+                guard let userId = try await resolveUserIdForOnboarding(), !userId.isEmpty else {
+                    await MainActor.run {
+                        hasCompletedOnboarding = false
+                    }
+                    return
+                }
+
+                let profileManager = ProfileManagerFactory.shared.create()
+                if let profile = try await profileManager.getProfileOrNull(userId: userId),
+                   profile.onboardingCompleted {
+                    await MainActor.run {
+                        hasCompletedOnboarding = true
+                    }
+                } else {
+                    await MainActor.run {
+                        hasCompletedOnboarding = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    hasCompletedOnboarding = false
+                }
+            }
         }
+    }
+
+    private func resolveUserIdForOnboarding() async throws -> String? {
+        if let user = authViewModel.getCurrentUser(), !user.id.isEmpty {
+            return user.id
+        }
+
+        guard let accessToken = try await sessionManager.getAccessToken(), !accessToken.isEmpty else {
+            return nil
+        }
+
+        return extractSubFromJWT(accessToken)
+    }
+
+    private func extractSubFromJWT(_ token: String) -> String? {
+        let parts = token.split(separator: ".")
+        guard parts.count >= 2 else { return nil }
+
+        var payload = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+
+        let remainder = payload.count % 4
+        if remainder > 0 {
+            payload += String(repeating: "=", count: 4 - remainder)
+        }
+
+        guard let data = Data(base64Encoded: payload),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let sub = json["sub"] as? String,
+              !sub.isEmpty else {
+            return nil
+        }
+
+        return sub
     }
     
     private func handleDeepLink(_ url: URL) {
-        print("Deep link received: \(url)")
+        NSLog("🔗 Deep link received: \(url)")
         
         // Check if this is an auth callback
         if url.scheme == "amigo" && url.host == "auth" {
             // Extract tokens from URL fragment
             if let fragment = url.fragment {
-                print("Fragment: \(fragment)")
+                NSLog("🔗 Fragment: \(fragment)")
                 
                 // Parse fragment parameters
                 let params = fragment.components(separatedBy: "&").reduce(into: [String: String]()) { result, param in
@@ -106,15 +165,30 @@ struct AmigoApp: App {
                     }
                 }
                 
+                NSLog("🔗 Parsed params: \(params.keys.joined(separator: ", "))")
+                
                 if let accessToken = params["access_token"],
                    let refreshToken = params["refresh_token"] {
-                    print("Tokens found, handling session")
+                    NSLog("✅ Tokens found - access: \(accessToken.prefix(20))..., refresh: \(refreshToken.prefix(20))...")
                     
                     Task {
                         await authViewModel.handleDeepLinkSession(accessToken: accessToken, refreshToken: refreshToken)
+                        
+                        // Log user after session is handled
+                        if let user = authViewModel.getCurrentUser() {
+                            NSLog("✅ User after deep link: ID=\(user.id), email=\(user.email)")
+                        } else {
+                            NSLog("❌ No user after deep link handling")
+                        }
                     }
+                } else {
+                    NSLog("❌ Missing tokens in params")
                 }
+            } else {
+                NSLog("❌ No fragment in URL")
             }
+        } else {
+            NSLog("🔗 Not an auth callback: scheme=\(url.scheme ?? "nil"), host=\(url.host ?? "nil")")
         }
     }
 }

@@ -120,7 +120,7 @@ Resources:
               headers = {
                   'Content-Type': 'application/json',
                   'Access-Control-Allow-Origin': '*',
-                  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+                  'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amigo-Auth',
                   'Access-Control-Allow-Methods': 'POST,OPTIONS'
               }
               
@@ -134,7 +134,9 @@ Resources:
               
               try:
                   # Extract and verify authorization token
-                  auth_header = event.get('headers', {}).get('Authorization', '')
+                  incoming_headers = event.get('headers', {}) or {}
+                  auth_header = incoming_headers.get('Authorization') or incoming_headers.get('authorization', '')
+                  x_amigo_auth = incoming_headers.get('X-Amigo-Auth') or incoming_headers.get('x-amigo-auth', '')
                   if not auth_header.startswith('Bearer '):
                       return {
                           'statusCode': 401,
@@ -153,6 +155,8 @@ Resources:
                       }
                   
                   user_id = user_payload.get('sub')
+                    if x_amigo_auth:
+                      print('X-Amigo-Auth header received for downstream tool forwarding path')
                   
                   # Parse request body
                   body = json.loads(event.get('body', '{}'))
@@ -338,7 +342,7 @@ Resources:
         IntegrationResponses:
           - StatusCode: 200
             ResponseParameters:
-              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amigo-Auth'"
               method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
               method.response.header.Access-Control-Allow-Origin: "'*'"
             ResponseTemplates:

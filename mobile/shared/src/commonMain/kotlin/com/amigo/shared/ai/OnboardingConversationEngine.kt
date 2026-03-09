@@ -7,7 +7,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNames
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * AI-powered conversational onboarding engine
@@ -17,6 +23,12 @@ class OnboardingConversationEngine(
     private val bedrockClient: BedrockClient,
     private val sessionManager: SessionManager
 ) {
+    private companion object {
+        const val BEDROCK_AGENT_ID = "4XLAIQ6BUY"
+        const val BEDROCK_AGENT_ALIAS_ID = "TSTALIASID"
+        const val JSON_CONTRACT_HINT = "Respond ONLY in valid JSON with keys: type, version, session_context{cap,responsibilities,collect_data,collect_metrics}, aimofchat{name,status}, ui{render{type,text,data[]},tone,next_question}, input{type,options}, data{collected,metrics}, actions, missing_fields, error."
+    }
+
     private val _conversationState = MutableStateFlow<OnboardingState>(OnboardingState.Initial)
     val conversationState: StateFlow<OnboardingState> = _conversationState.asStateFlow()
     
@@ -28,6 +40,7 @@ class OnboardingConversationEngine(
     
     private val conversationHistory = mutableListOf<ConversationMessage>()
     private val profileData = mutableMapOf<String, String>()
+    private var agentSessionId: String = ""
     private var lastAskedField: String? = null
     private var hasAskedPermissions: Boolean = false
     private val shownFeatureKeys = mutableSetOf<String>()
@@ -58,6 +71,7 @@ class OnboardingConversationEngine(
             _conversationState.value = OnboardingState.Collecting
             hasAskedPermissions = false
             shownFeatureKeys.clear()
+            agentSessionId = "onboarding-${currentTimeMillis()}"
             
             // Generate welcome message
             val response = generateAIResponse("START_ONBOARDING")
@@ -173,13 +187,38 @@ class OnboardingConversationEngine(
         Logger.i("OnboardingEngine", prompt)
         Logger.i("OnboardingEngine", "PROMPT_END")
         
-        val result = bedrockClient.invokeModel(
-            modelId = "amazon.nova-micro-v1:0", // Amazon Nova Micro - 88% cheaper than Claude, same quality
-            prompt = prompt,
-            systemPrompt = buildSystemPrompt(),
-            maxTokens = 800,
-            temperature = 0.3 // Lower temperature for more consistent, deterministic responses
+        val userId = sessionManager.getCurrentUser()?.id.orEmpty()
+        val sessionContext = """
+            {
+              "cap": "onboarding",
+              "user_id": "$userId",
+              "responsibilities": [
+                "Use X-Amigo-Auth header from session attribute x_amigo_auth when calling edge functions",
+                "Fetch profile via GET /get-profile",
+                "Collect missing fields based on cap",
+                "Save updates via POST /save-onboarding-data",
+                "Validate status via GET /get-onboarding-status"
+              ],
+              "collect_data": ["first_name", "last_name", "age", "weight", "height", "gender", "activity_level"]
+            }
+        """.trimIndent()
+
+        val agentMessage = if (userInput == "START_ONBOARDING") {
+            "SESSION_CONTEXT:$sessionContext\n\n$JSON_CONTRACT_HINT\n\nUser message: I want to start onboarding."
+        } else {
+            "$JSON_CONTRACT_HINT\n\nUser message: $userInput"
+        }
+
+        val agentResult = bedrockClient.invokeAgent(
+            message = agentMessage,
+            sessionId = agentSessionId,
+            agentId = BEDROCK_AGENT_ID,
+            agentAliasId = BEDROCK_AGENT_ALIAS_ID,
+            cap = "onboarding",
+            sessionContext = sessionContext
         )
+
+        val result = agentResult
         
         return if (result.isSuccess) {
             val completion = result.getOrNull()?.completion ?: ""
@@ -241,9 +280,15 @@ class OnboardingConversationEngine(
             if (jsonStart >= 0 && jsonEnd > jsonStart) {
                 jsonString = jsonString.substring(jsonStart, jsonEnd)
                 
-                val parsed = json.decodeFromString<AIResponse>(jsonString)
-                Logger.i("OnboardingEngine", "Parsed JSON response successfully")
-                parsed
+                try {
+                    val parsed = json.decodeFromString<AIResponse>(jsonString)
+                    Logger.i("OnboardingEngine", "Parsed legacy AI response JSON successfully")
+                    parsed
+                } catch (_: Exception) {
+                    val agent = json.decodeFromString<AgentResponse>(jsonString)
+                    Logger.i("OnboardingEngine", "Parsed Bedrock agent JSON successfully")
+                    mapAgentResponse(agent)
+                }
             } else {
                 // No JSON found, treat as plain text
                 Logger.w("OnboardingEngine", "⚠️ No JSON found in response, using as plain text")
@@ -259,6 +304,134 @@ class OnboardingConversationEngine(
                 replies = listOf("Weight Loss", "Muscle Gain", "Maintenance", "Improved Energy", "Better Sleep")
             )
         }
+    }
+
+    private fun mapAgentResponse(agent: AgentResponse): AIResponse {
+        val render = agent.ui?.render
+        val inputType = agent.input?.type?.lowercase().orEmpty()
+
+        fun JsonElement.asStringOrNull(): String? {
+            return runCatching { jsonPrimitive.contentOrNull }.getOrNull()
+        }
+
+        fun optionLabel(option: JsonElement): String? {
+            val primitive = option.asStringOrNull()?.trim()
+            if (!primitive.isNullOrEmpty()) return primitive
+
+            val obj = runCatching { option.jsonObject }.getOrNull() ?: return null
+            val candidates = listOf("label", "text", "title", "name", "value")
+            return candidates
+                .asSequence()
+                .mapNotNull { key -> obj[key]?.asStringOrNull()?.trim() }
+                .firstOrNull { it.isNotEmpty() }
+        }
+
+        val inputReplies = agent.input?.options
+            ?.mapNotNull(::optionLabel)
+            ?.distinct()
+            .orEmpty()
+
+        val renderReplies = render?.data
+            ?.mapNotNull(::optionLabel)
+            ?.distinct()
+            .orEmpty()
+
+        val replies = when {
+            inputReplies.isNotEmpty() -> inputReplies
+            renderReplies.isNotEmpty() -> renderReplies
+            else -> null
+        }
+
+        val renderType = render?.type?.lowercase().orEmpty()
+
+        val mappedReplyType = when (inputType) {
+            "none" -> "none"
+            "quick_pills" -> "quick_pills"
+            "dropdown" -> "list"
+            "yes_no" -> "yes_no"
+            "date" -> "date"
+            else -> when (renderType) {
+                "quick_pills", "chips", "buttons" -> "quick_pills"
+                "dropdown", "list", "select" -> "list"
+                "yes_no", "boolean", "confirm" -> "yes_no"
+                "date", "date_picker" -> "date"
+                else -> if (replies != null) "quick_pills" else "text"
+            }
+        }
+
+        val collected = agent.data?.collected ?: emptyMap()
+        fun valueOf(key: String): String? {
+            val element = collected[key] ?: return null
+            return element.asStringOrNull()
+        }
+
+        fun summaryLineOf(item: JsonElement): String? {
+            item.asStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+
+            val obj = runCatching { item.jsonObject }.getOrNull() ?: return null
+            val label = listOf("label", "title", "name")
+                .asSequence()
+                .mapNotNull { key -> obj[key]?.asStringOrNull()?.trim() }
+                .firstOrNull { it.isNotEmpty() }
+
+            val directValue = listOf("value", "text", "content", "current_value")
+                .asSequence()
+                .mapNotNull { key -> obj[key]?.asStringOrNull()?.trim() }
+                .firstOrNull { it.isNotEmpty() }
+
+            val valueFromCollected = obj["var_name_in_collected"]
+                ?.asStringOrNull()
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+                ?.let(::valueOf)
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+
+            val value = directValue ?: valueFromCollected
+
+            return when {
+                !label.isNullOrBlank() && !value.isNullOrBlank() -> "$label: $value"
+                !label.isNullOrBlank() -> label
+                !value.isNullOrBlank() -> value
+                else -> null
+            }
+        }
+
+        val renderItems = render?.data
+            ?.mapNotNull(::summaryLineOf)
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.distinct()
+            ?.takeIf { it.isNotEmpty() }
+
+        val firstName = valueOf("first_name")
+        val lastName = valueOf("last_name")
+        val fullName = listOfNotNull(firstName, lastName).joinToString(" ").ifBlank { null }
+
+        val profile = ProfileData(
+            name = fullName,
+            age = valueOf("age"),
+            height = valueOf("height") ?: valueOf("height_cm"),
+            weight = valueOf("weight") ?: valueOf("weight_kg"),
+            activityLevel = valueOf("activity_level"),
+            goalType = profileData["goalType"],
+            goalDetail = profileData["goalDetail"],
+            goalNumber = profileData["goalNumber"],
+            goalByWhen = profileData["goalByWhen"],
+            dietaryPreferences = profileData["dietaryPreferences"]
+        )
+
+        return AIResponse(
+            message = render?.text?.takeIf { it.isNotBlank() }
+                ?: agent.ui?.nextQuestion?.takeIf { it.isNotBlank() }
+                ?: "Let's continue your onboarding.",
+            replyType = mappedReplyType,
+            replies = replies,
+            renderType = renderType.ifBlank { null },
+            renderItems = renderItems,
+            profileData = profile,
+            nextAction = "agent_managed"
+        )
     }
     
     /**
@@ -313,13 +486,32 @@ class OnboardingConversationEngine(
             Logger.i("OnboardingEngine", prompt)
             Logger.i("OnboardingEngine", "GUIDANCE_PROMPT_END")
             
-            val result = bedrockClient.invokeModel(
-                modelId = "amazon.nova-micro-v1:0",
-                prompt = prompt,
-                systemPrompt = buildSystemPrompt(),
-                maxTokens = 800,
-                temperature = 0.3
-            )
+                        val userId = sessionManager.getCurrentUser()?.id.orEmpty()
+                        val sessionContext = """
+                                {
+                                    "cap": "onboarding",
+                                    "user_id": "$userId",
+                                    "responsibilities": [
+                                        "Use X-Amigo-Auth header from session attribute x_amigo_auth when calling edge functions",
+                                        "Fetch profile via GET /get-profile",
+                                        "Collect missing fields based on cap",
+                                        "Save updates via POST /save-onboarding-data",
+                                        "Validate status via GET /get-onboarding-status"
+                                    ],
+                                    "collect_data": ["first_name", "last_name", "age", "weight", "height", "gender", "activity_level"]
+                                }
+                        """.trimIndent()
+
+                        val guidanceAgentMessage = "SESSION_CONTEXT:$sessionContext\n\n$JSON_CONTRACT_HINT\n\n$prompt"
+
+                        val result = bedrockClient.invokeAgent(
+                                message = guidanceAgentMessage,
+                                sessionId = agentSessionId,
+                                agentId = BEDROCK_AGENT_ID,
+                                agentAliasId = BEDROCK_AGENT_ALIAS_ID,
+                                cap = "onboarding",
+                                sessionContext = sessionContext
+                        )
             
             if (result.isSuccess) {
                 val completion = result.getOrNull()?.completion ?: ""
@@ -461,6 +653,15 @@ class OnboardingConversationEngine(
             }
         }
 
+        val nextMissingForQualityGuard = missingRequiredFields().firstOrNull()
+        if (nextMissingForQualityGuard != null && isLowQualityFallbackMessage(finalResponse.message)) {
+            finalResponse = buildFallbackQuestionForField(nextMissingForQualityGuard)
+            Logger.i(
+                "OnboardingEngine",
+                "Replaced low-quality fallback message with deterministic question for '$nextMissingForQualityGuard'"
+            )
+        }
+
         val askedFieldInResponse = inferAskedField(finalResponse.message, finalResponse.replyType)
         if (!askedFieldInResponse.isNullOrBlank() && !profileData[askedFieldInResponse].isNullOrBlank()) {
             val nextField = missingRequiredFields().firstOrNull { it != askedFieldInResponse }
@@ -583,7 +784,9 @@ class OnboardingConversationEngine(
                 text = messageText,
                 replyType = finalReplyType,
                 replies = responseToShow.replies,
-                feature = null
+                feature = null,
+                renderType = responseToShow.renderType,
+                renderItems = responseToShow.renderItems
             )
         }
         
@@ -611,6 +814,22 @@ class OnboardingConversationEngine(
                 _conversationState.value = OnboardingState.Collecting
             }
         }
+    }
+
+    private fun isLowQualityFallbackMessage(message: String): Boolean {
+        val normalized = message.trim().lowercase()
+        if (normalized.isBlank()) return true
+
+        val patterns = listOf(
+            "having trouble connecting",
+            "didn't quite understand",
+            "did not quite understand",
+            "i apologize",
+            "let me rephrase",
+            "could you please tell me a bit more"
+        )
+
+        return patterns.any { normalized.contains(it) }
     }
     
     /**
@@ -1290,7 +1509,9 @@ class OnboardingConversationEngine(
         replies: List<String>? = null,
         feature: FeatureIntro? = null,
         isFeatureIntro: Boolean = false,
-        delayAfterPrevious: Long = 0
+        delayAfterPrevious: Long = 0,
+        renderType: String? = null,
+        renderItems: List<String>? = null
     ) {
         val message = ConversationMessage(
             id = generateMessageId(),
@@ -1301,7 +1522,9 @@ class OnboardingConversationEngine(
             replies = replies,
             feature = feature,
             isFeatureIntro = isFeatureIntro,
-            delayAfterPrevious = delayAfterPrevious
+            delayAfterPrevious = delayAfterPrevious,
+            renderType = renderType,
+            renderItems = renderItems
         )
         conversationHistory.add(message)
         _messages.value = conversationHistory.toList()
@@ -1329,6 +1552,10 @@ class OnboardingConversationEngine(
     fun getProfileData(): Map<String, String> {
         return profileData.toMap()
     }
+
+    fun getMessagesSnapshot(): List<ConversationMessage> {
+        return conversationHistory.toList()
+    }
     
     /**
      * Check if onboarding is complete
@@ -1346,6 +1573,8 @@ data class AIResponse(
     val message: String = "",
     val replyType: String? = null, // "quick_pills", "list", "yes_no", "text", "date" - nullable for feature intros
     val replies: List<String>? = null,
+    val renderType: String? = null,
+    val renderItems: List<String>? = null,
     val featureIntro: FeatureIntroResponse? = null,
     val profileData: ProfileData? = null,
     val nextAction: String? = null
@@ -1382,6 +1611,38 @@ data class FeatureIntro(
     val icon: String
 )
 
+@Serializable
+data class AgentResponse(
+    val ui: AgentUi? = null,
+    val input: AgentInput? = null,
+    val data: AgentData? = null
+)
+
+@Serializable
+data class AgentUi(
+    val render: AgentRender? = null,
+    @JsonNames("next_question", "nextQuestion")
+    val nextQuestion: String? = null
+)
+
+@Serializable
+data class AgentRender(
+    val type: String? = null,
+    val text: String? = null,
+    val data: List<JsonElement>? = null
+)
+
+@Serializable
+data class AgentInput(
+    val type: String? = null,
+    val options: List<JsonElement>? = null
+)
+
+@Serializable
+data class AgentData(
+    val collected: Map<String, JsonElement> = emptyMap()
+)
+
 /**
  * Onboarding conversation states
  */
@@ -1403,6 +1664,8 @@ data class ConversationMessage(
     val timestamp: Long,
     val replyType: String, // REQUIRED: "quick_pills", "list", "yes_no", "text", "date"
     val replies: List<String>? = null,
+    val renderType: String? = null,
+    val renderItems: List<String>? = null,
     val feature: FeatureIntro? = null,
     val isFeatureIntro: Boolean = false, // True if this is just a feature card
     val delayAfterPrevious: Long = 0, // Milliseconds to wait before showing this message

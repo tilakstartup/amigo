@@ -79,6 +79,7 @@ class BedrockClient(
                 headers {
                     append(HttpHeaders.ContentType, "application/json")
                     append(HttpHeaders.Authorization, "Bearer $authToken")
+                    append("X-Amigo-Auth", "Bearer $authToken")
                 }
                 setBody(json.encodeToString(LambdaRequest.serializer(), requestBody))
             }
@@ -105,6 +106,78 @@ class BedrockClient(
                 val errorText = response.bodyAsText()
                 Logger.e("BedrockClient", "❌ API error - Status: ${response.status}, Body: $errorText")
                 Result.failure(Exception("Lambda API error: ${response.status} - $errorText"))
+            }
+        }
+    }
+
+    /**
+     * Invoke Bedrock Agent through Lambda proxy (with server-side return-control handling)
+     */
+    suspend fun invokeAgent(
+        message: String,
+        sessionId: String,
+        agentId: String,
+        agentAliasId: String,
+        cap: String = "onboarding",
+        sessionContext: String? = null
+    ): Result<BedrockResponse> {
+        return withRetry {
+            Logger.i("BedrockClient", "🔵 Starting Agent API call to $apiEndpoint")
+
+            val authToken = getAuthToken()
+            if (authToken == null) {
+                Logger.e("BedrockClient", "❌ No authentication token available")
+                return@withRetry Result.failure(Exception("No authentication token available"))
+            }
+            
+            // For onboarding, empty token is allowed (Lambda will handle anonymous requests)
+            if (authToken.isEmpty() && cap == "onboarding") {
+                Logger.i("BedrockClient", "⚠️ Onboarding request without auth token (allowed)")
+            }
+
+            val requestBody = LambdaRequest(
+                mode = "agent",
+                message = message,
+                sessionId = sessionId,
+                agentId = agentId,
+                agentAliasId = agentAliasId,
+                cap = cap,
+                sessionContext = sessionContext
+            )
+
+            Logger.i("BedrockClient", "📤 Agent request - AgentId: $agentId Alias: $agentAliasId Session: $sessionId Cap: $cap")
+
+            val response = httpClient.post(apiEndpoint) {
+                headers {
+                    append(HttpHeaders.ContentType, "application/json")
+                    // Always send Authorization header (even if empty for onboarding)
+                    append(HttpHeaders.Authorization, "Bearer $authToken")
+                    if (authToken.isNotEmpty()) {
+                        append("X-Amigo-Auth", "Bearer $authToken")
+                    }
+                }
+                setBody(json.encodeToString(LambdaRequest.serializer(), requestBody))
+            }
+
+            Logger.i("BedrockClient", "📥 Agent response - Status: ${response.status}")
+
+            if (response.status.isSuccess()) {
+                val responseText = response.bodyAsText()
+                val lambdaResponse = json.decodeFromString<LambdaResponse>(responseText)
+                Result.success(
+                    BedrockResponse(
+                        completion = lambdaResponse.completion,
+                        stopReason = lambdaResponse.stopReason,
+                        usage = BedrockUsage(
+                            inputTokens = lambdaResponse.usage.inputTokens,
+                            outputTokens = lambdaResponse.usage.outputTokens
+                        )
+                    )
+                )
+            } else {
+                val errorText = response.bodyAsText()
+                Logger.e("BedrockClient", "❌ Agent API error - Status: ${response.status}, Body: $errorText")
+                Result.failure(Exception("Lambda Agent API error: ${response.status} - $errorText"))
             }
         }
     }
@@ -180,10 +253,17 @@ class BedrockClient(
 // Request/Response models for Lambda API
 @Serializable
 private data class LambdaRequest(
-    val prompt: String,
-    val modelId: String,
-    val maxTokens: Int,
-    val temperature: Double,
+    val mode: String? = null,
+    val message: String? = null,
+    val sessionId: String? = null,
+    val agentId: String? = null,
+    val agentAliasId: String? = null,
+    val cap: String? = null,
+    val sessionContext: String? = null,
+    val prompt: String = "",
+    val modelId: String = "",
+    val maxTokens: Int = 2048,
+    val temperature: Double = 0.7,
     val systemPrompt: String? = null
 )
 

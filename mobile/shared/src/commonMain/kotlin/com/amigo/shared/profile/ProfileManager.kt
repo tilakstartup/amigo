@@ -3,11 +3,38 @@ package com.amigo.shared.profile
 import com.amigo.shared.data.models.UserProfile
 import com.amigo.shared.data.models.UnitPreference
 import com.amigo.shared.data.models.Theme
+import com.amigo.shared.data.models.GoalType
+import com.amigo.shared.data.models.ActivityLevel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.datetime.Clock
 
 class ProfileManager(private val supabase: SupabaseClient) {
+
+    suspend fun getProfileOrThrow(userId: String): UserProfile {
+        return getProfile(userId).getOrThrow()
+    }
+
+    suspend fun createProfileOrThrow(profile: UserProfile): UserProfile {
+        return createProfile(profile).getOrThrow()
+    }
+
+    suspend fun updateProfileOrThrow(userId: String, updates: ProfileUpdate): UserProfile {
+        return updateProfile(userId, updates).getOrThrow()
+    }
+
+    suspend fun getProfileOrNull(userId: String): UserProfile? {
+        return getProfile(userId).getOrNull()
+    }
+
+    suspend fun createProfileOrNull(profile: UserProfile): UserProfile? {
+        return createProfile(profile).getOrNull()
+    }
+
+    suspend fun updateProfileOrNull(userId: String, updates: ProfileUpdate): UserProfile? {
+        return updateProfile(userId, updates).getOrNull()
+    }
     
     /**
      * Get user profile by user ID
@@ -24,6 +51,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
             
             Result.success(profile)
         } catch (e: Exception) {
+            println("❌ ProfileManager.getProfile failed for userId=$userId: ${e.message}")
             Result.failure(e)
         }
     }
@@ -39,6 +67,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
             
             Result.success(created)
         } catch (e: Exception) {
+            println("❌ ProfileManager.createProfile failed for userId=${profile.id}, email=${profile.email}: ${e.message}")
             Result.failure(e)
         }
     }
@@ -58,6 +87,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
             
             Result.success(updated)
         } catch (e: Exception) {
+            println("❌ ProfileManager.updateProfile failed for userId=$userId: ${e.message}")
             Result.failure(e)
         }
     }
@@ -75,6 +105,146 @@ class ProfileManager(private val supabase: SupabaseClient) {
                 }
             
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Get user profile (alias for getProfile)
+     */
+    suspend fun getUserProfile(userId: String): Result<UserProfile> {
+        return getProfile(userId)
+    }
+    
+    /**
+     * Update user's health goal
+     */
+    suspend fun updateGoal(
+        userId: String,
+        goalType: GoalType,
+        targetWeightKg: Double? = null,
+        targetDate: String? = null,
+        currentWeightKg: Double? = null,
+        currentHeightCm: Double? = null,
+        activityLevel: String? = null,
+        calculatedBmr: Double? = null,
+        calculatedTdee: Double? = null,
+        calculatedDailyCalories: Double? = null,
+        calculatedBmiStart: Double? = null,
+        calculatedBmiTarget: Double? = null,
+        weeklyMilestones: List<Map<String, Any>>? = null,
+        isRealistic: Boolean? = null,
+        recommendedTargetDate: String? = null,
+        validationReason: String? = null,
+        goalContext: Map<String, Any>? = null
+    ): Result<UserProfile> {
+        return try {
+            val goalTypeValue = goalType.name.lowercase()
+            val updates = mutableMapOf<String, Any>(
+                "goal_type" to goalTypeValue
+            )
+            
+            if (targetDate != null) {
+                updates["goal_by_when"] = targetDate
+            }
+            
+            val updated = supabase.from("users_profiles")
+                .update(updates) {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+                .decodeSingle<UserProfile>()
+
+            supabase.from("health_goals")
+                .update(mapOf("is_active" to false)) {
+                    filter {
+                        eq("user_id", userId)
+                        eq("is_active", true)
+                    }
+                }
+
+            val healthGoalPayload = mutableMapOf<String, Any>(
+                "user_id" to userId,
+                "goal_type" to goalTypeValue,
+                "is_active" to true,
+                "start_date" to Clock.System.now().toString()
+            )
+
+            targetDate?.let {
+                healthGoalPayload["target_date"] = it
+                healthGoalPayload["end_date"] = "${it}T00:00:00Z"
+            }
+            targetWeightKg?.let { healthGoalPayload["target_weight"] = it }
+            currentWeightKg?.let { healthGoalPayload["current_weight"] = it }
+            currentHeightCm?.let { healthGoalPayload["current_height"] = it }
+            normalizeHealthGoalActivityLevel(activityLevel)?.let { healthGoalPayload["activity_level"] = it }
+            calculatedBmr?.let { healthGoalPayload["calculated_bmr"] = it }
+            calculatedTdee?.let { healthGoalPayload["calculated_tdee"] = it }
+            calculatedDailyCalories?.let { healthGoalPayload["calculated_daily_calories"] = it }
+            calculatedBmiStart?.let { healthGoalPayload["calculated_bmi_start"] = it }
+            calculatedBmiTarget?.let { healthGoalPayload["calculated_bmi_target"] = it }
+            weeklyMilestones?.let { healthGoalPayload["weekly_milestones"] = it }
+            isRealistic?.let { healthGoalPayload["is_realistic"] = it }
+            recommendedTargetDate?.let { healthGoalPayload["recommended_target_date"] = it }
+            validationReason?.let { healthGoalPayload["validation_reason"] = it }
+            goalContext?.let { healthGoalPayload["goal_context"] = it }
+
+            supabase.from("health_goals").insert(healthGoalPayload)
+            
+            Result.success(updated)
+        } catch (e: Exception) {
+            println("❌ ProfileManager.updateGoal failed for userId=$userId: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    private fun normalizeHealthGoalActivityLevel(activityLevel: String?): String? {
+        if (activityLevel.isNullOrBlank()) {
+            return null
+        }
+
+        return when (activityLevel.trim().lowercase()) {
+            "sedentary" -> "sedentary"
+            "light", "lightly_active", "lightly active" -> "light"
+            "moderate", "moderately_active", "moderately active" -> "moderate"
+            "active", "very_active", "very active" -> "active"
+            "very_active_plus", "extremely_active", "extremely active", "athlete" -> "very_active"
+            else -> ActivityLevel.fromString(activityLevel)?.let {
+                when (it) {
+                    ActivityLevel.SEDENTARY -> "sedentary"
+                    ActivityLevel.LIGHTLY_ACTIVE -> "light"
+                    ActivityLevel.MODERATELY_ACTIVE -> "moderate"
+                    ActivityLevel.VERY_ACTIVE -> "active"
+                    ActivityLevel.EXTREMELY_ACTIVE -> "very_active"
+                }
+            }
+        }
+    }
+    
+    /**
+     * Save onboarding data and mark onboarding as complete
+     */
+    suspend fun completeOnboarding(
+        userId: String,
+        onboardingData: ProfileUpdate
+    ): Result<UserProfile> {
+        return try {
+            // Add onboarding completion timestamp
+            val updates = onboardingData.toMap().toMutableMap()
+            updates["onboarding_completed"] = true
+            updates["onboarding_completed_at"] = Clock.System.now().toString()
+            
+            val updated = supabase.from("users_profiles")
+                .update(updates) {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+                .decodeSingle<UserProfile>()
+            
+            Result.success(updated)
         } catch (e: Exception) {
             Result.failure(e)
         }
