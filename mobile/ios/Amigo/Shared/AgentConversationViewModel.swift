@@ -45,7 +45,7 @@ class AgentConversationViewModel: ObservableObject {
         engine = AmigoAgentConversationFactory.shared.create(
             apiEndpoint: apiEndpoint,
             sessionManager: sessionManager,
-            supabaseClient: SupabaseClientProvider.shared.client
+            supabaseClient: try? SupabaseClientProvider.shared.getClient()
         )
         print("✅ iOS: Engine created successfully")
     }

@@ -7,6 +7,7 @@ import * as cr from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 export interface BedrockAgentStackProps extends cdk.StackProps {
   environment: string;
@@ -83,7 +84,7 @@ export class BedrockAgentStack extends cdk.Stack {
     const dataOpsActionGroup = this.createActionGroup(
       'DataOperations',
       actionGroupManager,
-      'DataOperations',
+      'data_operations',
       'Profile and onboarding data operations with RETURN_CONTROL',
       this.getDataOperationsSchema()
     );
@@ -92,7 +93,7 @@ export class BedrockAgentStack extends cdk.Stack {
     const healthCalcActionGroup = this.createActionGroup(
       'HealthCalculations',
       actionGroupManager,
-      'HealthCalculations',
+      'health_calculations',
       'BMR, TDEE, and goal validation calculations with RETURN_CONTROL',
       this.getHealthCalculationsSchema()
     );
@@ -101,7 +102,7 @@ export class BedrockAgentStack extends cdk.Stack {
     const goalMgmtActionGroup = this.createActionGroup(
       'GoalManagement',
       actionGroupManager,
-      'GoalManagement',
+      'goal_management',
       'Save and manage user health goals with RETURN_CONTROL',
       this.getGoalManagementSchema()
     );
@@ -155,6 +156,7 @@ export class BedrockAgentStack extends cdk.Stack {
           'bedrock:UpdateAgentActionGroup',
           'bedrock:DeleteAgentActionGroup',
           'bedrock:GetAgentActionGroup',
+          'bedrock:ListAgentActionGroups',
         ],
         resources: ['*'],
       })
@@ -219,6 +221,9 @@ export class BedrockAgentStack extends cdk.Stack {
       onEventHandler: managerFunction,
     });
 
+    // Compute hash of schema to detect changes
+    const schemaHash = crypto.createHash('sha256').update(apiSchema).digest('hex').substring(0, 8);
+
     const actionGroup = new cdk.CustomResource(this, `${id}ActionGroup`, {
       serviceToken: provider.serviceToken,
       properties: {
@@ -226,6 +231,7 @@ export class BedrockAgentStack extends cdk.Stack {
         ActionGroupName: actionGroupName,
         Description: description,
         ApiSchema: apiSchema,
+        SchemaHash: schemaHash, // This will change when schema changes
       },
     });
 
@@ -278,7 +284,8 @@ def handler(event, context):
     description = props.get("Description", "")
     api_schema = props.get("ApiSchema", "")
     
-    physical_id = event.get("PhysicalResourceId", f"action-group-{action_group_name}")
+    # Physical ID format: {agent_id}:{action_group_id}
+    physical_id = event.get("PhysicalResourceId", f"{agent_id}:pending")
 
     try:
         req_type = event["RequestType"]
@@ -294,11 +301,35 @@ def handler(event, context):
                 actionGroupState='ENABLED'
             )
             action_group_id = response['agentActionGroup']['actionGroupId']
-            send(event, context, "SUCCESS", {"ActionGroupId": action_group_id}, action_group_id)
+            new_physical_id = f"{agent_id}:{action_group_id}"
+            send(event, context, "SUCCESS", {"ActionGroupId": action_group_id}, new_physical_id)
             return
         
         if req_type == "Update":
-            action_group_id = physical_id
+            # Extract action group ID from physical ID
+            if ':' in physical_id:
+                _, action_group_id = physical_id.split(':', 1)
+            else:
+                # Fallback for old format - look up the action group by name
+                print(f"WARNING: Old physical ID format detected: {physical_id}")
+                print(f"Looking up action group by name: {action_group_name}")
+                try:
+                    list_response = bedrock.list_agent_action_groups(
+                        agentId=agent_id,
+                        agentVersion='DRAFT',
+                        maxResults=100
+                    )
+                    action_groups = list_response.get('actionGroupSummaries', [])
+                    matching_group = next((ag for ag in action_groups if ag['actionGroupName'] == action_group_name), None)
+                    if matching_group:
+                        action_group_id = matching_group['actionGroupId']
+                        print(f"Found action group ID: {action_group_id}")
+                    else:
+                        raise Exception(f"Could not find action group with name: {action_group_name}")
+                except Exception as lookup_error:
+                    print(f"Failed to lookup action group: {lookup_error}")
+                    raise
+            
             response = bedrock.update_agent_action_group(
                 agentId=agent_id,
                 agentVersion='DRAFT',
@@ -309,12 +340,19 @@ def handler(event, context):
                 apiSchema={'payload': api_schema},
                 actionGroupState='ENABLED'
             )
-            send(event, context, "SUCCESS", {"ActionGroupId": action_group_id}, action_group_id)
+            # Update to new physical ID format
+            new_physical_id = f"{agent_id}:{action_group_id}"
+            send(event, context, "SUCCESS", {"ActionGroupId": action_group_id}, new_physical_id)
             return
         
         if req_type == "Delete":
             try:
-                action_group_id = physical_id
+                # Extract action group ID from physical ID
+                if ':' in physical_id:
+                    _, action_group_id = physical_id.split(':', 1)
+                else:
+                    action_group_id = physical_id
+                
                 bedrock.delete_agent_action_group(
                     agentId=agent_id,
                     agentVersion='DRAFT',

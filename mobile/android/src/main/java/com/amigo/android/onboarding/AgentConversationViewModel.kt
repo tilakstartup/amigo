@@ -23,7 +23,7 @@ class AgentConversationViewModel(
         AmigoAgentConversationFactory.create(
             AppConfig.BEDROCK_API_ENDPOINT,
             sessionManager,
-            SupabaseClientProvider.client
+            null
         )
     }
     

@@ -23,7 +23,7 @@ final class ConversationalOnboardingViewModel: ObservableObject {
         self.engine = AmigoAgentConversationFactory.shared.create(
             apiEndpoint: AppConfig.shared.BEDROCK_API_ENDPOINT,
             sessionManager: sessionManager,
-            supabaseClient: SupabaseClientProvider.shared.client
+            supabaseClient: try? SupabaseClientProvider.shared.getClient()
         )
         
         print("✅ iOS: Engine created successfully")

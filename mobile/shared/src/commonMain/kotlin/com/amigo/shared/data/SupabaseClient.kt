@@ -11,9 +11,6 @@ object SupabaseClientProvider {
     
     private var _client: SupabaseClient? = null
     
-    val client: SupabaseClient?
-        get() = _client
-    
     fun initialize(supabaseUrl: String, supabaseKey: String) {
         if (_client == null) {
             _client = createSupabaseClient(
