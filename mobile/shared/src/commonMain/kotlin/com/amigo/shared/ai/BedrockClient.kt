@@ -120,7 +120,8 @@ class BedrockClient(
         agentId: String,
         agentAliasId: String,
         cap: String = "onboarding",
-        sessionContext: String? = null
+        sessionContext: String? = null,
+        returnControlInvocationResults: List<ReturnControlResult>? = null
     ): Result<BedrockResponse> {
         return withRetry {
             Logger.i("BedrockClient", "🔵 ========== AGENT API CALL START ==========")
@@ -151,7 +152,8 @@ class BedrockClient(
                 agentId = agentId,
                 agentAliasId = agentAliasId,
                 cap = cap,
-                sessionContext = sessionContext
+                sessionContext = sessionContext,
+                returnControlInvocationResults = returnControlInvocationResults
             )
 
             Logger.i("BedrockClient", "📤 Serializing request body...")
@@ -306,6 +308,7 @@ private data class LambdaRequest(
     val agentAliasId: String? = null,
     val cap: String? = null,
     val sessionContext: String? = null,
+    val returnControlInvocationResults: List<ReturnControlResult>? = null,
     val prompt: String = "",
     val modelId: String = "",
     val maxTokens: Int = 2048,
@@ -353,6 +356,25 @@ data class FunctionInvocation(
     @SerialName("function_name")
     val functionName: String,
     val params: Map<String, String> = emptyMap()
+)
+
+@Serializable
+data class ReturnControlResult(
+    @SerialName("invocation_id")
+    val invocationId: String,
+    @SerialName("function_results")
+    val functionResults: List<FunctionResult>
+)
+
+@Serializable
+data class FunctionResult(
+    @SerialName("action_group")
+    val actionGroup: String,
+    @SerialName("function_name")
+    val functionName: String,
+    val success: Boolean,
+    val result: String? = null,
+    val error: String? = null
 )
 
 

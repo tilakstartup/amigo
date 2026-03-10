@@ -301,12 +301,15 @@ def lambda_handler(event, context):
             agent_alias_id = body.get('agentAliasId') or os.environ.get('BEDROCK_AGENT_ALIAS_ID', 'TSTALIASID')
             session_id = body.get('sessionId') or f"mobile-{user_id}-{int(datetime.utcnow().timestamp())}"
             message = body.get('message') or body.get('prompt')
+            return_control_invocation_results = body.get('returnControlInvocationResults')
 
-            if not agent_id or not message:
+            # Allow empty message if returnControlInvocationResults is provided (tool result handshake)
+            has_return_control_results = return_control_invocation_results is not None and len(return_control_invocation_results) > 0
+            if not agent_id or (not message and not has_return_control_results):
                 return {
                     'statusCode': 400,
                     'headers': headers,
-                    'body': json.dumps({'error': 'Missing required parameters for agent mode: agentId/message'})
+                    'body': json.dumps({'error': 'Missing required parameters for agent mode: agentId and (message or returnControlInvocationResults)'})
                 }
 
             # Only include bearer token in session attributes if we have a valid token
@@ -320,15 +323,129 @@ def lambda_handler(event, context):
             if bearer_token:
                 session_attributes['x_amigo_auth'] = bearer_token
             
-            response = bedrock_agent_runtime.invoke_agent(
-                agentId=agent_id,
-                agentAliasId=agent_alias_id,
-                sessionId=session_id,
-                inputText=message,
-                sessionState={
+            # Build invoke_agent parameters
+            invoke_params = {
+                'agentId': agent_id,
+                'agentAliasId': agent_alias_id,
+                'sessionId': session_id,
+                'sessionState': {
                     'sessionAttributes': session_attributes
                 }
-            )
+            }
+            
+            # Add returnControlInvocationResults if provided
+            if return_control_invocation_results:
+                print(f"📋 Adding returnControlInvocationResults to invoke_agent call")
+                print(f"📋 returnControlInvocationResults: {json.dumps(return_control_invocation_results)[:500]}")
+                
+                # Transform client format to Bedrock format
+                # Client sends: [{"invocation_id": "...", "function_results": [...]}]
+                # Bedrock expects: [{"functionResult": {...}} or {"apiResult": {...}}]
+                # IMPORTANT: If the action group uses API schema, we must return apiResult, not functionResult
+                bedrock_results = []
+                invocation_id_to_send = None
+                for item in return_control_invocation_results:
+                    invocation_id = item.get('invocationId') or item.get('invocation_id')
+                    if invocation_id and not invocation_id_to_send:
+                        invocation_id_to_send = invocation_id
+                    # Handle both camelCase and snake_case field names
+                    function_results = item.get('functionResults') or item.get('function_results') or []
+                    
+                    for func_result in function_results:
+                        action_group = func_result.get('actionGroup') or func_result.get('action_group') or 'data_operations'
+                        function_name = func_result.get('functionName') or func_result.get('function_name') or ''
+                        success = func_result.get('success', False)
+                        result_data = func_result.get('result', '{}')
+                        error_msg = func_result.get('error', '')
+                        
+                        # Map function names to API paths for API schema action groups
+                        # data_operations uses API schema, so we need to return apiResult
+                        function_to_api_path = {
+                            'get_profile': '/get-profile',
+                            'save_onboarding_data': '/save-onboarding-data',
+                            'get_onboarding_status': '/get-onboarding-status',
+                        }
+                        
+                        # Check if this is an API schema action group
+                        if action_group == 'data_operations' and function_name in function_to_api_path:
+                            # Return apiResult format for API schema
+                            api_path = function_to_api_path[function_name]
+                            http_method = 'POST' if function_name == 'save_onboarding_data' else 'GET'
+                            
+                            bedrock_result = {
+                                'apiResult': {
+                                    'actionGroup': action_group,
+                                    'apiPath': api_path,
+                                    'httpMethod': http_method,
+                                    'httpStatusCode': 200 if success else 500,
+                                    'responseBody': {
+                                        'application/json': {
+                                            'body': result_data if isinstance(result_data, str) else json.dumps(result_data)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if not success:
+                                bedrock_result['apiResult']['responseState'] = 'FAILURE'
+                                if error_msg:
+                                    bedrock_result['apiResult']['responseBody']['application/json']['body'] = json.dumps({
+                                        'error': error_msg
+                                    })
+                        else:
+                            # Return functionResult format for function schema action groups
+                            bedrock_result = {
+                                'functionResult': {
+                                    'actionGroup': action_group,
+                                    'function': function_name,
+                                    'responseBody': {
+                                        'TEXT': {
+                                            'body': result_data if isinstance(result_data, str) else json.dumps(result_data)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if not success:
+                                bedrock_result['functionResult']['responseState'] = 'FAILURE'
+                                if error_msg:
+                                    bedrock_result['functionResult']['responseBody']['TEXT']['body'] = json.dumps({
+                                        'error': error_msg
+                                    })
+                        
+                        bedrock_results.append(bedrock_result)
+                
+                print(f"📋 Transformed to Bedrock format: {json.dumps(bedrock_results)[:500]}")
+                
+                # Only add returnControlInvocationResults if we have actual results
+                if bedrock_results and invocation_id_to_send:
+                    # AWS Bedrock expects returnControlInvocationResults in sessionState
+                    # Format: [{"functionResult": {...}}, {"functionResult": {...}}]
+                    invoke_params['sessionState']['returnControlInvocationResults'] = bedrock_results
+                    print(f"📋 Added {len(bedrock_results)} results to returnControlInvocationResults")
+                    
+                    # CRITICAL: invocationId goes at sessionState level (same level as returnControlInvocationResults)
+                    invoke_params['sessionState']['invocationId'] = invocation_id_to_send
+                    print(f"📋 Added invocationId to sessionState: {invocation_id_to_send}")
+                else:
+                    print(f"⚠️ WARNING: returnControlInvocationResults provided but no results or invocationId to send")
+                
+                # CRITICAL: Do NOT include inputText when sending invocation results
+                # This tells Bedrock to continue the RETURN_CONTROL flow, not start a new request
+                print(f"📋 RETURN_CONTROL mode: NOT including inputText, only returnControlInvocationResults")
+            else:
+                # Normal request with message
+                if not message:
+                    return {
+                        'statusCode': 400,
+                        'headers': headers,
+                        'body': json.dumps({'error': 'Missing required parameter: message'})
+                    }
+                invoke_params['inputText'] = message
+                print(f"📋 Normal mode: including inputText with {len(message)} chars")
+            
+            print(f"📋 Final invoke_agent params: {json.dumps(invoke_params, indent=2)[:1000]}")
+            response = bedrock_agent_runtime.invoke_agent(**invoke_params)
 
             text, return_control = _read_agent_events(response)
             

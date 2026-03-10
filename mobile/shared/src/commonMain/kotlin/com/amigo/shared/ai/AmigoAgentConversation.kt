@@ -183,9 +183,19 @@ class AmigoAgentConversation(
         )
     }
 
-    private suspend fun invokeAgentForCompletion(agentMessage: String): String? {
+    private suspend fun invokeAgentForCompletion(agentMessage: String, invocationId: String? = null, invocationResults: List<InvocationResult>? = null): String? {
         Logger.i("AmigoAgentConversation", "📞 ========== INVOKE AGENT FOR COMPLETION ==========")
-        logLargePayload("PROMPT", agentMessage)
+        
+        // If we have invocation results, send empty message and let Lambda handle returnControlInvocationResults
+        val messageToSend = if (invocationId != null && invocationResults != null) {
+            Logger.i("AmigoAgentConversation", "📋 Sending invocation results via returnControlInvocationResults (empty message)")
+            ""
+        } else {
+            Logger.i("AmigoAgentConversation", "📋 Sending regular message")
+            agentMessage
+        }
+        
+        logLargePayload("PROMPT", messageToSend.ifEmpty { "[empty - using returnControlInvocationResults]" })
 
         Logger.i("AmigoAgentConversation", "📞 Calling bedrockClient.invokeAgent...")
         Logger.i("AmigoAgentConversation", "📞 Agent ID: $BEDROCK_AGENT_ID")
@@ -193,13 +203,37 @@ class AmigoAgentConversation(
         Logger.i("AmigoAgentConversation", "📞 Session ID: $agentSessionId")
         Logger.i("AmigoAgentConversation", "📞 Cap: $sessionCap")
         
+        // Build returnControlInvocationResults if we have results to send back
+        val returnControlResults = if (invocationId != null && invocationResults != null && invocationResults.isNotEmpty()) {
+            Logger.i("AmigoAgentConversation", "📋 Building returnControlInvocationResults for invocationId: $invocationId with ${invocationResults.size} results")
+            val functionResults = invocationResults.map { result ->
+                com.amigo.shared.ai.FunctionResult(
+                    actionGroup = result.actionGroup,
+                    functionName = result.functionName,
+                    success = result.success,
+                    result = result.result,
+                    error = result.error
+                )
+            }
+            listOf(com.amigo.shared.ai.ReturnControlResult(
+                invocationId = invocationId,
+                functionResults = functionResults
+            ))
+        } else {
+            if (invocationId != null && (invocationResults == null || invocationResults.isEmpty())) {
+                Logger.w("AmigoAgentConversation", "⚠️ WARNING: invocationId present but no results to send (invocationResults is ${if (invocationResults == null) "null" else "empty"})")
+            }
+            null
+        }
+        
         val result = bedrockClient.invokeAgent(
-            message = agentMessage,
+            message = messageToSend,
             sessionId = agentSessionId,
             agentId = BEDROCK_AGENT_ID,
             agentAliasId = BEDROCK_AGENT_ALIAS_ID,
             cap = sessionCap,
-            sessionContext = sessionContextJson
+            sessionContext = sessionContextJson,
+            returnControlInvocationResults = returnControlResults
         )
 
         if (result.isFailure) {
@@ -229,15 +263,15 @@ class AmigoAgentConversation(
             }
             
             invocationRecursionDepth++
-            val invocationResults = processActionInvocations(bedrockResponse.invocations)
+            val processedResults = processActionInvocations(bedrockResponse.invocations)
             
-            // Send results back to agent to continue conversation
-            val resultsMessage = buildInvocationResultsMessage(invocationResults)
-            logLargePayload("INVOCATION_RESULTS", resultsMessage)
-            
-            Logger.i("AmigoAgentConversation", "📋 Sending invocation results back to agent (recursive call)...")
-            // Recursive call with results
-            val recursiveResult = invokeAgentForCompletion(resultsMessage)
+            Logger.i("AmigoAgentConversation", "📋 Sending invocation results back to agent via returnControlInvocationResults...")
+            // Recursive call with returnControlInvocationResults
+            val recursiveResult = invokeAgentForCompletion(
+                agentMessage = "",  // Empty message - results go via returnControlInvocationResults
+                invocationId = bedrockResponse.invocationId,
+                invocationResults = processedResults
+            )
             invocationRecursionDepth--
             return recursiveResult
         }
