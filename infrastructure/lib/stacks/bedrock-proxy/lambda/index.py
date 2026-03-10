@@ -63,8 +63,6 @@ def _build_return_control_results(return_control, jwt_bearer):
     invocation_id = return_control.get('invocationId')
     inputs = return_control.get('invocationInputs', [])
     results = []
-    
-    print(f"📋 Processing {len(inputs)} invocation inputs")
 
     for item in inputs:
         api_input = item.get('apiInvocationInput')
@@ -112,8 +110,6 @@ def _build_return_control_results(return_control, jwt_bearer):
             action_group = function_input.get('actionGroup', 'onboarding-operations')
             function_name = function_input.get('function', '')
             parameters = function_input.get('parameters', [])
-            
-            print(f"📞 Function invocation: {action_group}.{function_name}")
 
             args = {}
             for param in parameters:
@@ -154,7 +150,6 @@ def _build_return_control_results(return_control, jwt_bearer):
                 payload['operation'] = function_name
 
             status_code, body = _invoke_edge(http_method, api_path, header_token, payload)
-            print(f"✅ Function {function_name} returned status {status_code}: {json.dumps(body)[:200]}")
             
             function_result = {
                 'actionGroup': action_group,
@@ -205,9 +200,6 @@ def lambda_handler(event, context):
     Handles authentication and rate limiting
     """
     
-    # Debug logging
-    print(f"Event: {json.dumps(event)}")
-    
     # CORS headers
     headers = {
         'Content-Type': 'application/json',
@@ -251,20 +243,15 @@ def lambda_handler(event, context):
                 elif auth_header == 'Bearer':
                     token_from_header = ""  # Empty token
             
-            print(f"Onboarding auth check: token_from_header={repr(token_from_header)}, auth_header={repr(auth_header)}")
-            
             if token_from_header and token_from_header.strip():
                 user_payload = verify_supabase_token(token_from_header)
                 if user_payload:
                     user_id = user_payload.get('sub')
                     token = token_from_header
-                    print(f"Handling onboarding request with authenticated user: {user_id}")
                 else:
-                    print("Handling onboarding request with invalid JWT -> falling back to anonymous")
                     user_id = f"onboarding-anon-{int(datetime.utcnow().timestamp())}"
                     token = ""
             else:
-                print(f"Handling onboarding request without JWT -> anonymous")
                 user_id = f"onboarding-anon-{int(datetime.utcnow().timestamp())}"
                 token = ""
         else:
@@ -298,14 +285,24 @@ def lambda_handler(event, context):
             
             user_id = user_payload.get('sub')
         
-        if x_amigo_auth:
-            print('X-Amigo-Auth header received for downstream tool forwarding path')
         if mode == 'agent':
             agent_id = body.get('agentId') or os.environ.get('BEDROCK_AGENT_ID')
             agent_alias_id = body.get('agentAliasId') or os.environ.get('BEDROCK_AGENT_ALIAS_ID', 'TSTALIASID')
             session_id = body.get('sessionId') or f"mobile-{user_id}-{int(datetime.utcnow().timestamp())}"
             message = body.get('message') or body.get('prompt')
             return_control_invocation_results = body.get('returnControlInvocationResults')
+            
+            # Extract invocation ID if present
+            invocation_id_from_user = None
+            if return_control_invocation_results:
+                for item in return_control_invocation_results:
+                    inv_id = item.get('invocationId') or item.get('invocation_id')
+                    if inv_id:
+                        invocation_id_from_user = inv_id
+                        break
+            
+            # Log what user sent to Lambda
+            print(f"📥 USER → LAMBDA [session={session_id}, invocation={invocation_id_from_user}]: message={message}, returnControlInvocationResults={json.dumps(return_control_invocation_results) if return_control_invocation_results else None}")
 
             # Allow empty message if returnControlInvocationResults is provided (tool result handshake)
             has_return_control_results = return_control_invocation_results is not None and len(return_control_invocation_results) > 0
@@ -339,8 +336,15 @@ def lambda_handler(event, context):
             
             # Add returnControlInvocationResults if provided
             if return_control_invocation_results:
-                print(f"📋 Adding returnControlInvocationResults to invoke_agent call")
-                print(f"📋 returnControlInvocationResults: {json.dumps(return_control_invocation_results)[:500]}")
+                # Log function results being returned
+                print(f"✅ [session={session_id}, invocation={invocation_id_from_user}] Returning results for {len(return_control_invocation_results)} invocation(s)")
+                for item in return_control_invocation_results:
+                    func_results = item.get('functionResults') or item.get('function_results') or []
+                    for func_result in func_results:
+                        action_group = func_result.get('actionGroup') or func_result.get('action_group')
+                        function_name = func_result.get('functionName') or func_result.get('function_name')
+                        result_data = func_result.get('result', '{}')
+                        print(f"  ← [invocation={invocation_id_from_user}] {action_group}.{function_name} = {result_data}")
                 
                 # Transform client format to Bedrock format
                 # Client sends: [{"invocation_id": "...", "function_results": [...]}]
@@ -425,24 +429,19 @@ def lambda_handler(event, context):
                         
                         bedrock_results.append(bedrock_result)
                 
-                print(f"📋 Transformed to Bedrock format: {json.dumps(bedrock_results)[:500]}")
-                
                 # Only add returnControlInvocationResults if we have actual results
                 if bedrock_results and invocation_id_to_send:
                     # AWS Bedrock expects returnControlInvocationResults in sessionState
                     # Format: [{"functionResult": {...}}, {"functionResult": {...}}]
                     invoke_params['sessionState']['returnControlInvocationResults'] = bedrock_results
-                    print(f"📋 Added {len(bedrock_results)} results to returnControlInvocationResults")
                     
                     # CRITICAL: invocationId goes at sessionState level (same level as returnControlInvocationResults)
                     invoke_params['sessionState']['invocationId'] = invocation_id_to_send
-                    print(f"📋 Added invocationId to sessionState: {invocation_id_to_send}")
                 else:
                     print(f"⚠️ WARNING: returnControlInvocationResults provided but no results or invocationId to send")
                 
                 # CRITICAL: Do NOT include inputText when sending invocation results
                 # This tells Bedrock to continue the RETURN_CONTROL flow, not start a new request
-                print(f"📋 RETURN_CONTROL mode: NOT including inputText, only returnControlInvocationResults")
             else:
                 # Normal request with message
                 if not message:
@@ -452,21 +451,38 @@ def lambda_handler(event, context):
                         'body': json.dumps({'error': 'Missing required parameter: message'})
                     }
                 invoke_params['inputText'] = message
-                print(f"📋 Normal mode: including inputText with {len(message)} chars")
             
-            print(f"📋 Final invoke_agent params: {json.dumps(invoke_params, indent=2)[:1000]}")
+            # Log conversation flow
+            if message:
+                print(f"💬 [session={session_id}] User message: {message}")
+            
+            # Log what Lambda is sending to Agent
+            print(f"📤 LAMBDA → AGENT [session={session_id}, invocation={invocation_id_from_user}]: inputText={message if message else '[RETURN_CONTROL_RESULTS]'}")
+            
             response = bedrock_agent_runtime.invoke_agent(**invoke_params)
 
             text, return_control = _read_agent_events(response)
+            
+            # Extract invocation ID from agent response
+            invocation_id_from_agent = return_control.get('invocationId') if return_control else None
+            
+            # Log what Lambda received from Agent
+            print(f"📥 AGENT → LAMBDA [session={session_id}, invocation={invocation_id_from_agent}]: completion={text}, return_control={json.dumps(return_control) if return_control else None}")
+            
+            # Log agent response
+            if text:
+                print(f"🤖 [session={session_id}] Agent response: {text}")
             
             # Return invocations to client for client-side handling
             invocations = None
             invocation_id = None
             
             if return_control:
-                print(f"🔵 RETURN_CONTROL received: {json.dumps(return_control, indent=2)}")
                 invocation_id = return_control.get('invocationId')
                 invocation_inputs = return_control.get('invocationInputs', [])
+                
+                # Log function invocations
+                print(f"🔧 [session={session_id}, invocation={invocation_id}] Agent requesting {len(invocation_inputs)} function invocation(s)")
                 
                 # Convert invocations to client format
                 invocations = []
@@ -517,9 +533,8 @@ def lambda_handler(event, context):
                             'function_name': function_name,
                             'params': params
                         })
+                        print(f"  → [invocation={invocation_id}] {action_group}.{function_name}({json.dumps(params)})")
                 
-                print(f"📋 Returning {len(invocations)} invocations to client for handling")
-
             result = {
                 'completion': text,
                 'stopReason': 'end_turn',
@@ -535,6 +550,9 @@ def lambda_handler(event, context):
             if invocations:
                 result['invocations'] = invocations
                 result['invocationId'] = invocation_id
+            
+            # Log what Lambda is sending to User
+            print(f"📤 LAMBDA → USER [session={session_id}, invocation={invocation_id}]: {json.dumps(result)}")
 
             return {
                 'statusCode': 200,

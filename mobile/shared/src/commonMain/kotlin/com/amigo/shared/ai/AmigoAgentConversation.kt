@@ -310,21 +310,31 @@ class AmigoAgentConversation(
      * Process action invocations from Bedrock Agent using the ActionGroupRegistry.
      * 
      * This method:
-     * 1. Extracts the user ID from the Supabase session (or JWT token if session.user is null)
-     * 2. Creates an ActionContext with authentication information
-     * 3. Executes each invocation through the ActionGroupRegistry
-     * 4. Returns results for each invocation
+     * 1. Ensures Supabase session is synced (imports session if needed)
+     * 2. Extracts the user ID from the Supabase session (or JWT token if session.user is null)
+     * 3. Creates an ActionContext with authentication information
+     * 4. Executes each invocation through the ActionGroupRegistry
+     * 5. Returns results for each invocation
      * 
      * @param invocations List of function invocations from the Bedrock Agent
      * @return List of invocation results (success or failure for each)
      * 
-     * Note: If the Supabase session object doesn't have user information populated,
-     * this method will decode the JWT access token to extract the user ID from the 'sub' claim.
-     * This ensures authentication works even when the session object is incomplete.
+     * CRITICAL: This method MUST sync the Supabase session before executing actions,
+     * otherwise database operations will fail with "No active session" errors due to RLS policies.
      */
     private suspend fun processActionInvocations(
         invocations: List<FunctionInvocation>
     ): List<InvocationResult> {
+        // CRITICAL: Ensure Supabase session is synced BEFORE executing actions
+        // This imports the session into Supabase so RLS policies work correctly
+        Logger.i("AmigoAgentConversation", "📋 Syncing Supabase session before action execution...")
+        val sessionSynced = sessionManager.ensureSessionSynced()
+        Logger.i("AmigoAgentConversation", "📋 Session sync result: $sessionSynced")
+        
+        if (!sessionSynced) {
+            Logger.w("AmigoAgentConversation", "⚠️ WARNING: Failed to sync Supabase session - database operations may fail")
+        }
+        
         // Get userId from Supabase client session
         Logger.i("AmigoAgentConversation", "📋 Checking Supabase session...")
         Logger.i("AmigoAgentConversation", "📋 supabaseClient is null: ${supabaseClient == null}")

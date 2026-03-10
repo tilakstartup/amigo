@@ -19,6 +19,7 @@ data class SessionConfig(
 /**
  * Predefined session configurations.
  * These match the YAML files in resources/session-configs/
+ * TODO: Load these from YAML files dynamically when multiplatform YAML support is available
  */
 object SessionConfigs {
     
@@ -78,6 +79,7 @@ object SessionConfigs {
             "If goal_type not provided in initial message, ask for it (weight_loss/muscle_gain/maintenance)",
             "Ask for target_weight (must be different from current weight based on goal type)",
             "Ask for target_date (must be future date in yyyy-MM-dd format)",
+            "Do not acknowledge that you need to calculate, just invoke functions directly",
             "Call calculate_bmr(x_amigo_auth, weight, height, age, gender)",
             "Call calculate_tdee(x_amigo_auth, weight, height, age, gender, activity_level)",
             "Calculate daily calories based on goal (e.g., for weight loss = TDEE - (weight_difference * 7700 / days_until_target))",
@@ -110,8 +112,17 @@ object SessionConfigs {
     
     /**
      * Get a session config by cap name.
+     * Loads from YAML files dynamically.
      */
     fun getConfig(cap: String): SessionConfig? {
+        // Try loading from YAML first
+        val yamlConfig = SessionConfigLoader.loadConfig(cap)
+        if (yamlConfig != null) {
+            return yamlConfig
+        }
+        
+        // Fall back to hardcoded configs if YAML loading fails
+        println("⚠️ Falling back to hardcoded config for '$cap'")
         return when (cap) {
             "onboarding" -> ONBOARDING
             "goal_setting" -> GOAL_SETTING

@@ -10,6 +10,9 @@ import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.datetime.Clock
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 
 class ProfileManager(private val supabase: SupabaseClient) {
 
@@ -184,37 +187,36 @@ class ProfileManager(private val supabase: SupabaseClient) {
                 }
             println("✅ ProfileManager: Old goals deactivated")
 
-            val healthGoalPayload = mutableMapOf<String, Any>(
-                "user_id" to userId,
-                "goal_type" to goalTypeValue,
-                "is_active" to true,
-                "start_date" to Clock.System.now().toString()
-            )
-
-            targetDate?.let {
-                healthGoalPayload["target_date"] = it
-                healthGoalPayload["end_date"] = "${it}T00:00:00Z"
+            val healthGoalPayload = buildJsonObject {
+                put("user_id", userId)
+                put("goal_type", goalTypeValue)
+                put("is_active", true)
+                put("start_date", Clock.System.now().toString())
+                
+                targetDate?.let {
+                    put("target_date", it)
+                    put("end_date", "${it}T00:00:00Z")
+                }
+                targetWeightKg?.let { put("target_weight", it) }
+                currentWeightKg?.let { put("current_weight", it) }
+                currentHeightCm?.let { put("current_height", it) }
+                normalizeHealthGoalActivityLevel(activityLevel)?.let { put("activity_level", it) }
+                calculatedBmr?.let { put("calculated_bmr", it) }
+                calculatedTdee?.let { put("calculated_tdee", it) }
+                calculatedDailyCalories?.let { put("calculated_daily_calories", it) }
+                calculatedBmiStart?.let { put("calculated_bmi_start", it) }
+                calculatedBmiTarget?.let { put("calculated_bmi_target", it) }
+                isRealistic?.let { put("is_realistic", it) }
+                recommendedTargetDate?.let { put("recommended_target_date", it) }
+                validationReason?.let { put("validation_reason", it) }
+                // Note: weeklyMilestones and goalContext are skipped for now as they need special handling
             }
-            targetWeightKg?.let { healthGoalPayload["target_weight"] = it }
-            currentWeightKg?.let { healthGoalPayload["current_weight"] = it }
-            currentHeightCm?.let { healthGoalPayload["current_height"] = it }
-            normalizeHealthGoalActivityLevel(activityLevel)?.let { healthGoalPayload["activity_level"] = it }
-            calculatedBmr?.let { healthGoalPayload["calculated_bmr"] = it }
-            calculatedTdee?.let { healthGoalPayload["calculated_tdee"] = it }
-            calculatedDailyCalories?.let { healthGoalPayload["calculated_daily_calories"] = it }
-            calculatedBmiStart?.let { healthGoalPayload["calculated_bmi_start"] = it }
-            calculatedBmiTarget?.let { healthGoalPayload["calculated_bmi_target"] = it }
-            weeklyMilestones?.let { healthGoalPayload["weekly_milestones"] = it }
-            isRealistic?.let { healthGoalPayload["is_realistic"] = it }
-            recommendedTargetDate?.let { healthGoalPayload["recommended_target_date"] = it }
-            validationReason?.let { healthGoalPayload["validation_reason"] = it }
-            goalContext?.let { healthGoalPayload["goal_context"] = it }
 
-            println("🔵 ProfileManager: Inserting health goal with payload keys: ${healthGoalPayload.keys}")
-            println("🔵 ProfileManager: user_id=${healthGoalPayload["user_id"]}, goal_type=${healthGoalPayload["goal_type"]}")
+            println("🔵 ProfileManager: Inserting health goal")
+            println("🔵 ProfileManager: user_id=$userId, goal_type=$goalTypeValue")
             println("🔵 ProfileManager: Session access token present: ${currentSession.accessToken.isNotEmpty()}")
             try {
-                val insertResult = supabase.from("health_goals").insert(healthGoalPayload)
+                supabase.from("health_goals").insert(healthGoalPayload)
                 println("✅ ProfileManager: Health goal insert completed successfully")
             } catch (insertError: Exception) {
                 println("❌ ProfileManager: Health goal insert FAILED: ${insertError.message}")
