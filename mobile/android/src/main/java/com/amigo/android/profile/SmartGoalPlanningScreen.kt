@@ -18,6 +18,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.amigo.shared.auth.SessionManager
 import com.amigo.shared.goals.*
+import com.amigo.shared.utils.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -742,8 +743,58 @@ class AIGoalPlanningViewModel(
     }
     
     private suspend fun savePlanToDatabase(plan: GoalPlan) {
-        // TODO: Implement saving to Supabase health_goals table
-        com.amigo.shared.utils.Logger.i("AIGoalPlanning", "Plan accepted: ${plan.goalType}")
+        try {
+            val userId = sessionManager.getCurrentUser()?.id ?: run {
+                Logger.e("AIGoalPlanning", "No user found, cannot save plan")
+                return
+            }
+            
+            val profileManager = com.amigo.shared.profile.ProfileManagerFactory.create()
+            
+            // Prepare milestone data
+            val milestonePayload = plan.milestones.map { milestone ->
+                mapOf(
+                    "week" to milestone.week,
+                    "projected_weight_kg" to milestone.projectedWeightKg,
+                    "percent_complete" to milestone.percentComplete
+                )
+            }
+            
+            // Use the shared ProfileManager.updateGoal method
+            val result = profileManager.updateGoal(
+                userId = userId,
+                goalType = when (plan.goalType) {
+                    "weight_loss" -> com.amigo.shared.data.models.GoalType.WEIGHT_LOSS
+                    "muscle_gain" -> com.amigo.shared.data.models.GoalType.MUSCLE_GAIN
+                    "improved_energy" -> com.amigo.shared.data.models.GoalType.IMPROVED_ENERGY
+                    "maintenance" -> com.amigo.shared.data.models.GoalType.MAINTENANCE
+                    else -> com.amigo.shared.data.models.GoalType.WEIGHT_LOSS
+                },
+                targetDate = plan.targetMetrics.targetDate,
+                targetWeightKg = plan.targetMetrics.weightKg,
+                currentWeightKg = plan.currentMetrics.weightKg,
+                currentHeightCm = plan.currentMetrics.heightCm,
+                activityLevel = plan.currentMetrics.activityLevel,
+                calculatedBmr = plan.calculations.bmr,
+                calculatedTdee = plan.calculations.tdee,
+                calculatedDailyCalories = plan.calculations.dailyCalories,
+                calculatedBmiStart = plan.currentMetrics.bmi,
+                calculatedBmiTarget = plan.targetMetrics.targetBMI,
+                weeklyMilestones = milestonePayload,
+                isRealistic = plan.validation.isRealistic,
+                recommendedTargetDate = null,
+                validationReason = plan.validation.reason,
+                goalContext = null
+            )
+            
+            if (result.isSuccess) {
+                Logger.i("AIGoalPlanning", "Plan accepted and saved: ${plan.goalType}")
+            } else {
+                Logger.e("AIGoalPlanning", "Failed to save plan: ${result.exceptionOrNull()?.message}")
+            }
+        } catch (e: Exception) {
+            Logger.e("AIGoalPlanning", "Error saving plan: ${e.message}")
+        }
     }
 }
 
@@ -809,8 +860,58 @@ class ManualGoalPlanningViewModel(
     }
     
     private suspend fun savePlanToDatabase(plan: GoalPlan) {
-        // TODO: Implement saving to Supabase health_goals table
-        com.amigo.shared.utils.Logger.i("ManualGoalPlanning", "Plan saved: ${plan.goalType}")
+        try {
+            val userId = sessionManager.getCurrentUser()?.id ?: run {
+                Logger.e("ManualGoalPlanning", "No user found, cannot save plan")
+                return
+            }
+            
+            val profileManager = com.amigo.shared.profile.ProfileManagerFactory.create()
+            
+            // Prepare milestone data
+            val milestonePayload = plan.milestones.map { milestone ->
+                mapOf(
+                    "week" to milestone.week,
+                    "projected_weight_kg" to milestone.projectedWeightKg,
+                    "percent_complete" to milestone.percentComplete
+                )
+            }
+            
+            // Use the shared ProfileManager.updateGoal method
+            val result = profileManager.updateGoal(
+                userId = userId,
+                goalType = when (plan.goalType) {
+                    "weight_loss" -> com.amigo.shared.data.models.GoalType.WEIGHT_LOSS
+                    "muscle_gain" -> com.amigo.shared.data.models.GoalType.MUSCLE_GAIN
+                    "improved_energy" -> com.amigo.shared.data.models.GoalType.IMPROVED_ENERGY
+                    "maintenance" -> com.amigo.shared.data.models.GoalType.MAINTENANCE
+                    else -> com.amigo.shared.data.models.GoalType.WEIGHT_LOSS
+                },
+                targetDate = plan.targetMetrics.targetDate,
+                targetWeightKg = plan.targetMetrics.weightKg,
+                currentWeightKg = plan.currentMetrics.weightKg,
+                currentHeightCm = plan.currentMetrics.heightCm,
+                activityLevel = plan.currentMetrics.activityLevel,
+                calculatedBmr = plan.calculations.bmr,
+                calculatedTdee = plan.calculations.tdee,
+                calculatedDailyCalories = plan.calculations.dailyCalories,
+                calculatedBmiStart = plan.currentMetrics.bmi,
+                calculatedBmiTarget = plan.targetMetrics.targetBMI,
+                weeklyMilestones = milestonePayload,
+                isRealistic = plan.validation.isRealistic,
+                recommendedTargetDate = null,
+                validationReason = plan.validation.reason,
+                goalContext = null
+            )
+            
+            if (result.isSuccess) {
+                Logger.i("ManualGoalPlanning", "Plan saved successfully: ${plan.goalType}")
+            } else {
+                Logger.e("ManualGoalPlanning", "Failed to save plan: ${result.exceptionOrNull()?.message}")
+            }
+        } catch (e: Exception) {
+            Logger.e("ManualGoalPlanning", "Error saving plan: ${e.message}")
+        }
     }
 }
 

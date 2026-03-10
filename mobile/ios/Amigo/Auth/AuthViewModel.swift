@@ -28,11 +28,22 @@ class AuthViewModel: ObservableObject {
     }
     
     func initializeSession() async {
+        print("🔵 [iOS AuthViewModel] initializeSession() START")
         do {
+            print("🔵 [iOS AuthViewModel] Calling sessionManager.initialize()...")
             try await sessionManager.initialize()
-            isAuthenticated = sessionManager.isAuthenticated.value as! Bool
+            let authStatus = sessionManager.isAuthenticated.value as! Bool
+            print("🔵 [iOS AuthViewModel] SessionManager initialized, isAuthenticated=\(authStatus)")
+            isAuthenticated = authStatus
+            
+            if authStatus {
+                let user = sessionManager.getCurrentUser()
+                print("✅ [iOS AuthViewModel] User logged in: id=\(user?.id ?? "nil"), email=\(user?.email ?? "nil")")
+            } else {
+                print("⚠️ [iOS AuthViewModel] No authenticated user")
+            }
         } catch {
-            print("Failed to initialize session: \(error)")
+            print("❌ [iOS AuthViewModel] Failed to initialize session: \(error)")
         }
     }
     
@@ -100,43 +111,65 @@ class AuthViewModel: ObservableObject {
     }
     
     func signInWithGoogle() async {
+        print("🔐 [iOS AuthViewModel] signInWithGoogle() START")
         isLoading = true
         errorMessage = nil
         
         do {
+            print("🔐 [iOS AuthViewModel] Calling oauthAuthenticator.signInWithGoogle()...")
             let result = try await oauthAuthenticator.signInWithGoogle()
             
             if let success = result as? AuthResult.Success {
+                print("✅ [iOS AuthViewModel] Google sign-in SUCCESS")
+                print("✅ [iOS AuthViewModel] Session user.id: \(success.session.user.id)")
+                print("✅ [iOS AuthViewModel] Session email: \(success.session.user.email)")
+                print("✅ [iOS AuthViewModel] Access token length: \(success.session.accessToken.count)")
+                print("🔐 [iOS AuthViewModel] Calling sessionManager.saveSession()...")
                 try await sessionManager.saveSession(session: success.session)
+                print("✅ [iOS AuthViewModel] Session saved, setting isAuthenticated=true")
                 isAuthenticated = true
             } else if let error = result as? AuthResult.Error {
+                print("❌ [iOS AuthViewModel] Google sign-in ERROR: \(error.message)")
                 errorMessage = error.message
             }
         } catch {
+            print("❌ [iOS AuthViewModel] Google sign-in EXCEPTION: \(error.localizedDescription)")
             errorMessage = "Google sign in failed: \(error.localizedDescription)"
         }
         
         isLoading = false
+        print("🔐 [iOS AuthViewModel] signInWithGoogle() END")
     }
     
     func signInWithApple() async {
+        print("🔐 [iOS AuthViewModel] signInWithApple() START")
         isLoading = true
         errorMessage = nil
         
         do {
+            print("🔐 [iOS AuthViewModel] Calling oauthAuthenticator.signInWithApple()...")
             let result = try await oauthAuthenticator.signInWithApple()
             
             if let success = result as? AuthResult.Success {
+                print("✅ [iOS AuthViewModel] Apple sign-in SUCCESS")
+                print("✅ [iOS AuthViewModel] Session user.id: \(success.session.user.id)")
+                print("✅ [iOS AuthViewModel] Session email: \(success.session.user.email)")
+                print("✅ [iOS AuthViewModel] Access token length: \(success.session.accessToken.count)")
+                print("🔐 [iOS AuthViewModel] Calling sessionManager.saveSession()...")
                 try await sessionManager.saveSession(session: success.session)
+                print("✅ [iOS AuthViewModel] Session saved, setting isAuthenticated=true")
                 isAuthenticated = true
             } else if let error = result as? AuthResult.Error {
+                print("❌ [iOS AuthViewModel] Apple sign-in ERROR: \(error.message)")
                 errorMessage = error.message
             }
         } catch {
+            print("❌ [iOS AuthViewModel] Apple sign-in EXCEPTION: \(error.localizedDescription)")
             errorMessage = "Apple sign in failed: \(error.localizedDescription)"
         }
         
         isLoading = false
+        print("🔐 [iOS AuthViewModel] signInWithApple() END")
     }
     
     func signOut() async {
@@ -164,21 +197,31 @@ class AuthViewModel: ObservableObject {
     }
     
     func handleDeepLinkSession(accessToken: String, refreshToken: String) async {
+        print("🔗 [iOS AuthViewModel] handleDeepLinkSession() START")
+        print("🔗 [iOS AuthViewModel] Access token length: \(accessToken.count)")
+        print("🔗 [iOS AuthViewModel] Refresh token length: \(refreshToken.count)")
         isLoading = true
         errorMessage = nil
         
         do {
+            print("🔗 [iOS AuthViewModel] Calling sessionManager.handleDeepLinkSession()...")
             let result = try await sessionManager.handleDeepLinkSession(accessToken: accessToken, refreshToken: refreshToken)
             
             if let success = result as? AuthResult.Success {
+                print("✅ [iOS AuthViewModel] Deep link session SUCCESS")
+                print("✅ [iOS AuthViewModel] User ID: \(success.session.user.id)")
+                print("✅ [iOS AuthViewModel] User email: \(success.session.user.email)")
                 isAuthenticated = true
             } else if let error = result as? AuthResult.Error {
+                print("❌ [iOS AuthViewModel] Deep link session ERROR: \(error.message)")
                 errorMessage = error.message
             }
         } catch {
+            print("❌ [iOS AuthViewModel] Deep link session EXCEPTION: \(error.localizedDescription)")
             errorMessage = "Failed to handle session: \(error.localizedDescription)"
         }
         
         isLoading = false
+        print("🔗 [iOS AuthViewModel] handleDeepLinkSession() END")
     }
 }

@@ -20,6 +20,7 @@ import com.amigo.android.auth.SignUpScreen
 import com.amigo.android.ui.theme.AmigoTheme
 import com.amigo.shared.auth.AuthFactory
 import com.amigo.shared.auth.SecureStorage
+import com.amigo.shared.config.AppConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,8 +32,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         // Initialize Supabase client
-        val supabaseUrl = "https://hibbnohfwvbglyxgyaav.supabase.co"
-        val supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpYmJub2hmd3ZiZ2x5eGd5YWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NjQwNDMsImV4cCI6MjA4ODQ0MDA0M30.8acSzRLPqFFOf1WF-k5BECV8Vfdx1bVlaKTxM_s26Rc"
+        val supabaseUrl = AppConfig.SUPABASE_URL
+        val supabaseKey = AppConfig.SUPABASE_ANON_KEY
         AuthFactory.initializeSupabase(supabaseUrl, supabaseKey)
         
         // Create authentication components

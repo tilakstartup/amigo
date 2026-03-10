@@ -138,8 +138,8 @@ class ProfileSetupViewModel: ObservableObject {
     
     init() {
         // Initialize Supabase client
-        let supabaseUrl = "https://hibbnohfwvbglyxgyaav.supabase.co"
-        let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpYmJub2hmd3ZiZ2x5eGd5YWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NjQwNDMsImV4cCI6MjA4ODQ0MDA0M30.8acSzRLPqFFOf1WF-k5BECV8Vfdx1bVlaKTxM_s26Rc"
+        let supabaseUrl = AppConfig.shared.SUPABASE_URL
+        let supabaseKey = AppConfig.shared.SUPABASE_ANON_KEY
         AuthFactory.shared.initializeSupabase(supabaseUrl: supabaseUrl, supabaseKey: supabaseKey)
         
         let supabaseClient = SupabaseClientProvider.shared.getClient()

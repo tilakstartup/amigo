@@ -83,7 +83,7 @@ This guide walks you through setting up Apple Sign In for your Amigo Health iOS 
 1. In Supabase Dashboard, go to **Authentication** > **URL Configuration**
 2. Make sure your redirect URLs include:
    ```
-   com.amigo.ios://oauth-callback
+   com.amigoai.ios://oauth-callback
    ```
 
 ## Step 3: Configure iOS App

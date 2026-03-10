@@ -1,7 +1,16 @@
 package com.amigo.shared.ai
 
+import com.amigo.shared.ai.actions.ActionContext
+import com.amigo.shared.ai.actions.ActionGroupRegistry
+import com.amigo.shared.ai.models.ConversationMessage
+import com.amigo.shared.ai.models.OnboardingState
 import com.amigo.shared.auth.SessionManager
+import com.amigo.shared.config.AppConfig
 import com.amigo.shared.utils.Logger
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.user.UserInfo
+import io.ktor.util.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,14 +20,16 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import com.amigo.shared.utils.TimeProvider
 
 class AmigoAgentConversation(
     private val bedrockClient: BedrockClient,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val supabaseClient: SupabaseClient? = null
 ) {
     private companion object {
-        const val BEDROCK_AGENT_ID = "4XLAIQ6BUY"
-        const val BEDROCK_AGENT_ALIAS_ID = "TSTALIASID"
+        val BEDROCK_AGENT_ID = AppConfig.BEDROCK_AGENT_ID
+        val BEDROCK_AGENT_ALIAS_ID = AppConfig.BEDROCK_AGENT_ALIAS_ID
         const val JSON_CONTRACT_HINT = "Respond ONLY in valid JSON with keys: type, version, session_context{cap,responsibilities,collect_data,collect_metrics}, aimofchat{name,status}, ui{render{type,text,data[]},tone,next_question}, input{type,options}, data{collected,metrics}, missing_fields, error. Do NOT include actions. Input rules: if options count <= 5 use input.type=quick_pills; use input.type=list only when options count > 5. For yes/no style questions use input.type=yes_no and provide exactly 2 option labels (labels may vary, e.g., Want/Don't want, Like/Unlike), and each yes/no label must be under 20 characters. For date fields use input.type=date and expect value in yyyy-MM-dd. For weight fields use input.type=weight and expect numeric value in kg."
         const val MAX_INFO_AUTO_ACK_CHAIN = 6
     }
@@ -42,6 +53,8 @@ class AmigoAgentConversation(
     private var agentSessionId: String = ""
     private var sessionCap: String = "onboarding"
     private var sessionContextJson: String = "{}"
+    private var invocationRecursionDepth: Int = 0
+    private val MAX_INVOCATION_RECURSION_DEPTH = 5
 
     suspend fun startSession(
         cap: String,
@@ -51,28 +64,44 @@ class AmigoAgentConversation(
         initialMessage: String = "Let's start this session."
     ): Result<Unit> {
         return try {
+            Logger.i("AmigoAgentConversation", "🚀 ========== START SESSION ==========")
+            Logger.i("AmigoAgentConversation", "🚀 Cap: $cap")
+            Logger.i("AmigoAgentConversation", "🚀 Responsibilities: ${responsibilities.size} items")
+            Logger.i("AmigoAgentConversation", "🚀 Collect data: ${collectData.size} fields")
+            Logger.i("AmigoAgentConversation", "🚀 Collect metrics: ${collectMetrics.size} metrics")
+            Logger.i("AmigoAgentConversation", "🚀 Initial message: $initialMessage")
+            
             _conversationState.value = OnboardingState.Collecting
             conversationHistory.clear()
             profileData.clear()
             _messages.value = emptyList()
 
             sessionCap = cap
-            agentSessionId = "${cap}-${currentTimeMillis()}"
+            agentSessionId = "${cap}-${TimeProvider.currentTimeMillis()}"
+            Logger.i("AmigoAgentConversation", "🚀 Generated session ID: $agentSessionId")
+            
             sessionContextJson = buildSessionContext(
                 cap = cap,
                 responsibilities = responsibilities,
                 collectData = collectData,
                 collectMetrics = collectMetrics
             )
+            Logger.i("AmigoAgentConversation", "🚀 Session context JSON length: ${sessionContextJson.length} chars")
 
+            Logger.i("AmigoAgentConversation", "🚀 Calling requestAgent...")
             val response = requestAgent(
                 userMessage = initialMessage,
                 includeSessionPrefix = true
             )
+            Logger.i("AmigoAgentConversation", "🚀 requestAgent returned, handling response...")
             handleAgentResponse(response)
+            Logger.i("AmigoAgentConversation", "🚀 ========== START SESSION SUCCESS ==========")
             Result.success(Unit)
         } catch (e: Exception) {
-            Logger.e("AmigoAgentConversation", "Failed to start session: ${e.message}")
+            Logger.e("AmigoAgentConversation", "❌ Failed to start session: ${e.message}")
+            Logger.e("AmigoAgentConversation", "❌ Exception type: ${e::class.simpleName}")
+            Logger.e("AmigoAgentConversation", "❌ Stack trace: ${e.stackTraceToString()}")
+            Logger.e("AmigoAgentConversation", "🚀 ========== START SESSION FAILED ==========")
             Result.failure(e)
         }
     }
@@ -155,8 +184,15 @@ class AmigoAgentConversation(
     }
 
     private suspend fun invokeAgentForCompletion(agentMessage: String): String? {
+        Logger.i("AmigoAgentConversation", "📞 ========== INVOKE AGENT FOR COMPLETION ==========")
         logLargePayload("PROMPT", agentMessage)
 
+        Logger.i("AmigoAgentConversation", "📞 Calling bedrockClient.invokeAgent...")
+        Logger.i("AmigoAgentConversation", "📞 Agent ID: $BEDROCK_AGENT_ID")
+        Logger.i("AmigoAgentConversation", "📞 Agent Alias ID: $BEDROCK_AGENT_ALIAS_ID")
+        Logger.i("AmigoAgentConversation", "📞 Session ID: $agentSessionId")
+        Logger.i("AmigoAgentConversation", "📞 Cap: $sessionCap")
+        
         val result = bedrockClient.invokeAgent(
             message = agentMessage,
             sessionId = agentSessionId,
@@ -167,13 +203,173 @@ class AmigoAgentConversation(
         )
 
         if (result.isFailure) {
-            Logger.e("AmigoAgentConversation", "Agent call failed: ${result.exceptionOrNull()?.message}")
+            Logger.e("AmigoAgentConversation", "❌ Agent call failed: ${result.exceptionOrNull()?.message}")
+            Logger.e("AmigoAgentConversation", "❌ Exception type: ${result.exceptionOrNull()?.let { it::class.simpleName }}")
+            Logger.e("AmigoAgentConversation", "📞 ========== INVOKE AGENT FAILED ==========")
             return null
         }
 
-        val completion = result.getOrNull()?.completion.orEmpty()
+        val bedrockResponse = result.getOrNull()
+        if (bedrockResponse == null) {
+            Logger.e("AmigoAgentConversation", "❌ Agent response is null")
+            Logger.e("AmigoAgentConversation", "📞 ========== INVOKE AGENT NULL RESPONSE ==========")
+            return null
+        }
+
+        Logger.i("AmigoAgentConversation", "✅ Agent call succeeded")
+        
+        // Handle RETURN_CONTROL invocations if present
+        if (!bedrockResponse.invocations.isNullOrEmpty()) {
+            Logger.i("AmigoAgentConversation", "📋 Processing ${bedrockResponse.invocations.size} action invocations (recursion depth: $invocationRecursionDepth/$MAX_INVOCATION_RECURSION_DEPTH)")
+            
+            if (invocationRecursionDepth >= MAX_INVOCATION_RECURSION_DEPTH) {
+                Logger.e("AmigoAgentConversation", "❌ Max invocation recursion depth exceeded! Stopping to prevent infinite loop.")
+                invocationRecursionDepth = 0
+                return bedrockResponse.completion
+            }
+            
+            invocationRecursionDepth++
+            val invocationResults = processActionInvocations(bedrockResponse.invocations)
+            
+            // Send results back to agent to continue conversation
+            val resultsMessage = buildInvocationResultsMessage(invocationResults)
+            logLargePayload("INVOCATION_RESULTS", resultsMessage)
+            
+            Logger.i("AmigoAgentConversation", "📋 Sending invocation results back to agent (recursive call)...")
+            // Recursive call with results
+            val recursiveResult = invokeAgentForCompletion(resultsMessage)
+            invocationRecursionDepth--
+            return recursiveResult
+        }
+
+        val completion = bedrockResponse.completion
         logLargePayload("RESPONSE", completion)
+        Logger.i("AmigoAgentConversation", "📞 ========== INVOKE AGENT SUCCESS ==========")
         return completion
+    }
+
+    /**
+     * Process action invocations from Bedrock Agent using the ActionGroupRegistry.
+     * 
+     * This method:
+     * 1. Extracts the user ID from the Supabase session (or JWT token if session.user is null)
+     * 2. Creates an ActionContext with authentication information
+     * 3. Executes each invocation through the ActionGroupRegistry
+     * 4. Returns results for each invocation
+     * 
+     * @param invocations List of function invocations from the Bedrock Agent
+     * @return List of invocation results (success or failure for each)
+     * 
+     * Note: If the Supabase session object doesn't have user information populated,
+     * this method will decode the JWT access token to extract the user ID from the 'sub' claim.
+     * This ensures authentication works even when the session object is incomplete.
+     */
+    private suspend fun processActionInvocations(
+        invocations: List<FunctionInvocation>
+    ): List<InvocationResult> {
+        // Get userId from Supabase client session
+        Logger.i("AmigoAgentConversation", "📋 Checking Supabase session...")
+        Logger.i("AmigoAgentConversation", "📋 supabaseClient is null: ${supabaseClient == null}")
+        
+        val userId = try {
+            val session = supabaseClient?.auth?.currentSessionOrNull()
+            Logger.i("AmigoAgentConversation", "📋 currentSessionOrNull() returned: ${if (session == null) "null" else "session exists"}")
+            
+            if (session != null) {
+                Logger.i("AmigoAgentConversation", "📋 Session user id: ${session.user?.id ?: "null"}")
+                Logger.i("AmigoAgentConversation", "📋 Session access token length: ${session.accessToken?.length ?: 0}")
+                
+                // If session.user.id is null, decode the JWT token to extract the user ID
+                // This handles cases where Supabase session object is incomplete
+                if (session.user?.id == null && session.accessToken != null) {
+                    Logger.i("AmigoAgentConversation", "📋 Attempting to decode JWT token to extract userId...")
+                    extractUserIdFromJWT(session.accessToken)
+                } else {
+                    session.user?.id
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Logger.w("AmigoAgentConversation", "Could not get user from Supabase: ${e.message}")
+            Logger.w("AmigoAgentConversation", "Exception type: ${e::class.simpleName}")
+            null
+        }
+        val isAuthenticated = userId != null
+        
+        Logger.i("AmigoAgentConversation", "📋 Action context - userId: ${userId ?: "null"}, authenticated: $isAuthenticated")
+        
+        val context = ActionContext(
+            userId = userId,
+            sessionId = agentSessionId,
+            isAuthenticated = isAuthenticated,
+            supabaseClient = supabaseClient,
+            additionalContext = mapOf(
+                "cap" to sessionCap,
+                "profileData" to profileData
+            )
+        )
+        
+        return invocations.map { invocation ->
+            Logger.i("AmigoAgentConversation", "Executing: ${invocation.actionGroup}.${invocation.functionName}")
+            
+            val result = ActionGroupRegistry.executeInvocation(invocation, context)
+            
+            if (result.isSuccess) {
+                Logger.i("AmigoAgentConversation", "✅ ${invocation.functionName} succeeded")
+                InvocationResult(
+                    actionGroup = invocation.actionGroup,
+                    functionName = invocation.functionName,
+                    success = true,
+                    result = result.getOrNull()?.toString() ?: "{}"
+                )
+            } else {
+                Logger.e("AmigoAgentConversation", "❌ ${invocation.functionName} failed: ${result.exceptionOrNull()?.message}")
+                InvocationResult(
+                    actionGroup = invocation.actionGroup,
+                    functionName = invocation.functionName,
+                    success = false,
+                    error = result.exceptionOrNull()?.message ?: "Unknown error"
+                )
+            }
+        }
+    }
+
+    /**
+     * Build a message containing invocation results to send back to the agent
+     */
+    private fun buildInvocationResultsMessage(results: List<InvocationResult>): String {
+        val resultsJson = results.joinToString(",\n") { result ->
+            if (result.success) {
+                """
+                {
+                  "action_group": "${result.actionGroup}",
+                  "function": "${result.functionName}",
+                  "status": "success",
+                  "result": ${result.result}
+                }
+                """.trimIndent()
+            } else {
+                """
+                {
+                  "action_group": "${result.actionGroup}",
+                  "function": "${result.functionName}",
+                  "status": "error",
+                  "error": "${result.error}"
+                }
+                """.trimIndent()
+            }
+        }
+        
+        return """
+            FUNCTION_RESULTS: [
+              $resultsJson
+            ]
+            
+            $JSON_CONTRACT_HINT
+            
+            Continue the conversation based on these function results.
+        """.trimIndent()
     }
 
     private fun logLargePayload(label: String, payload: String) {
@@ -276,7 +472,11 @@ class AmigoAgentConversation(
         }
 
         fun summaryLineOf(item: JsonElement): String? {
-            item.jsonPrimitive.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+            runCatching { item.jsonPrimitive.contentOrNull }
+                .getOrNull()
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { return it }
 
             val obj = runCatching { item.jsonObject }.getOrNull() ?: return null
 
@@ -456,7 +656,7 @@ class AmigoAgentConversation(
             id = generateMessageId(),
             text = text,
             isFromAmigo = true,
-            timestamp = currentTimeMillis(),
+            timestamp = TimeProvider.currentTimeMillis(),
             replyType = replyType,
             replies = replies,
             renderType = renderType,
@@ -471,7 +671,7 @@ class AmigoAgentConversation(
             id = generateMessageId(),
             text = text,
             isFromAmigo = false,
-            timestamp = currentTimeMillis(),
+            timestamp = TimeProvider.currentTimeMillis(),
             replyType = "text"
         )
         conversationHistory.add(message)
@@ -509,7 +709,55 @@ class AmigoAgentConversation(
     }
 
     private fun generateMessageId(): String {
-        return "msg_${currentTimeMillis()}_${(0..9999).random()}"
+        return "msg_${TimeProvider.currentTimeMillis()}_${(0..9999).random()}"
+    }
+    
+    /**
+     * Extract user ID from a JWT access token.
+     * 
+     * JWT tokens have the format: header.payload.signature
+     * The payload is base64url-encoded JSON containing claims including 'sub' (subject/user ID).
+     * 
+     * This method:
+     * 1. Splits the token into its three parts
+     * 2. Decodes the payload from base64url to a string
+     * 3. Parses the JSON to extract the 'sub' claim
+     * 
+     * @param token The JWT access token
+     * @return The user ID from the 'sub' claim, or null if extraction fails
+     * 
+     * Note: JWT uses base64url encoding (not standard base64), which uses '-' and '_'
+     * instead of '+' and '/', and may omit padding. This method handles the conversion.
+     */
+    private fun extractUserIdFromJWT(token: String): String? {
+        return try {
+            val parts = token.split(".")
+            if (parts.size != 3) {
+                Logger.w("AmigoAgentConversation", "JWT token doesn't have 3 parts: ${parts.size}")
+                return null
+            }
+            
+            val payload = parts[1]
+            // Convert base64url to standard base64 and add padding if needed
+            val base64 = payload.replace('-', '+').replace('_', '/')
+            val paddedBase64 = when (base64.length % 4) {
+                2 -> base64 + "=="
+                3 -> base64 + "="
+                else -> base64
+            }
+            
+            val decodedString = paddedBase64.decodeBase64Bytes().decodeToString()
+            Logger.i("AmigoAgentConversation", "📋 Decoded JWT payload: ${decodedString.take(200)}")
+            
+            // Parse JSON and extract 'sub' field (user ID)
+            val jsonPayload = json.parseToJsonElement(decodedString).jsonObject
+            val sub = jsonPayload["sub"]?.jsonPrimitive?.content
+            Logger.i("AmigoAgentConversation", "📋 Extracted userId from JWT 'sub' field: $sub")
+            sub
+        } catch (e: Exception) {
+            Logger.w("AmigoAgentConversation", "Failed to decode JWT: ${e.message}")
+            null
+        }
     }
 }
 
@@ -553,4 +801,15 @@ private data class AmigoAgentData(
 private data class AmigoAgentAimOfChat(
     val name: String? = null,
     val status: String? = null
+)
+
+/**
+ * Result of a function invocation
+ */
+private data class InvocationResult(
+    val actionGroup: String,
+    val functionName: String,
+    val success: Boolean,
+    val result: String? = null,
+    val error: String? = null
 )

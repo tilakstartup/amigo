@@ -6,6 +6,7 @@ import com.amigo.shared.data.models.Theme
 import com.amigo.shared.data.models.GoalType
 import com.amigo.shared.data.models.ActivityLevel
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.datetime.Clock
@@ -140,6 +141,20 @@ class ProfileManager(private val supabase: SupabaseClient) {
         goalContext: Map<String, Any>? = null
     ): Result<UserProfile> {
         return try {
+            // Verify Supabase has an active session
+            val currentSession = supabase.auth.currentSessionOrNull()
+            if (currentSession == null) {
+                println("❌ ProfileManager: No active Supabase session found!")
+                return Result.failure(Exception("No active session. Please log in again."))
+            }
+            println("✅ ProfileManager: Active session found for user: ${currentSession.user?.id}")
+            
+            // Verify the session user matches the userId parameter
+            val sessionUserId = currentSession.user?.id
+            if (sessionUserId != userId) {
+                println("⚠️ ProfileManager: Session user ID ($sessionUserId) doesn't match target user ID ($userId)")
+            }
+            
             val goalTypeValue = goalType.name.lowercase()
             val updates = mutableMapOf<String, Any>(
                 "goal_type" to goalTypeValue
@@ -149,6 +164,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
                 updates["goal_by_when"] = targetDate
             }
             
+            println("🔵 ProfileManager: Updating users_profiles for user: $userId")
             val updated = supabase.from("users_profiles")
                 .update(updates) {
                     filter {
@@ -156,7 +172,9 @@ class ProfileManager(private val supabase: SupabaseClient) {
                     }
                 }
                 .decodeSingle<UserProfile>()
+            println("✅ ProfileManager: users_profiles updated successfully")
 
+            println("🔵 ProfileManager: Deactivating old goals for user: $userId")
             supabase.from("health_goals")
                 .update(mapOf("is_active" to false)) {
                     filter {
@@ -164,6 +182,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
                         eq("is_active", true)
                     }
                 }
+            println("✅ ProfileManager: Old goals deactivated")
 
             val healthGoalPayload = mutableMapOf<String, Any>(
                 "user_id" to userId,
@@ -191,7 +210,17 @@ class ProfileManager(private val supabase: SupabaseClient) {
             validationReason?.let { healthGoalPayload["validation_reason"] = it }
             goalContext?.let { healthGoalPayload["goal_context"] = it }
 
-            supabase.from("health_goals").insert(healthGoalPayload)
+            println("🔵 ProfileManager: Inserting health goal with payload keys: ${healthGoalPayload.keys}")
+            println("🔵 ProfileManager: user_id=${healthGoalPayload["user_id"]}, goal_type=${healthGoalPayload["goal_type"]}")
+            println("🔵 ProfileManager: Session access token present: ${currentSession.accessToken.isNotEmpty()}")
+            try {
+                val insertResult = supabase.from("health_goals").insert(healthGoalPayload)
+                println("✅ ProfileManager: Health goal insert completed successfully")
+            } catch (insertError: Exception) {
+                println("❌ ProfileManager: Health goal insert FAILED: ${insertError.message}")
+                insertError.printStackTrace()
+                throw insertError
+            }
             
             Result.success(updated)
         } catch (e: Exception) {

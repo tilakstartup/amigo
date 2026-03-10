@@ -9,11 +9,14 @@ import io.github.jan.supabase.storage.Storage
 
 object SupabaseClientProvider {
     
-    private var client: SupabaseClient? = null
+    private var _client: SupabaseClient? = null
+    
+    val client: SupabaseClient?
+        get() = _client
     
     fun initialize(supabaseUrl: String, supabaseKey: String) {
-        if (client == null) {
-            client = createSupabaseClient(
+        if (_client == null) {
+            _client = createSupabaseClient(
                 supabaseUrl = supabaseUrl,
                 supabaseKey = supabaseKey
             ) {
@@ -26,7 +29,7 @@ object SupabaseClientProvider {
     }
     
     fun getClient(): SupabaseClient {
-        return client ?: throw IllegalStateException(
+        return _client ?: throw IllegalStateException(
             "Supabase client not initialized. Call initialize() first."
         )
     }

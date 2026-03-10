@@ -222,7 +222,7 @@ struct OnboardingCoordinator: View {
                         userInfo: [NSLocalizedDescriptionKey: "Missing access token"])
         }
 
-        guard let url = URL(string: "https://hibbnohfwvbglyxgyaav.supabase.co/rest/v1/users_profiles") else {
+        guard let url = URL(string: "\(AppConfig.shared.SUPABASE_URL)/rest/v1/users_profiles") else {
             throw NSError(domain: "OnboardingCoordinator", code: -7,
                         userInfo: [NSLocalizedDescriptionKey: "Invalid Supabase URL"])
         }

@@ -303,7 +303,7 @@ fun MessageBubble(
 }
 
 @Composable
-fun FeatureCard(feature: com.amigo.shared.ai.FeatureIntro) {
+fun FeatureCard(feature: com.amigo.shared.ai.models.FeatureIntro) {
     Surface(
         modifier = Modifier.fillMaxWidth(0.85f),
         shape = RoundedCornerShape(14.dp),

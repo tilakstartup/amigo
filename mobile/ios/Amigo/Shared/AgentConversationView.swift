@@ -5,9 +5,13 @@ struct AgentConversationView: View {
     @StateObject private var viewModel: AgentConversationViewModel
     let onComplete: ([String: String]) -> Void
     
-    init(sessionManager: SessionManager, onComplete: @escaping ([String: String]) -> Void) {
+    init(
+        sessionManager: SessionManager,
+        chatConfig: ChatSessionConfig,
+        onComplete: @escaping ([String: String]) -> Void
+    ) {
         self.onComplete = onComplete
-        _viewModel = StateObject(wrappedValue: AgentConversationViewModel(sessionManager: sessionManager))
+        _viewModel = StateObject(wrappedValue: AgentConversationViewModel(sessionManager: sessionManager, chatConfig: chatConfig))
     }
     
     var body: some View {
@@ -97,7 +101,7 @@ struct AgentConversationView: View {
         }
         .onAppear {
             Task {
-                await viewModel.startOnboarding()
+                await viewModel.startChat()
             }
         }
         .onChange(of: viewModel.isComplete) { isComplete in
@@ -843,5 +847,12 @@ struct PermissionCardCompactView: View {
 #Preview {
     let secureStorage = SecureStorage()
     let sessionManager = AuthFactory.shared.createSessionManager(secureStorage: secureStorage)
-    AgentConversationView(sessionManager: sessionManager, onComplete: { _ in })
+    let previewConfig = ChatSessionConfig(
+        cap: "preview",
+        responsibilities: ["Collect minimal profile details"],
+        collectData: ["first_name"],
+        collectMetrics: [],
+        initialMessage: "Let's start."
+    )
+    AgentConversationView(sessionManager: sessionManager, chatConfig: previewConfig, onComplete: { _ in })
 }

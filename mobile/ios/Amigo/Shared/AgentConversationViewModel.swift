@@ -2,6 +2,14 @@ import SwiftUI
 import shared
 import Combine
 
+struct ChatSessionConfig {
+    let cap: String
+    let responsibilities: [String]
+    let collectData: [String]
+    let collectMetrics: [String]
+    let initialMessage: String
+}
+
 @MainActor
 class AgentConversationViewModel: ObservableObject {
     @Published var messages: [MessageViewModel] = []
@@ -17,48 +25,59 @@ class AgentConversationViewModel: ObservableObject {
     private var engine: AmigoAgentConversation?
     private var cancellables = Set<AnyCancellable>()
     private let sessionManager: SessionManager
+    private let chatConfig: ChatSessionConfig
     
-    init(sessionManager: SessionManager) {
+    init(sessionManager: SessionManager, chatConfig: ChatSessionConfig) {
+        print("🔧 iOS: Initializing AgentConversationViewModel")
+        print("📍 iOS: Cap: \(chatConfig.cap)")
         self.sessionManager = sessionManager
+        self.chatConfig = chatConfig
         setupEngine()
     }
     
     private func setupEngine() {
-        // Initialize Bedrock client with correct API endpoint
-        let apiEndpoint = "https://n96755fzqk.execute-api.us-east-1.amazonaws.com/dev/invoke"
+        // Use the correct API endpoint from AppConfig
+        let apiEndpoint = AppConfig.shared.BEDROCK_API_ENDPOINT
+        print("🔧 iOS: Setting up engine with endpoint: \(apiEndpoint)")
+        print("📍 iOS: Agent ID: \(AppConfig.shared.BEDROCK_AGENT_ID)")
+        print("📍 iOS: Agent Alias: \(AppConfig.shared.BEDROCK_AGENT_ALIAS_ID)")
         
         engine = AmigoAgentConversationFactory.shared.create(
             apiEndpoint: apiEndpoint,
-            sessionManager: sessionManager
+            sessionManager: sessionManager,
+            supabaseClient: SupabaseClientProvider.shared.client
         )
+        print("✅ iOS: Engine created successfully")
     }
     
-    func startOnboarding() async {
+    func startChat() async {
+        print("🚀 iOS: startChat() called")
         guard let engine = engine else {
+            print("❌ iOS: Engine is nil!")
             return
         }
         
+        print("📞 iOS: Calling engine.startSession()")
+        print("📍 iOS: Cap: \(chatConfig.cap)")
+        print("📍 iOS: Responsibilities: \(chatConfig.responsibilities.count) items")
+        print("📍 iOS: CollectData: \(chatConfig.collectData.count) fields")
+        print("📍 iOS: InitialMessage: \(chatConfig.initialMessage)")
+        
         do {
             _ = try await engine.startSession(
-                cap: "onboarding",
-                responsibilities: [
-                    "just introduce yourself as Amigo, a friendly and supportive health coach and jump into questions",
-                    "Collect onboarding profile information from user",
-                    "start with the goal question first",
-                    "Validate and normalize collected onboarding fields",
-                    "Summarize the onboarding details and review with the user",
-                    "Save onboarding data only after user confirmation",
-                    "Mark onboarding as complete and close the onboarding chat"
-                ],
-                collectData: ["first_name", "last_name", "age", "weight", "height", "gender", "activity_level", "goal_type", "goal_detail", "goal_by_when"],
-                collectMetrics: ["bmr", "tdee", "daily_calories"],
-                initialMessage: "I want to start onboarding."
+                cap: chatConfig.cap,
+                responsibilities: chatConfig.responsibilities,
+                collectData: chatConfig.collectData,
+                collectMetrics: chatConfig.collectMetrics,
+                initialMessage: chatConfig.initialMessage
             )
+            print("✅ iOS: engine.startSession() completed successfully")
             // Start observing messages
             observeMessages()
             refreshMessagesFromEngine()
         } catch {
-            print("Error starting onboarding: \(error)")
+            print("❌ iOS: Error starting chat: \(error)")
+            print("❌ iOS: Error details: \(error.localizedDescription)")
         }
     }
 
@@ -94,14 +113,19 @@ class AgentConversationViewModel: ObservableObject {
     }
 
     private func refreshMessagesFromEngine() {
-        guard let engine = engine else { return }
+        guard let engine = engine else {
+            print("⚠️ iOS: Engine is nil in refreshMessagesFromEngine")
+            return
+        }
 
         let snapshot = engine.getMessagesSnapshot()
+        print("📨 iOS: Refreshing messages - Count: \(snapshot.count)")
         let mapped = mapMessages(snapshot)
         messages = mapped
 
         if let lastMessage = snapshot.last, lastMessage.isFromAmigo {
             needsTextInput = lastMessage.replyType == "text" || lastMessage.replyType == nil
+            print("💬 iOS: needsTextInput = \(needsTextInput), replyType = \(lastMessage.replyType ?? "nil")")
         }
     }
     
@@ -180,6 +204,8 @@ class AgentConversationViewModel: ObservableObject {
     func sendMessage() async {
         let message = userInput.trimmingCharacters(in: .whitespaces)
         guard !message.isEmpty, let engine = engine, !isSubmitting else { return }
+        
+        print("📤 iOS: Sending message: \(message)")
         isSubmitting = true
         
         // Clear input immediately
@@ -188,9 +214,11 @@ class AgentConversationViewModel: ObservableObject {
         
         do {
             _ = try await engine.processUserResponse(response: message)
+            print("✅ iOS: Message processed successfully")
             refreshMessagesFromEngine()
         } catch {
-            print("Error processing response: \(error)")
+            print("❌ iOS: Error processing response: \(error)")
+            print("❌ iOS: Error details: \(error.localizedDescription)")
             refreshMessagesFromEngine()
         }
         isSubmitting = false
@@ -198,13 +226,17 @@ class AgentConversationViewModel: ObservableObject {
     
     func sendQuickReply(_ reply: String) async {
         guard let engine = engine, !isSubmitting else { return }
+        
+        print("📤 iOS: Sending quick reply: \(reply)")
         isSubmitting = true
         
         do {
             _ = try await engine.processQuickReply(option: reply)
+            print("✅ iOS: Quick reply processed successfully")
             refreshMessagesFromEngine()
         } catch {
-            print("Error processing quick reply: \(error)")
+            print("❌ iOS: Error processing quick reply: \(error)")
+            print("❌ iOS: Error details: \(error.localizedDescription)")
             refreshMessagesFromEngine()
         }
         isSubmitting = false

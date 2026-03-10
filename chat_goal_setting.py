@@ -2,6 +2,7 @@
 """
 Start chat with goal_setting context
 """
+import os
 from chat_agent import chat_with_agent
 
 goal_setting_context = {
@@ -19,4 +20,5 @@ goal_setting_context = {
 }
 
 if __name__ == '__main__':
-    chat_with_agent('4XLAIQ6BUY', session_context=goal_setting_context)
+    agent_id = os.getenv("BEDROCK_AGENT_ID", "J6KQ1YZL7R")
+    chat_with_agent(agent_id, session_context=goal_setting_context)

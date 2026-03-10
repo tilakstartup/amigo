@@ -4,7 +4,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.amigo.shared.ai.*
+import com.amigo.shared.ai.models.ConversationMessage
+import com.amigo.shared.ai.models.FeatureIntro
+import com.amigo.shared.ai.models.OnboardingState
 import com.amigo.shared.auth.SessionManager
+import com.amigo.shared.config.AppConfig
+import com.amigo.shared.data.SupabaseClientProvider
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -15,8 +20,11 @@ class AgentConversationViewModel(
 ) : ViewModel() {
     
     private val engine: AmigoAgentConversation by lazy {
-        val apiEndpoint = "https://n96755fzqk.execute-api.us-east-1.amazonaws.com/dev/invoke"
-        AmigoAgentConversationFactory.create(apiEndpoint, sessionManager)
+        AmigoAgentConversationFactory.create(
+            AppConfig.BEDROCK_API_ENDPOINT,
+            sessionManager,
+            SupabaseClientProvider.client
+        )
     }
     
     val messages: StateFlow<List<MessageViewModel>> = engine.messages

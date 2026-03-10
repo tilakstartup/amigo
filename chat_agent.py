@@ -154,7 +154,8 @@ def chat_with_agent(agent_id, agent_alias_id='TSTALIASID', session_context=None)
             print(f"\n❌ Error: {e}\n")
 
 if __name__ == '__main__':
-    agent_id = '4XLAIQ6BUY'
+    import os
+    agent_id = os.getenv("BEDROCK_AGENT_ID", "J6KQ1YZL7R")
     
     # Example session contexts you can use:
     # Goal setting session

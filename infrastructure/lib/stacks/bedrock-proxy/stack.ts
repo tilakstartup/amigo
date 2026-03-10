@@ -39,6 +39,7 @@ export class BedrockProxyStack extends cdk.Stack {
           'bedrock:InvokeModelWithResponseStream',
           'bedrock:Converse',
           'bedrock:ConverseStream',
+          'bedrock:InvokeAgent',
           'bedrock-agent-runtime:InvokeAgent',
         ],
         resources: [

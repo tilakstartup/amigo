@@ -258,6 +258,9 @@ verify_jwt = false
 [functions.save-onboarding-data]
 verify_jwt = false
 
+[functions.health-calculations]
+verify_jwt = false
+
 [functions.get-onboarding-status]
 verify_jwt = false
 

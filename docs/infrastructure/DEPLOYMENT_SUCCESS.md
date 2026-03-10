@@ -10,9 +10,9 @@
 ## Resources Created
 
 ### Bedrock Agent
-- **Agent ID**: `4XLAIQ6BUY`
-- **Agent ARN**: `arn:aws:bedrock:us-east-1:334856751928:agent/4XLAIQ6BUY`
-- **Foundation Model**: Amazon Nova Micro (amazon.nova-micro-v1:0)
+- **Agent ID**: `J6KQ1YZL7R`
+- **Agent ARN**: `arn:aws:bedrock:us-east-1:334856751928:agent/J6KQ1YZL7R`
+- **Foundation Model**: Amazon Nova Lite (amazon.nova-lite-v1:0)
 - **Status**: PREPARED
 
 ### Lambda Functions (5)
@@ -53,7 +53,7 @@ Currently the agent has NO action groups registered. You need to create them:
 
 ```bash
 # Set variables
-AGENT_ID=4XLAIQ6BUY
+AGENT_ID=J6KQ1YZL7R
 REGION=us-east-1
 HEALTH_ARN="arn:aws:lambda:us-east-1:334856751928:function:amigo-health-calculations-dev"
 DATA_Q_ARN="arn:aws:lambda:us-east-1:334856751928:function:amigo-data-queries-dev"
@@ -134,7 +134,7 @@ aws lambda invoke \
 
 # Test agent conversation (after action groups registered)
 aws bedrock-agent-runtime invoke-agent \
-  --agent-id 4XLAIQ6BUY \
+  --agent-id J6KQ1YZL7R \
   --agent-alias-id TSTALIASID \
   --region us-east-1 \
   --session-id $(uuidgen) \
@@ -152,7 +152,7 @@ val bedrockClient = BedrockAgentRuntimeClient {
 }
 
 val response = bedrockClient.invokeAgent {
-    agentId = "4XLAIQ6BUY"
+    agentId = "J6KQ1YZL7R"
     agentAliasId = "your-alias-id"
     sessionId = UUID.randomUUID().toString()
     inputText = userMessage
@@ -175,12 +175,12 @@ val response = bedrockClient.invokeAgent {
 aws logs tail /aws/lambda/amigo-health-calculations-dev --follow
 
 # Agent logs (after invocation)
-aws logs tail /aws/bedrock/agent/4XLAIQ6BUY --follow
+aws logs tail /aws/bedrock/agent/J6KQ1YZL7R --follow
 ```
 
 ### Check Agent Status
 ```bash
-aws bedrock-agent get-agent --agent-id 4XLAIQ6BUY --region us-east-1
+aws bedrock-agent get-agent --agent-id J6KQ1YZL7R --region us-east-1
 ```
 
 ### Delete Stack (if needed)
@@ -204,6 +204,6 @@ aws cloudformation delete-stack --stack-name amigo-bedrock-agent-dev --region us
 
 ## References
 
-- [Bedrock Agent Console](https://console.aws.amazon.com/bedrock/agent/4XLAIQ6BUY)
+- [Bedrock Agent Console](https://console.aws.amazon.com/bedrock/agent/J6KQ1YZL7R)
 - [CloudFormation Stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/stackinfo?stackId=amigo-bedrock-agent-dev)
 - [Lambda Functions](https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions)

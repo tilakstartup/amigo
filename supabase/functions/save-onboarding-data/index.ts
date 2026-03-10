@@ -29,8 +29,17 @@ function normalizeActivityLevel(value?: string): string | null {
 }
 
 serve(async (req) => {
+  const requestId = crypto.randomUUID()
+  const startedAt = Date.now()
   try {
+    console.log('[save-onboarding-data] request.start', JSON.stringify({
+      requestId,
+      method: req.method,
+      hasAuthHeader: !!req.headers.get('X-Amigo-Auth')
+    }))
+
     if (req.method !== 'POST') {
+      console.warn('[save-onboarding-data] method.not_allowed', JSON.stringify({ requestId, method: req.method }))
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
         { status: 405, headers: { 'Content-Type': 'application/json' } }
@@ -42,6 +51,7 @@ serve(async (req) => {
     const jwt = authHeader.replace('Bearer ', '').trim()
 
     if (!jwt) {
+      console.warn('[save-onboarding-data] auth.missing', JSON.stringify({ requestId }))
       return new Response(
         JSON.stringify({ error: 'Missing X-Amigo-Auth header (Bearer <user_jwt>)' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
@@ -57,6 +67,10 @@ serve(async (req) => {
     const { data: authData, error: authError } = await authClient.auth.getUser(jwt)
 
     if (authError || !authData.user) {
+      console.warn('[save-onboarding-data] auth.invalid', JSON.stringify({
+        requestId,
+        message: authError?.message || 'No user in auth response'
+      }))
       return new Response(
         JSON.stringify({ error: 'Invalid user JWT' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
@@ -64,6 +78,7 @@ serve(async (req) => {
     }
 
     const userId = authData.user.id
+    console.log('[save-onboarding-data] auth.ok', JSON.stringify({ requestId, userId }))
 
 
     // Create Supabase client with user JWT for RLS enforcement
@@ -81,9 +96,15 @@ serve(async (req) => {
 
     // Parse request body
     const body: OnboardingData = await req.json()
+    console.log('[save-onboarding-data] payload.received', JSON.stringify({
+      requestId,
+      userId,
+      keys: Object.keys(body || {})
+    }))
 
     // Validate data
     if (!body || Object.keys(body).length === 0) {
+      console.warn('[save-onboarding-data] payload.empty', JSON.stringify({ requestId, userId }))
       return new Response(
         JSON.stringify({ error: 'No data provided' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -119,14 +140,19 @@ serve(async (req) => {
       .single()
 
     if (updateError) {
-      console.error('Update error:', updateError)
+      console.error('[save-onboarding-data] profile.update_error', JSON.stringify({
+        requestId,
+        userId,
+        code: updateError.code,
+        message: updateError.message
+      }))
       return new Response(
         JSON.stringify({ error: `Error saving onboarding data: ${updateError.message}` }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       )
     }
 
-    return new Response(
+    const response = new Response(
       JSON.stringify({
         success: true,
         user_id: userId,
@@ -146,8 +172,21 @@ serve(async (req) => {
       }
     )
 
+    console.log('[save-onboarding-data] request.end', JSON.stringify({
+      requestId,
+      userId,
+      updatedKeys: Object.keys(profileUpdate),
+      durationMs: Date.now() - startedAt
+    }))
+
+    return response
+
   } catch (error) {
-    console.error('Error in save-onboarding-data:', error)
+    console.error('[save-onboarding-data] request.error', JSON.stringify({
+      requestId,
+      durationMs: Date.now() - startedAt,
+      message: error instanceof Error ? error.message : String(error)
+    }))
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error' 

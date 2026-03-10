@@ -34,7 +34,7 @@ SUPABASE_ANON_KEY = os.getenv(
 EMAIL = os.getenv("TEST_SUPABASE_EMAIL", "tilak@yopmail.com")
 PASSWORD = os.getenv("TEST_SUPABASE_PASSWORD", "imathsage")
 
-AGENT_ID = os.getenv("BEDROCK_AGENT_ID", "4XLAIQ6BUY")
+AGENT_ID = os.getenv("BEDROCK_AGENT_ID", "J6KQ1YZL7R")
 AGENT_ALIAS_ID = os.getenv("BEDROCK_AGENT_ALIAS_ID", "TSTALIASID")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 EDGE_BASE = os.getenv("SUPABASE_EDGE_BASE", "https://hibbnohfwvbglyxgyaav.supabase.co/functions/v1")
@@ -198,10 +198,16 @@ def _build_return_control_results(return_control: dict, jwt_bearer: str):
                 "get_profile": ("GET", "/get-profile"),
                 "save_onboarding_data": ("POST", "/save-onboarding-data"),
                 "get_onboarding_status": ("GET", "/get-onboarding-status"),
+                "calculate_bmr": ("POST", "/health-calculations"),
+                "calculate_tdee": ("POST", "/health-calculations"),
+                "validate_goal": ("POST", "/health-calculations"),
+                "calculate_macros": ("POST", "/health-calculations"),
             }
             http_method, api_path = function_map.get(function_name, ("POST", f"/{function_name}"))
 
             payload = {k: v for k, v in args.items() if k != "x_amigo_auth"}
+            if function_name in ("calculate_bmr", "calculate_tdee", "validate_goal", "calculate_macros"):
+                payload["operation"] = function_name
             if os.getenv("DEBUG_RETURN_CONTROL") == "1":
                 print(f"[DEBUG] function={function_name} method={http_method} path={api_path}")
                 print(f"[DEBUG] header token prefix={header_token[:24]}...")

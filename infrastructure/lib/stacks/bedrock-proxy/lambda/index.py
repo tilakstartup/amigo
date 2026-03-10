@@ -63,6 +63,8 @@ def _build_return_control_results(return_control, jwt_bearer):
     invocation_id = return_control.get('invocationId')
     inputs = return_control.get('invocationInputs', [])
     results = []
+    
+    print(f"📋 Processing {len(inputs)} invocation inputs")
 
     for item in inputs:
         api_input = item.get('apiInvocationInput')
@@ -106,6 +108,8 @@ def _build_return_control_results(return_control, jwt_bearer):
             action_group = function_input.get('actionGroup', 'onboarding-operations')
             function_name = function_input.get('function', '')
             parameters = function_input.get('parameters', [])
+            
+            print(f"📞 Function invocation: {action_group}.{function_name}")
 
             args = {}
             for param in parameters:
@@ -146,6 +150,8 @@ def _build_return_control_results(return_control, jwt_bearer):
                 payload['operation'] = function_name
 
             status_code, body = _invoke_edge(http_method, api_path, header_token, payload)
+            print(f"✅ Function {function_name} returned status {status_code}: {json.dumps(body)[:200]}")
+            
             function_result = {
                 'actionGroup': action_group,
                 'function': function_name,
@@ -325,31 +331,55 @@ def lambda_handler(event, context):
             )
 
             text, return_control = _read_agent_events(response)
-
-            while return_control:
-                invocation_id, results = _build_return_control_results(return_control, bearer_token)
-                if not invocation_id or not results:
-                    break
-
-                # Build session attributes for follow-up
-                follow_up_attributes = {
-                    'user_id': user_id,
-                    'auth_header_name': 'X-Amigo-Auth'
-                }
-                if bearer_token:
-                    follow_up_attributes['x_amigo_auth'] = bearer_token
-
-                follow_up = bedrock_agent_runtime.invoke_agent(
-                    agentId=agent_id,
-                    agentAliasId=agent_alias_id,
-                    sessionId=session_id,
-                    sessionState={
-                        'invocationId': invocation_id,
-                        'returnControlInvocationResults': results,
-                        'sessionAttributes': follow_up_attributes
-                    }
-                )
-                text, return_control = _read_agent_events(follow_up)
+            
+            # Return invocations to client for client-side handling
+            invocations = None
+            invocation_id = None
+            
+            if return_control:
+                print(f"🔵 RETURN_CONTROL received: {json.dumps(return_control, indent=2)}")
+                invocation_id = return_control.get('invocationId')
+                invocation_inputs = return_control.get('invocationInputs', [])
+                
+                # Convert invocations to client format
+                invocations = []
+                for item in invocation_inputs:
+                    api_input = item.get('apiInvocationInput')
+                    function_input = item.get('functionInvocationInput')
+                    
+                    if api_input:
+                        # Convert API invocation to function format for consistency
+                        action_group = api_input.get('actionGroup', 'data_operations')
+                        api_path = api_input.get('apiPath', '')
+                        
+                        # Map API paths to function names
+                        function_name = api_path.lstrip('/').replace('-', '_')
+                        
+                        invocations.append({
+                            'action_group': action_group,
+                            'function_name': function_name,
+                            'params': {}
+                        })
+                    
+                    elif function_input:
+                        action_group = function_input.get('actionGroup', 'data_operations')
+                        function_name = function_input.get('function', '')
+                        parameters = function_input.get('parameters', [])
+                        
+                        params = {}
+                        for param in parameters:
+                            name = param.get('name')
+                            value = param.get('value')
+                            if name:
+                                params[name] = value
+                        
+                        invocations.append({
+                            'action_group': action_group,
+                            'function_name': function_name,
+                            'params': params
+                        })
+                
+                print(f"📋 Returning {len(invocations)} invocations to client for handling")
 
             result = {
                 'completion': text,
@@ -361,6 +391,11 @@ def lambda_handler(event, context):
                 'userId': user_id,
                 'timestamp': datetime.utcnow().isoformat()
             }
+            
+            # Add invocations if present
+            if invocations:
+                result['invocations'] = invocations
+                result['invocationId'] = invocation_id
 
             return {
                 'statusCode': 200,
