@@ -112,28 +112,14 @@ final class ConversationalOnboardingViewModel: ObservableObject {
         print("🚀 iOS: startOnboarding() called")
         Task {
             do {
-                print("📞 iOS: Calling engine.startSession()")
+                print("📞 iOS: Calling engine.startSessionByName()")
                 print("📍 iOS: API Endpoint: \(AppConfig.shared.BEDROCK_API_ENDPOINT)")
                 print("📍 iOS: Agent ID: \(AppConfig.shared.BEDROCK_AGENT_ID)")
                 print("📍 iOS: Agent Alias: \(AppConfig.shared.BEDROCK_AGENT_ALIAS_ID)")
                 
-                try await engine.startSession(
-                    cap: "onboarding",
-                    responsibilities: [
-                        "Collect onboarding profile information from user",
-                        "Validate and normalize collected onboarding fields",
-                        "Summarize the onboarding details and review with the user",
-                        "Save onboarding data only after user confirmation",
-                        "Mark onboarding as complete and close the onboarding chat"
-                    ],
-                    collectData: [
-                        "first_name", "last_name", "age", "weight", "height",
-                        "gender", "activity_level", "goal_type", "goal_detail", "goal_by_when"
-                    ],
-                    collectMetrics: ["bmr", "tdee", "daily_calories"],
-                    initialMessage: "I want to start onboarding."
-                )
-                print("✅ iOS: engine.startSession() completed successfully")
+                // Use the predefined onboarding session config
+                try await engine.startSessionByName(configName: "onboarding")
+                print("✅ iOS: engine.startSessionByName() completed successfully")
             } catch {
                 print("❌ iOS: Error starting onboarding: \(error.localizedDescription)")
                 print("❌ iOS: Error details: \(error)")

@@ -132,36 +132,8 @@ struct AIGoalPlanningView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        let config = ChatSessionConfig(
-            cap: "goal_setting",
-            responsibilities: [
-                "Get user profile to retrieve current weight, height, age, gender, activity_level",
-                "Confirm or ask for goal type (weight_loss, muscle_gain, or maintenance)",
-                "Ask for target weight in kg",
-                "Ask for target date in yyyy-MM-dd format",
-                "Calculate BMR using calculate_bmr(weight, height, age, gender)",
-                "Calculate TDEE using calculate_tdee(weight, height, age, gender, activity_level)",
-                "Calculate daily calories needed: For weight loss = TDEE - (weight_difference * 7700 / days_until_target)",
-                "Validate goal is realistic using validate_goal(goal_type, daily_calories)",
-                "Present summary with: current weight, target weight, target date, BMR, TDEE, daily calories, weekly weight change rate",
-                "Ask user to confirm the goal",
-                "When confirmed, call save_goal(goal_type, current_weight, target_weight, target_date, bmr, tdee, daily_calories)",
-                "Set status to completed after successful save"
-            ],
-            collectData: [
-                "current_weight",
-                "target_weight",
-                "target_date",
-                "goal_type"
-            ],
-            collectMetrics: [
-                "bmr",
-                "tdee",
-                "daily_calories",
-                "weekly_weight_change"
-            ],
-            initialMessage: "I'd like to set a \(goalType) goal"
-        )
+        // Use the predefined goal_setting config from SessionConfigs
+        let config = ChatSessionConfig.goalSetting
         
         AgentConversationView(
             sessionManager: sessionManager,

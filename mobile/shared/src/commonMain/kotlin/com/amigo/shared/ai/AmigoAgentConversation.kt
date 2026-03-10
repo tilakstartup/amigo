@@ -56,6 +56,30 @@ class AmigoAgentConversation(
     private var invocationRecursionDepth: Int = 0
     private val MAX_INVOCATION_RECURSION_DEPTH = 5
 
+    /**
+     * Start a session using a predefined SessionConfig.
+     * This is the recommended way to start sessions.
+     */
+    suspend fun startSessionWithConfig(config: SessionConfig): Result<Unit> {
+        return startSession(
+            cap = config.cap,
+            responsibilities = config.responsibilities,
+            collectData = config.collectData,
+            collectMetrics = config.collectMetrics,
+            initialMessage = config.initialMessage
+        )
+    }
+
+    /**
+     * Start a session using a config name (e.g., "onboarding", "goal_setting").
+     * Loads the config from SessionConfigs.
+     */
+    suspend fun startSessionByName(configName: String): Result<Unit> {
+        val config = SessionConfigs.getConfig(configName)
+            ?: return Result.failure(IllegalArgumentException("Unknown session config: $configName"))
+        return startSessionWithConfig(config)
+    }
+
     suspend fun startSession(
         cap: String,
         responsibilities: List<String>,

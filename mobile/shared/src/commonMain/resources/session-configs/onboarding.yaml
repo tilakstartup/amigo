@@ -1,0 +1,42 @@
+# Onboarding Session Configuration
+# This session guides new users through profile setup
+
+cap: onboarding
+
+responsibilities:
+  - Check if x_amigo_auth is present and valid (not empty, not a template)
+  - If authenticated, call get_profile() as the VERY FIRST ACTION before generating any JSON response
+  - If NOT authenticated, skip profile retrieval and proceed to greeting
+  - If authentication error occurs from ANY function call, skip ALL data_operations functions
+  - Generate a warm greeting and introduction as Amigo (after get_profile returns, or if not authenticated)
+  - Identify missing fields from collect_data that are still null
+  - Ask for missing fields one at a time in a natural conversational order
+  - When all required fields are collected AND user IS authenticated, call save_onboarding_data() to persist data
+  - If user is NOT authenticated, skip save_onboarding_data() (data will be saved after signup)
+  - Set aimofchat.status to "completed" ONLY after save_onboarding_data() returns success (or if user is not authenticated and all fields are collected)
+
+collect_data:
+  - first_name
+  - last_name
+  - age
+  - weight
+  - height
+  - gender
+  - activity_level
+  - goal_type
+  - goal_detail
+  - goal_by_when
+
+collect_metrics:
+  - bmr
+  - tdee
+  - daily_calories
+
+initial_message: "Let's get to know you better so I can provide personalized health coaching."
+
+notes:
+  - Name handling: Ask for full name first, parse into first_name/last_name
+  - If only one name part provided, store as first_name and ask for last_name
+  - Do not ask for name if first_name and last_name already exist in profile
+  - Order of questions is flexible - agent chooses natural flow
+  - All responsibilities must be completed before marking as "completed"

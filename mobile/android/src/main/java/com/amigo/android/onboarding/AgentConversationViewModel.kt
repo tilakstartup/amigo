@@ -101,22 +101,8 @@ class AgentConversationViewModel(
     fun startOnboarding() {
         viewModelScope.launch {
             try {
-                engine.startSession(
-                    cap = "onboarding",
-                    responsibilities = listOf(
-                        "Collect onboarding profile information from user",
-                        "Validate and normalize collected onboarding fields",
-                        "Summarize the onboarding details and review with the user",
-                        "Save onboarding data only after user confirmation",
-                        "Mark onboarding as complete and close the onboarding chat"
-                    ),
-                    collectData = listOf(
-                        "first_name", "last_name", "age", "weight", "height",
-                        "gender", "activity_level", "goal_type", "goal_detail", "goal_by_when"
-                    ),
-                    collectMetrics = listOf("bmr", "tdee", "daily_calories"),
-                    initialMessage = "I want to start onboarding."
-                )
+                // Use the predefined onboarding session config
+                engine.startSessionByName("onboarding")
             } catch (e: Exception) {
                 println("Error starting onboarding: ${e.message}")
             }
