@@ -1,0 +1,70 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Goal Management",
+    "version": "1.0.0",
+    "description": "Save and manage user health goals"
+  },
+  "paths": {
+    "/save-goal": {
+      "post": {
+        "summary": "[AUTHENTICATED_ONLY] Save health goal",
+        "description": "Save a health goal to the database. Only call when is_authenticated='true'.",
+        "operationId": "save_goal",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["goal_type", "current_weight", "target_weight", "target_date"],
+                "properties": {
+                  "goal_type": {
+                    "type": "string",
+                    "enum": ["weight_loss", "muscle_gain", "maintenance"]
+                  },
+                  "current_weight": {
+                    "type": "number"
+                  },
+                  "target_weight": {
+                    "type": "number"
+                  },
+                  "target_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "current_height": {
+                    "type": "number"
+                  },
+                  "activity_level": {
+                    "type": "string"
+                  },
+                  "calculated_bmr": {
+                    "type": "number"
+                  },
+                  "calculated_tdee": {
+                    "type": "number"
+                  },
+                  "calculated_daily_calories": {
+                    "type": "number"
+                  },
+                  "is_realistic": {
+                    "type": "boolean"
+                  },
+                  "validation_reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  }
+}

@@ -138,6 +138,20 @@ IMPORTANT: Check x_amigo_auth before calling data_operations functions. If x_ami
 - Parameters: x_amigo_auth, goal_type (weight_loss/weight_gain/maintenance), target_calories
 - Returns: Validation result with recommendations
 
+7. save_goal(x_amigo_auth, goal_type, current_weight, target_weight, target_date, bmr, tdee, daily_calories): Save user's health goal
+- When: User confirms their goal after validation
+- Parameters: 
+  - x_amigo_auth = Bearer token
+  - goal_type = "weight_loss", "weight_gain", or "maintenance"
+  - current_weight = Current weight in kg
+  - target_weight = Target weight in kg
+  - target_date = Target date in yyyy-MM-dd format
+  - bmr = Calculated BMR (optional, can be null)
+  - tdee = Calculated TDEE (optional, can be null)
+  - daily_calories = Recommended daily calories (optional, can be null)
+- Returns: Success confirmation with saved goal details
+- IMPORTANT: Call this function AFTER user confirms their goal, not before
+
 TOKEN HANDLING:
 - Session stores JWT in x_amigo_auth parameter
 - Always pass x_amigo_auth to every function call
@@ -156,6 +170,38 @@ Session Initialization with Cap (Role/Hat):
 - When all responsibilities completed, set status to "completed"
 - If no context provided, use default goal_setting behavior
 - The cap and responsibilities are set dynamically by the app for each session
+
+Example Cap: goal_setting
+Example Responsibilities for goal_setting:
+1. Get user profile to retrieve current weight, height, age, gender, activity_level
+2. Ask for goal type (weight_loss, muscle_gain, or maintenance)
+3. Ask for target weight in kg
+4. Ask for target date in yyyy-MM-dd format
+5. Calculate BMR using calculate_bmr(weight, height, age, gender)
+6. Calculate TDEE using calculate_tdee(weight, height, age, gender, activity_level)
+7. Calculate daily calories needed based on goal
+8. Validate goal is realistic using validate_goal(goal_type, daily_calories)
+9. Present summary with: current weight, target weight, target date, BMR, TDEE, daily calories, weekly weight change rate
+10. Ask user to confirm the goal
+11. When confirmed, call save_goal(goal_type, current_weight, target_weight, target_date, bmr, tdee, daily_calories)
+12. Set aimofchat.status = "completed" after successful save
+
+CRITICAL WORKFLOW FOR goal_setting CAP:
+- Step 1: Call get_profile() to get current metrics (weight, height, age, gender, activity_level) - RETURN_CONTROL
+- Step 2: If goal_type not in initial message, ask for it (weight_loss/muscle_gain/maintenance) - JSON RESPONSE
+- Step 3: Ask for target_weight (must be different from current weight based on goal type) - JSON RESPONSE
+- Step 4: Ask for target_date (must be future date in yyyy-MM-dd format) - JSON RESPONSE
+- Step 5: Call calculate_bmr(x_amigo_auth, weight, height, age, gender) - RETURN_CONTROL
+- Step 6: Call calculate_tdee(x_amigo_auth, weight, height, age, gender, activity_level) - RETURN_CONTROL
+- Step 7: Calculate daily calories: For weight loss = TDEE - (weight_difference * 7700 / days_until_target) - DO IN YOUR HEAD
+- Step 8: Call validate_goal(x_amigo_auth, goal_type, daily_calories) - RETURN_CONTROL
+- Step 9: Present summary with all metrics and ask for confirmation (use message_with_summary) - JSON RESPONSE
+- Step 10: When user confirms (says "yes", "confirm", "looks good", etc.), IMMEDIATELY call save_goal() - RETURN_CONTROL - DO NOT GENERATE JSON FIRST
+  - CRITICAL: This is a FUNCTION CALL using RETURN_CONTROL mechanism
+  - DO NOT say "I've saved your goal" in JSON - actually CALL the save_goal function
+  - DO NOT set status to completed until AFTER save_goal returns successfully
+  - Parameters for save_goal: goal_type, current_weight, target_weight, target_date, current_height, activity_level, calculated_bmr, calculated_tdee, calculated_daily_calories
+- Step 11: After save_goal returns success, THEN generate JSON response with aimofchat.status="completed"
 
 Example Cap: onboarding
 Example Responsibilities:

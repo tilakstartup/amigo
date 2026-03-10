@@ -127,107 +127,49 @@ struct PlanningOptionCard: View {
 
 // AI-Guided Goal Planning View
 struct AIGoalPlanningView: View {
-    @StateObject private var viewModel: AIGoalPlanningViewModel
+    let sessionManager: SessionManager
+    let goalType: String
     @Environment(\.dismiss) private var dismiss
     
-    init(sessionManager: SessionManager, goalType: String) {
-        _viewModel = StateObject(wrappedValue: AIGoalPlanningViewModel(
-            sessionManager: sessionManager,
-            goalType: goalType
-        ))
-    }
-    
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Messages
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(viewModel.messages) { message in
-                                MessageBubble(message: message)
-                                    .id(message.id)
-                            }
-                            
-                            if viewModel.isTyping {
-                                TypingIndicator()
-                            }
-                        }
-                        .padding()
-                    }
-                    .onChange(of: viewModel.messages.count) { _ in
-                        if let lastMessage = viewModel.messages.last {
-                            withAnimation {
-                                proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                            }
-                        }
-                    }
-                }
-                
-                // Show plan if available
-                if let plan = viewModel.currentPlan {
-                    GoalPlanSummaryCard(plan: plan)
-                        .padding()
-                }
-                
-                // Input area
-                if viewModel.state == .collecting || viewModel.state == .reviewingPlan {
-                    VStack(spacing: 12) {
-                        if viewModel.state == .reviewingPlan {
-                            HStack(spacing: 12) {
-                                Button("Adjust") {
-                                    Task {
-                                        await viewModel.requestAdjustment()
-                                    }
-                                }
-                                .buttonStyle(.bordered)
-                                
-                                Button("Accept Plan") {
-                                    Task {
-                                        await viewModel.acceptPlan()
-                                        dismiss()
-                                    }
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .tint(.pink)
-                            }
-                            .padding(.horizontal)
-                        }
-                        
-                        HStack(spacing: 12) {
-                            TextField("Type your response...", text: $viewModel.userInput)
-                                .textFieldStyle(.roundedBorder)
-                                .disabled(viewModel.isTyping)
-                            
-                            Button(action: {
-                                Task {
-                                    await viewModel.sendMessage()
-                                }
-                            }) {
-                                Image(systemName: "arrow.up.circle.fill")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(viewModel.userInput.isEmpty ? .gray : .pink)
-                            }
-                            .disabled(viewModel.userInput.isEmpty || viewModel.isTyping)
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                    }
-                }
+        let config = ChatSessionConfig(
+            cap: "goal_setting",
+            responsibilities: [
+                "Get user profile to retrieve current weight, height, age, gender, activity_level",
+                "Confirm or ask for goal type (weight_loss, muscle_gain, or maintenance)",
+                "Ask for target weight in kg",
+                "Ask for target date in yyyy-MM-dd format",
+                "Calculate BMR using calculate_bmr(weight, height, age, gender)",
+                "Calculate TDEE using calculate_tdee(weight, height, age, gender, activity_level)",
+                "Calculate daily calories needed: For weight loss = TDEE - (weight_difference * 7700 / days_until_target)",
+                "Validate goal is realistic using validate_goal(goal_type, daily_calories)",
+                "Present summary with: current weight, target weight, target date, BMR, TDEE, daily calories, weekly weight change rate",
+                "Ask user to confirm the goal",
+                "When confirmed, call save_goal(goal_type, current_weight, target_weight, target_date, bmr, tdee, daily_calories)",
+                "Set status to completed after successful save"
+            ],
+            collectData: [
+                "current_weight",
+                "target_weight",
+                "target_date",
+                "goal_type"
+            ],
+            collectMetrics: [
+                "bmr",
+                "tdee",
+                "daily_calories",
+                "weekly_weight_change"
+            ],
+            initialMessage: "I'd like to set a \(goalType) goal"
+        )
+        
+        AgentConversationView(
+            sessionManager: sessionManager,
+            chatConfig: config,
+            onComplete: { _ in
+                dismiss()
             }
-            .navigationTitle("Talk to Amigo")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
-            .task {
-                await viewModel.startConversation()
-            }
-        }
+        )
     }
 }
 

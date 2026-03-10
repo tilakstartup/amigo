@@ -97,10 +97,20 @@ export class BedrockAgentStack extends cdk.Stack {
       this.getHealthCalculationsSchema()
     );
 
+    // Create Goal Management Action Group
+    const goalMgmtActionGroup = this.createActionGroup(
+      'GoalManagement',
+      actionGroupManager,
+      'GoalManagement',
+      'Save and manage user health goals with RETURN_CONTROL',
+      this.getGoalManagementSchema()
+    );
+
     // Create custom resource to prepare agent
     const prepareAgent = this.createPrepareAgentResource(environment);
     prepareAgent.node.addDependency(dataOpsActionGroup);
     prepareAgent.node.addDependency(healthCalcActionGroup);
+    prepareAgent.node.addDependency(goalMgmtActionGroup);
 
     // Outputs
     new cdk.CfnOutput(this, 'AgentIdOutput', {
@@ -229,6 +239,10 @@ export class BedrockAgentStack extends cdk.Stack {
 
   private getHealthCalculationsSchema(): string {
     return fs.readFileSync(path.join(__dirname, 'action-groups/schemas/health-calculations-schema.json'), 'utf-8');
+  }
+
+  private getGoalManagementSchema(): string {
+    return fs.readFileSync(path.join(__dirname, 'action-groups/schemas/goal-management-schema.json'), 'utf-8');
   }
 
   private getActionGroupManagerCode(): string {

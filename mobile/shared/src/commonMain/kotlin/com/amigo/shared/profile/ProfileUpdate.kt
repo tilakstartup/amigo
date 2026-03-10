@@ -6,11 +6,14 @@ import com.amigo.shared.data.models.GoalType
 import com.amigo.shared.data.models.ActivityLevel
 
 data class ProfileUpdate(
+    val firstName: String? = null,
+    val lastName: String? = null,
     val displayName: String? = null,
     val avatarUrl: String? = null,
     val age: Int? = null,
     val heightCm: Double? = null,
     val weightKg: Double? = null,
+    val gender: String? = null,
     val goalType: GoalType? = null,
     val goalByWhen: String? = null,
     val activityLevel: ActivityLevel? = null,
@@ -23,11 +26,14 @@ data class ProfileUpdate(
 ) {
     fun toMap(): Map<String, Any?> {
         val map = mutableMapOf<String, Any?>()
+        firstName?.let { map["first_name"] = it }
+        lastName?.let { map["last_name"] = it }
         displayName?.let { map["display_name"] = it }
         avatarUrl?.let { map["avatar_url"] = it }
         age?.let { map["age"] = it }
         heightCm?.let { map["height_cm"] = it }
         weightKg?.let { map["weight_kg"] = it }
+        gender?.let { map["gender"] = it }
         goalType?.let { map["goal_type"] = it.name.lowercase() }
         goalByWhen?.let { map["goal_by_when"] = it }
         activityLevel?.let { map["activity_level"] = it.name.lowercase() }

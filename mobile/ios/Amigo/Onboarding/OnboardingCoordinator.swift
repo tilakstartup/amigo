@@ -116,11 +116,14 @@ struct OnboardingCoordinator: View {
         let weight: KotlinDouble? = profileData["weight"].flatMap { Double($0) }.map { KotlinDouble(value: $0) }
         
         let profileUpdate = ProfileUpdate(
+            firstName: profileData["firstName"],
+            lastName: profileData["lastName"],
             displayName: profileData["name"],
             avatarUrl: nil,
             age: age,
             heightCm: height,
             weightKg: weight,
+            gender: profileData["gender"],
             goalType: goalType,
             goalByWhen: profileData["goalByWhen"],
             activityLevel: activityLevel,
@@ -136,11 +139,14 @@ struct OnboardingCoordinator: View {
         let newProfile = UserProfile(
             id: userId,
             email: normalizedEmail,
+            firstName: profileData["firstName"],
+            lastName: profileData["lastName"],
             displayName: profileData["name"],
             avatarUrl: currentAvatarUrl,
             age: age,
             heightCm: height,
             weightKg: weight,
+            gender: profileData["gender"],
             goalType: goalType,
             goalByWhen: profileData["goalByWhen"],
             activityLevel: activityLevel,

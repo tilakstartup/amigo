@@ -7,6 +7,10 @@ import kotlinx.serialization.SerialName
 data class UserProfile(
     val id: String,
     val email: String,
+    @SerialName("first_name")
+    val firstName: String? = null,
+    @SerialName("last_name")
+    val lastName: String? = null,
     @SerialName("display_name")
     val displayName: String? = null,
     @SerialName("avatar_url")
@@ -16,6 +20,7 @@ data class UserProfile(
     val heightCm: Double? = null,
     @SerialName("weight_kg")
     val weightKg: Double? = null,
+    val gender: String? = null,
     @SerialName("goal_type")
     val goalType: GoalType? = null,
     @SerialName("goal_by_when")

@@ -16,6 +16,7 @@ object ActionGroupRegistry {
         // Register all action groups
         registerActionGroup(DataOperationsActionGroup)
         registerActionGroup(HealthCalculationsActionGroup)
+        registerActionGroup(GoalManagementActionGroup)
     }
     
     private fun registerActionGroup(actionGroup: ActionGroup) {

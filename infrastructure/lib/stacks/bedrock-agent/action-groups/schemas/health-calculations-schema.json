@@ -54,8 +54,17 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "bmr": {
+                  "weight_kg": {
                     "type": "number"
+                  },
+                  "height_cm": {
+                    "type": "number"
+                  },
+                  "age": {
+                    "type": "number"
+                  },
+                  "gender": {
+                    "type": "string"
                   },
                   "activity_level": {
                     "type": "string"

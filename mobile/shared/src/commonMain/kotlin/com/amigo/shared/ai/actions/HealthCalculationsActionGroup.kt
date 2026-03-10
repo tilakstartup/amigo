@@ -28,7 +28,10 @@ object HealthCalculationsActionGroup : ActionGroup {
             name = "calculate_tdee",
             description = "Calculate Total Daily Energy Expenditure",
             parameters = listOf(
-                ActionParameter("bmr", "number", "Basal Metabolic Rate", required = true),
+                ActionParameter("weight_kg", "number", "Weight in kilograms", required = true),
+                ActionParameter("height_cm", "number", "Height in centimeters", required = true),
+                ActionParameter("age", "number", "Age in years", required = true),
+                ActionParameter("gender", "string", "Gender (male/female)", required = true),
                 ActionParameter("activity_level", "string", "Activity level", required = true)
             )
         ),
@@ -87,8 +90,29 @@ object HealthCalculationsActionGroup : ActionGroup {
     
     private fun calculateTDEE(params: Map<String, String>): Result<JsonObject> {
         return try {
-            val bmr = params["bmr"]?.toDoubleOrNull()
-                ?: return Result.failure(IllegalArgumentException("Invalid bmr"))
+            // First calculate BMR if not provided
+            val bmr = if (params.containsKey("bmr")) {
+                params["bmr"]?.toDoubleOrNull()
+                    ?: return Result.failure(IllegalArgumentException("Invalid bmr"))
+            } else {
+                // Calculate BMR from weight, height, age, gender
+                val weightKg = params["weight_kg"]?.toDoubleOrNull()
+                    ?: return Result.failure(IllegalArgumentException("Invalid weight_kg"))
+                val heightCm = params["height_cm"]?.toDoubleOrNull()
+                    ?: return Result.failure(IllegalArgumentException("Invalid height_cm"))
+                val age = params["age"]?.toIntOrNull()
+                    ?: return Result.failure(IllegalArgumentException("Invalid age"))
+                val gender = params["gender"]?.lowercase()
+                    ?: return Result.failure(IllegalArgumentException("Missing gender"))
+                
+                // Mifflin-St Jeor Equation
+                when (gender) {
+                    "male" -> (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5
+                    "female" -> (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161
+                    else -> return Result.failure(IllegalArgumentException("Invalid gender: $gender"))
+                }
+            }
+            
             val activityLevel = params["activity_level"]?.lowercase()
                 ?: return Result.failure(IllegalArgumentException("Missing activity_level"))
             

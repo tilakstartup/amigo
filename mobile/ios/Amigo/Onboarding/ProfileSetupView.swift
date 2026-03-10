@@ -187,11 +187,14 @@ class ProfileSetupViewModel: ObservableObject {
             
             // Create profile update
             let update = ProfileUpdate(
+                firstName: name.components(separatedBy: " ").first,
+                lastName: name.components(separatedBy: " ").dropFirst().joined(separator: " ").isEmpty ? nil : name.components(separatedBy: " ").dropFirst().joined(separator: " "),
                 displayName: name,
                 avatarUrl: nil,
                 age: KotlinInt(value: Int32(age)),
                 heightCm: KotlinDouble(value: heightInCm),
                 weightKg: KotlinDouble(value: weightInKg),
+                gender: nil,
                 goalType: nil,
                 goalByWhen: nil,
                 activityLevel: nil,
