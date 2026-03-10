@@ -72,6 +72,5 @@ Proprietary - All rights reserved
 ## run app and see logs
 
 ```
-APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Debug-iphonesimulator/Amigo.app" -type d 2>/dev/null | head -1) && xcrun simctl install F6E3DF5B-84A7-48F4-BF80-D2E12C48E9BE "$APP_PATH" && xcrun 
-simctl launch --console F6E3DF5B-84A7-48F4-BF80-D2E12C48E9BE com.amigoai.ios 2>&1
+APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Debug-iphonesimulator/Amigo.app" -type d 2>/dev/null | head -1) && xcrun simctl install F6E3DF5B-84A7-48F4-BF80-D2E12C48E9BE "$APP_PATH" && xcrun simctl launch --console F6E3DF5B-84A7-48F4-BF80-D2E12C48E9BE com.amigoai.ios 2>&1
 ```

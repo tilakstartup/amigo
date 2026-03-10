@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Data Operations",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Profile and onboarding data operations"
   },
   "paths": {
@@ -30,8 +30,61 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "payload_json": {
-                    "type": "string"
+                  "first_name": {
+                    "type": "string",
+                    "description": "User's first name"
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "description": "User's last name"
+                  },
+                  "age": {
+                    "type": "integer",
+                    "description": "User's age in years"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "User's weight in kg"
+                  },
+                  "height": {
+                    "type": "number",
+                    "description": "User's height in cm"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": ["male", "female", "other"],
+                    "description": "User's gender"
+                  },
+                  "activity_level": {
+                    "type": "string",
+                    "enum": ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],
+                    "description": "User's activity level"
+                  },
+                  "goal_type": {
+                    "type": "string",
+                    "enum": ["weight_loss", "muscle_gain", "maintenance"],
+                    "description": "User's health goal type"
+                  },
+                  "goal_detail": {
+                    "type": "string",
+                    "description": "Additional details about the goal"
+                  },
+                  "goal_by_when": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Target date for achieving the goal (YYYY-MM-DD)"
+                  },
+                  "bmr": {
+                    "type": "number",
+                    "description": "Calculated Basal Metabolic Rate"
+                  },
+                  "tdee": {
+                    "type": "number",
+                    "description": "Calculated Total Daily Energy Expenditure"
+                  },
+                  "daily_calories": {
+                    "type": "number",
+                    "description": "Calculated daily calorie target"
                   }
                 }
               }

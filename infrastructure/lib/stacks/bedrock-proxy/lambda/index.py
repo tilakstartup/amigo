@@ -85,6 +85,10 @@ def _build_return_control_results(return_control, jwt_bearer):
                 value = prop.get('value')
                 if name:
                     payload[name] = value
+            
+            # For save-onboarding-data, wrap individual fields in payload_json for edge function
+            if api_path == '/save-onboarding-data' and payload:
+                payload = {'payload_json': json.dumps(payload)}
 
             status_code, body = _invoke_edge(http_method, api_path, jwt_bearer, payload)
             api_result = {
@@ -358,26 +362,32 @@ def lambda_handler(event, context):
                         result_data = func_result.get('result', '{}')
                         error_msg = func_result.get('error', '')
                         
-                        # Map function names to API paths for API schema action groups
-                        # data_operations uses API schema, so we need to return apiResult
-                        function_to_api_path = {
-                            'get_profile': '/get-profile',
-                            'save_onboarding_data': '/save-onboarding-data',
-                            'get_onboarding_status': '/get-onboarding-status',
-                        }
+                        # List of function schema action groups (currently empty - all use API schema)
+                        # If we add function schema action groups in the future, add them here
+                        function_schema_functions = []
                         
-                        # Check if this is an API schema action group
-                        if action_group == 'data_operations' and function_name in function_to_api_path:
-                            # Return apiResult format for API schema
-                            api_path = function_to_api_path[function_name]
-                            http_method = 'POST' if function_name == 'save_onboarding_data' else 'GET'
+                        # Default: All action groups use API schema (OpenAPI 3.0)
+                        # Only check against function_schema_functions list for exceptions
+                        is_function_schema = function_name in function_schema_functions
+                        
+                        if not is_function_schema:
+                            # Return apiResult format for API schema action groups (default)
+                            # Convert function_name to API path: calculate_bmr -> /calculate-bmr
+                            api_path = '/' + function_name.replace('_', '-')
                             
+                            # Determine HTTP method based on function name
+                            # GET methods: functions starting with 'get_'
+                            # POST methods: everything else (save, calculate, validate, update, delete)
+                            http_method = 'GET' if function_name.startswith('get_') else 'POST'
+                            
+                            # Always return 200 status code, use responseState for success/failure
+                            # This allows Bedrock Agent to process errors gracefully
                             bedrock_result = {
                                 'apiResult': {
                                     'actionGroup': action_group,
                                     'apiPath': api_path,
                                     'httpMethod': http_method,
-                                    'httpStatusCode': 200 if success else 500,
+                                    'httpStatusCode': 200,
                                     'responseBody': {
                                         'application/json': {
                                             'body': result_data if isinstance(result_data, str) else json.dumps(result_data)
@@ -393,7 +403,7 @@ def lambda_handler(event, context):
                                         'error': error_msg
                                     })
                         else:
-                            # Return functionResult format for function schema action groups
+                            # Return functionResult format for function schema action groups (exceptions only)
                             bedrock_result = {
                                 'functionResult': {
                                     'actionGroup': action_group,
@@ -472,10 +482,22 @@ def lambda_handler(event, context):
                         # Map API paths to function names
                         function_name = api_path.lstrip('/').replace('-', '_')
                         
+                        # Extract parameters from requestBody
+                        params = {}
+                        request_body = api_input.get('requestBody', {})
+                        content = request_body.get('content', {})
+                        app_json = content.get('application/json', {})
+                        properties = app_json.get('properties', [])
+                        for prop in properties:
+                            name = prop.get('name')
+                            value = prop.get('value')
+                            if name:
+                                params[name] = value
+                        
                         invocations.append({
                             'action_group': action_group,
                             'function_name': function_name,
-                            'params': {}
+                            'params': params
                         })
                     
                     elif function_input:
