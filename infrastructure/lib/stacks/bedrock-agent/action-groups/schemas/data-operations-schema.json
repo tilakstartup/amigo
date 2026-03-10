@@ -1,0 +1,61 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Data Operations",
+    "version": "1.0.0",
+    "description": "Profile and onboarding data operations"
+  },
+  "paths": {
+    "/get-profile": {
+      "get": {
+        "summary": "[AUTHENTICATED_ONLY] Get user profile",
+        "description": "Fetch authenticated user profile. Only call when is_authenticated='true'.",
+        "operationId": "get_profile",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/save-onboarding-data": {
+      "post": {
+        "summary": "[AUTHENTICATED_ONLY] Save onboarding data",
+        "description": "Save or update user onboarding fields. Only call when is_authenticated='true'.",
+        "operationId": "save_onboarding_data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payload_json": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/get-onboarding-status": {
+      "get": {
+        "summary": "[AUTHENTICATED_ONLY] Get onboarding status",
+        "description": "Check onboarding progress. Only call when is_authenticated='true'.",
+        "operationId": "get_onboarding_status",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  }
+}

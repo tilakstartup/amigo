@@ -1,0 +1,106 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Health Calculations",
+    "version": "1.0.0",
+    "description": "BMR, TDEE, and goal validation"
+  },
+  "paths": {
+    "/calculate-bmr": {
+      "post": {
+        "summary": "Calculate BMR",
+        "description": "Calculate Basal Metabolic Rate",
+        "operationId": "calculate_bmr",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "weight_kg": {
+                    "type": "number"
+                  },
+                  "height_cm": {
+                    "type": "number"
+                  },
+                  "age": {
+                    "type": "number"
+                  },
+                  "gender": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/calculate-tdee": {
+      "post": {
+        "summary": "Calculate TDEE",
+        "description": "Calculate Total Daily Energy Expenditure",
+        "operationId": "calculate_tdee",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bmr": {
+                    "type": "number"
+                  },
+                  "activity_level": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/validate-goal": {
+      "post": {
+        "summary": "Validate goal",
+        "description": "Validate if goal is realistic",
+        "operationId": "validate_goal",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "goal_type": {
+                    "type": "string"
+                  },
+                  "daily_calories": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  }
+}
