@@ -814,6 +814,7 @@ class AIGoalPlanningViewModel: ObservableObject {
                 calculatedBmr: KotlinDouble(value: plan.calculations.bmr),
                 calculatedTdee: KotlinDouble(value: plan.calculations.tdee),
                 calculatedDailyCalories: KotlinDouble(value: plan.calculations.dailyCalories),
+                userDailyCalories: nil,
                 calculatedBmiStart: KotlinDouble(value: plan.currentMetrics.bmi),
                 calculatedBmiTarget: KotlinDouble(value: plan.targetMetrics.targetBMI),
                 weeklyMilestones: milestoneJsonString,
@@ -942,7 +943,7 @@ class ManualGoalPlanningViewModel: ObservableObject {
             NSLog("📝 [ManualGoalPlanning] No session JSON found in storage")
         }
         // Check if sessionManager already has a user BEFORE calling initialize
-        var userBeforeInit = try? await sessionManager.getCurrentUser()
+        let userBeforeInit = try? await sessionManager.getCurrentUser()
         NSLog("🔍 [ManualGoalPlanning] User BEFORE initialize: id=%@, email=%@", 
               userBeforeInit?.id ?? "nil", userBeforeInit?.email ?? "nil")
         
@@ -1131,6 +1132,7 @@ class ManualGoalPlanningViewModel: ObservableObject {
                 calculatedBmr: KotlinDouble(value: plan.calculations.bmr),
                 calculatedTdee: KotlinDouble(value: plan.calculations.tdee),
                 calculatedDailyCalories: KotlinDouble(value: plan.calculations.dailyCalories),
+                userDailyCalories: nil,
                 calculatedBmiStart: KotlinDouble(value: plan.currentMetrics.bmi),
                 calculatedBmiTarget: KotlinDouble(value: plan.targetMetrics.targetBMI),
                 weeklyMilestones: milestoneJsonString,
@@ -1252,7 +1254,7 @@ class ManualGoalPlanningViewModel: ObservableObject {
         }
 
         let minCalories = gender == "male" ? 1500.0 : 1200.0
-        var isRealistic = dailyCalories >= minCalories
+        let isRealistic = dailyCalories >= minCalories
         var reason = ""
         var recommendedDays: Int32? = nil
         var recommendedDate: Date? = nil

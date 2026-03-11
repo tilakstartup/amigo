@@ -32,6 +32,7 @@ object GoalManagementActionGroup : ActionGroup {
                 ActionParameter("calculated_bmr", "number", "Calculated BMR", required = false),
                 ActionParameter("calculated_tdee", "number", "Calculated TDEE", required = false),
                 ActionParameter("calculated_daily_calories", "number", "Calculated daily calories", required = false),
+                ActionParameter("user_daily_calories", "number", "User-specified daily calories when they override the recommended amount. REQUIRED when user_overridden=true.", required = false),
                 ActionParameter("is_realistic", "boolean", "Whether goal is realistic", required = false),
                 ActionParameter("validation_reason", "string", "Validation reason/message", required = false),
                 ActionParameter("user_overridden", "boolean", "Whether user chose to override safety recommendations", required = false)
@@ -137,13 +138,21 @@ object GoalManagementActionGroup : ActionGroup {
             val calculatedBmr = params["calculated_bmr"]?.toDoubleOrNull()
             val calculatedTdee = params["calculated_tdee"]?.toDoubleOrNull()
             val calculatedDailyCalories = params["calculated_daily_calories"]?.toDoubleOrNull()
+            val userDailyCalories = params["user_daily_calories"]?.toDoubleOrNull()
             val isRealistic = params["is_realistic"]?.toBooleanStrictOrNull()
             val validationReason = params["validation_reason"]
             val userOverridden = params["user_overridden"]?.toBooleanStrictOrNull() ?: false
             
             Logger.i("GoalManagement", "🎯 Optional params - height: $currentHeight, activity: $activityLevel")
             Logger.i("GoalManagement", "🎯 Calculations - BMR: $calculatedBmr, TDEE: $calculatedTdee, calories: $calculatedDailyCalories")
+            Logger.i("GoalManagement", "🎯 User daily calories: $userDailyCalories")
             Logger.i("GoalManagement", "🎯 User overridden: $userOverridden")
+            
+            // Validate that user_daily_calories is provided when user_overridden is true
+            if (userOverridden == true && userDailyCalories == null) {
+                Logger.e("GoalManagement", "❌ user_daily_calories is required when user_overridden=true")
+                return Result.failure(IllegalArgumentException("user_daily_calories parameter is required when user_overridden=true"))
+            }
             
             val profileManager = ProfileManager(supabase)
             Logger.i("GoalManagement", "🎯 Calling ProfileManager.updateGoal")
@@ -160,6 +169,7 @@ object GoalManagementActionGroup : ActionGroup {
                 calculatedBmr = calculatedBmr,
                 calculatedTdee = calculatedTdee,
                 calculatedDailyCalories = calculatedDailyCalories,
+                userDailyCalories = userDailyCalories,
                 isRealistic = isRealistic,
                 recommendedTargetDate = null,
                 validationReason = validationReason,

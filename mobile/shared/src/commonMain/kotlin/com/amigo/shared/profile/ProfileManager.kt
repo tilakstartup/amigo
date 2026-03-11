@@ -138,6 +138,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
         calculatedBmr: Double? = null,
         calculatedTdee: Double? = null,
         calculatedDailyCalories: Double? = null,
+        userDailyCalories: Double? = null,
         calculatedBmiStart: Double? = null,
         calculatedBmiTarget: Double? = null,
         weeklyMilestones: String? = null,  // JSON string
@@ -245,6 +246,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
                 calculatedBmr?.let { put("calculated_bmr", it) }
                 calculatedTdee?.let { put("calculated_tdee", it) }
                 calculatedDailyCalories?.let { put("calculated_daily_calories", it) }
+                userDailyCalories?.let { put("user_daily_calories", it) }
                 calculatedBmiStart?.let { put("calculated_bmi_start", it) }
                 calculatedBmiTarget?.let { put("calculated_bmi_target", it) }
                 isRealistic?.let { put("is_realistic", it) }

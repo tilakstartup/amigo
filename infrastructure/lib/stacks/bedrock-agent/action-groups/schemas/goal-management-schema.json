@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Goal Management",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Save and manage user health goals"
   },
   "paths": {
@@ -47,6 +47,10 @@
                   },
                   "calculated_daily_calories": {
                     "type": "number"
+                  },
+                  "user_daily_calories": {
+                    "type": "number",
+                    "description": "MANDATORY when user_overridden=true. The specific daily calorie amount the user wants when they override recommendations. Example: if user wants 1100 calories instead of recommended 1500, this field must be 1100."
                   },
                   "is_realistic": {
                     "type": "boolean"
