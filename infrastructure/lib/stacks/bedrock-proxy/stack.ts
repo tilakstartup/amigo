@@ -39,16 +39,38 @@ export class BedrockProxyStack extends cdk.Stack {
           'bedrock:InvokeModelWithResponseStream',
           'bedrock:Converse',
           'bedrock:ConverseStream',
-          'bedrock:InvokeAgent',
-          'bedrock-agent-runtime:InvokeAgent',
         ],
         resources: [
           `arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-*`,
           `arn:aws:bedrock:${this.region}::foundation-model/amazon.nova-*`,
           `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/*`,
-          `arn:aws:bedrock:${this.region}:${this.account}:agent/*`,
-          `arn:aws:bedrock:${this.region}:${this.account}:agent-alias/*/*`,
         ],
+      })
+    );
+
+    // Add Bedrock Agent Runtime permissions (separate statement with correct resource format)
+    lambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'bedrock-agent-runtime:InvokeAgent',
+          'bedrock:InvokeAgent', // Some regions/versions may use this action name
+        ],
+        resources: [
+          '*', // Bedrock Agent Runtime requires wildcard or specific agent-alias ARN
+        ],
+      })
+    );
+
+    // Add permission to use inference profiles
+    lambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'bedrock:GetInferenceProfile',
+          'bedrock:ListInferenceProfiles',
+        ],
+        resources: ['*'],
       })
     );
 

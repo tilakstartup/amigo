@@ -45,7 +45,7 @@
     "/calculate-tdee": {
       "post": {
         "summary": "Calculate TDEE",
-        "description": "Calculate Total Daily Energy Expenditure",
+        "description": "Calculate Total Daily Energy Expenditure. Requires either (bmr + activity_level) OR (weight_kg + height_cm + age + gender + activity_level)",
         "operationId": "calculate_tdee",
         "requestBody": {
           "required": true,
@@ -54,19 +54,68 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "bmr": {
+                    "type": "number",
+                    "description": "Pre-calculated BMR (optional if weight/height/age/gender provided)"
+                  },
                   "weight_kg": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Weight in kg (optional if bmr provided)"
                   },
                   "height_cm": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Height in cm (optional if bmr provided)"
                   },
                   "age": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Age in years (optional if bmr provided)"
                   },
                   "gender": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Gender (optional if bmr provided)"
                   },
                   "activity_level": {
+                    "type": "string",
+                    "description": "Activity level (required)"
+                  }
+                },
+                "required": ["activity_level"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/calculate-daily-calories": {
+      "post": {
+        "summary": "Calculate daily calories",
+        "description": "Calculate daily calorie target for goal with safety limits",
+        "operationId": "calculate_daily_calories",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "goal_type": {
+                    "type": "string"
+                  },
+                  "tdee": {
+                    "type": "number"
+                  },
+                  "current_weight_kg": {
+                    "type": "number"
+                  },
+                  "target_weight_kg": {
+                    "type": "number"
+                  },
+                  "target_date": {
                     "type": "string"
                   }
                 }
@@ -84,7 +133,7 @@
     "/validate-goal": {
       "post": {
         "summary": "Validate goal",
-        "description": "Validate if goal is realistic",
+        "description": "Validate if goal is realistic and provide suggestions if unsafe",
         "operationId": "validate_goal",
         "requestBody": {
           "required": true,
@@ -92,11 +141,27 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": ["goal_type", "daily_calories", "gender", "current_weight_kg", "target_weight_kg", "target_date", "tdee"],
                 "properties": {
                   "goal_type": {
                     "type": "string"
                   },
                   "daily_calories": {
+                    "type": "number"
+                  },
+                  "gender": {
+                    "type": "string"
+                  },
+                  "current_weight_kg": {
+                    "type": "number"
+                  },
+                  "target_weight_kg": {
+                    "type": "number"
+                  },
+                  "target_date": {
+                    "type": "string"
+                  },
+                  "tdee": {
                     "type": "number"
                   }
                 }

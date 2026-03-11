@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>11</integer>
+	<key>logs</key>
+	<dict>
+		<key>520B19D5-E686-46D3-93DA-77090470260F</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>520B19D5-E686-46D3-93DA-77090470260F.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>40</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>Amigo project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>Amigo</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project Amigo with scheme Amigo and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>794889148.01474202</real>
+			<key>timeStoppedRecording</key>
+			<real>794889154.83502901</real>
+			<key>title</key>
+			<string>Building project Amigo with scheme Amigo and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>520B19D5-E686-46D3-93DA-77090470260F</string>
+		</dict>
+		<key>773C251B-4849-495D-9950-965A994E4623</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>773C251B-4849-495D-9950-965A994E4623.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>Amigo project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>Amigo</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Cleaning project Amigo with scheme Amigo and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>794889586.29328096</real>
+			<key>timeStoppedRecording</key>
+			<real>794889586.50750995</real>
+			<key>title</key>
+			<string>Cleaning project Amigo with scheme Amigo and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>773C251B-4849-495D-9950-965A994E4623</string>
+		</dict>
+		<key>DC368942-4F98-4647-9F0D-70957CFCE698</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>DC368942-4F98-4647-9F0D-70957CFCE698.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>160</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>Amigo project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>Amigo</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project Amigo with scheme Amigo and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>794889586.51073003</real>
+			<key>timeStoppedRecording</key>
+			<real>794889608.94170105</real>
+			<key>title</key>
+			<string>Building project Amigo with scheme Amigo and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>DC368942-4F98-4647-9F0D-70957CFCE698</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

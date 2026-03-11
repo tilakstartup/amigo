@@ -141,7 +141,8 @@ class ProfileManager(private val supabase: SupabaseClient) {
         isRealistic: Boolean? = null,
         recommendedTargetDate: String? = null,
         validationReason: String? = null,
-        goalContext: Map<String, Any>? = null
+        goalContext: Map<String, Any>? = null,
+        userOverridden: Boolean? = null
     ): Result<UserProfile> {
         return try {
             // Verify Supabase has an active session
@@ -187,39 +188,62 @@ class ProfileManager(private val supabase: SupabaseClient) {
                 }
             println("✅ ProfileManager: Old goals deactivated")
 
-            val healthGoalPayload = buildJsonObject {
-                put("user_id", userId)
-                put("goal_type", goalTypeValue)
-                put("is_active", true)
-                put("start_date", Clock.System.now().toString())
-                
-                targetDate?.let {
-                    put("target_date", it)
-                    put("end_date", "${it}T00:00:00Z")
-                }
-                targetWeightKg?.let { put("target_weight", it) }
-                currentWeightKg?.let { put("current_weight", it) }
-                currentHeightCm?.let { put("current_height", it) }
-                normalizeHealthGoalActivityLevel(activityLevel)?.let { put("activity_level", it) }
-                calculatedBmr?.let { put("calculated_bmr", it) }
-                calculatedTdee?.let { put("calculated_tdee", it) }
-                calculatedDailyCalories?.let { put("calculated_daily_calories", it) }
-                calculatedBmiStart?.let { put("calculated_bmi_start", it) }
-                calculatedBmiTarget?.let { put("calculated_bmi_target", it) }
-                isRealistic?.let { put("is_realistic", it) }
-                recommendedTargetDate?.let { put("recommended_target_date", it) }
-                validationReason?.let { put("validation_reason", it) }
-                // Note: weeklyMilestones and goalContext are skipped for now as they need special handling
+            val healthGoalPayload = mutableMapOf<String, Any>(
+                "user_id" to userId,
+                "goal_type" to goalTypeValue,
+                "is_active" to true,
+                "start_date" to Clock.System.now().toString()
+            )
+            
+            targetDate?.let {
+                healthGoalPayload["target_date"] = it
+                healthGoalPayload["end_date"] = "${it}T00:00:00Z"
             }
+            targetWeightKg?.let { healthGoalPayload["target_weight"] = it }
+            currentWeightKg?.let { healthGoalPayload["current_weight"] = it }
+            currentHeightCm?.let { healthGoalPayload["current_height"] = it }
+            normalizeHealthGoalActivityLevel(activityLevel)?.let { healthGoalPayload["activity_level"] = it }
+            calculatedBmr?.let { healthGoalPayload["calculated_bmr"] = it }
+            calculatedTdee?.let { healthGoalPayload["calculated_tdee"] = it }
+            calculatedDailyCalories?.let { healthGoalPayload["calculated_daily_calories"] = it }
+            calculatedBmiStart?.let { healthGoalPayload["calculated_bmi_start"] = it }
+            calculatedBmiTarget?.let { healthGoalPayload["calculated_bmi_target"] = it }
+            isRealistic?.let { healthGoalPayload["is_realistic"] = it }
+            recommendedTargetDate?.let { healthGoalPayload["recommended_target_date"] = it }
+            validationReason?.let { healthGoalPayload["validation_reason"] = it }
+            userOverridden?.let { healthGoalPayload["user_overridden"] = it }
+            // Note: weeklyMilestones and goalContext are skipped for now as they need special handling
 
             println("🔵 ProfileManager: Inserting health goal")
             println("🔵 ProfileManager: user_id=$userId, goal_type=$goalTypeValue")
+            println("🔵 ProfileManager: Payload keys: ${healthGoalPayload.keys}")
+            println("🔵 ProfileManager: Session user: ${currentSession.user?.id}")
             println("🔵 ProfileManager: Session access token present: ${currentSession.accessToken.isNotEmpty()}")
+            println("🔵 ProfileManager: Session access token (first 50 chars): ${currentSession.accessToken.take(50)}")
+            
+            // CRITICAL: Must select() after insert to detect RLS violations
+            // Without select(), RLS policy failures are silent
             try {
-                supabase.from("health_goals").insert(healthGoalPayload)
-                println("✅ ProfileManager: Health goal insert completed successfully")
+                println("🔵 ProfileManager: Calling insert with select...")
+                val insertedGoal = supabase.from("health_goals")
+                    .insert(healthGoalPayload) {
+                        select()
+                    }
+                    .decodeSingleOrNull<Map<String, Any>>()
+                
+                if (insertedGoal != null) {
+                    println("✅ ProfileManager: Health goal inserted successfully!")
+                    println("✅ ProfileManager: Inserted goal id: ${insertedGoal["id"]}")
+                } else {
+                    println("❌ ProfileManager: Insert returned null - likely RLS policy blocked it")
+                    println("❌ ProfileManager: This means auth.uid() doesn't match user_id: $userId")
+                    throw Exception("Failed to insert health goal - RLS policy violation")
+                }
             } catch (insertError: Exception) {
                 println("❌ ProfileManager: Health goal insert FAILED: ${insertError.message}")
+                println("❌ ProfileManager: Error type: ${insertError::class.simpleName}")
+                println("❌ ProfileManager: This is likely an RLS policy violation")
+                println("❌ ProfileManager: Check that auth.uid() matches user_id: $userId")
                 insertError.printStackTrace()
                 throw insertError
             }

@@ -32,7 +32,8 @@ object GoalManagementActionGroup : ActionGroup {
                 ActionParameter("calculated_tdee", "number", "Calculated TDEE", required = false),
                 ActionParameter("calculated_daily_calories", "number", "Calculated daily calories", required = false),
                 ActionParameter("is_realistic", "boolean", "Whether goal is realistic", required = false),
-                ActionParameter("validation_reason", "string", "Validation reason/message", required = false)
+                ActionParameter("validation_reason", "string", "Validation reason/message", required = false),
+                ActionParameter("user_overridden", "boolean", "Whether user chose to override safety recommendations", required = false)
             )
         )
     )
@@ -137,9 +138,11 @@ object GoalManagementActionGroup : ActionGroup {
             val calculatedDailyCalories = params["calculated_daily_calories"]?.toDoubleOrNull()
             val isRealistic = params["is_realistic"]?.toBooleanStrictOrNull()
             val validationReason = params["validation_reason"]
+            val userOverridden = params["user_overridden"]?.toBooleanStrictOrNull() ?: false
             
             println("🎯 [GoalManagement] Optional params - height: $currentHeight, activity: $activityLevel")
             println("🎯 [GoalManagement] Calculations - BMR: $calculatedBmr, TDEE: $calculatedTdee, calories: $calculatedDailyCalories")
+            println("🎯 [GoalManagement] User overridden: $userOverridden")
             
             val profileManager = ProfileManager(supabase)
             println("🎯 [GoalManagement] Calling ProfileManager.updateGoal")
@@ -159,7 +162,8 @@ object GoalManagementActionGroup : ActionGroup {
                 isRealistic = isRealistic,
                 recommendedTargetDate = null,
                 validationReason = validationReason,
-                goalContext = null
+                goalContext = null,
+                userOverridden = userOverridden
             )
             
             println("✅ [GoalManagement] Goal saved successfully!")
@@ -174,11 +178,7 @@ object GoalManagementActionGroup : ActionGroup {
         } catch (e: Exception) {
             println("❌ [GoalManagement] Exception: ${e.message}")
             e.printStackTrace()
-            Result.success(buildJsonObject {
-                put("status", "error")
-                put("message", "Failed to save goal: ${e.message}")
-                put("userId", userId)
-            })
+            Result.failure(e)
         }
     }
 }

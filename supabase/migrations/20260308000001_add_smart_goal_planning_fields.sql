@@ -14,7 +14,8 @@ ADD COLUMN IF NOT EXISTS calculated_bmi_target NUMERIC,
 ADD COLUMN IF NOT EXISTS weekly_milestones JSONB,
 ADD COLUMN IF NOT EXISTS is_realistic BOOLEAN DEFAULT TRUE,
 ADD COLUMN IF NOT EXISTS recommended_target_date DATE,
-ADD COLUMN IF NOT EXISTS validation_reason TEXT;
+ADD COLUMN IF NOT EXISTS validation_reason TEXT,
+ADD COLUMN IF NOT EXISTS user_overridden BOOLEAN DEFAULT FALSE;
 
 -- Add comment to explain the new fields
 COMMENT ON COLUMN public.health_goals.target_weight IS 'Target weight for weight loss/gain goals (in kg)';
@@ -32,6 +33,7 @@ COMMENT ON COLUMN public.health_goals.weekly_milestones IS 'Projected weekly pro
 COMMENT ON COLUMN public.health_goals.is_realistic IS 'Whether the target date is realistic and safe';
 COMMENT ON COLUMN public.health_goals.recommended_target_date IS 'Alternative target date if original is unrealistic';
 COMMENT ON COLUMN public.health_goals.validation_reason IS 'Explanation of why goal is/isn''t realistic';
+COMMENT ON COLUMN public.health_goals.user_overridden IS 'Whether user chose to override safety recommendations';
 
 -- Create index for target_date queries
 CREATE INDEX IF NOT EXISTS idx_health_goals_target_date ON public.health_goals(target_date);

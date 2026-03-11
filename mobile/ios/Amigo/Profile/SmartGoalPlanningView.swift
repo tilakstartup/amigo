@@ -814,7 +814,8 @@ class AIGoalPlanningViewModel: ObservableObject {
                 isRealistic: KotlinBoolean(value: plan.validation.isRealistic),
                 recommendedTargetDate: nil,
                 validationReason: plan.validation.reason,
-                goalContext: nil
+                goalContext: nil,
+                userOverridden: nil
             )
             NSLog("🎉 [AIGoalPlanning] Plan accepted and saved successfully!")
         } catch {
@@ -1126,7 +1127,8 @@ class ManualGoalPlanningViewModel: ObservableObject {
                 isRealistic: KotlinBoolean(value: plan.validation.isRealistic),
                 recommendedTargetDate: nil,
                 validationReason: plan.validation.reason,
-                goalContext: nil
+                goalContext: nil,
+                userOverridden: nil
             )
             
             NSLog("🎉 [ManualGoalPlanning] Health goal saved successfully!")

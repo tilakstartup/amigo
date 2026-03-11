@@ -35,7 +35,7 @@ targets:
         SWIFT_VERSION: "5.9"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         OTHER_LDFLAGS: "$(inherited) -framework shared"
-        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/bin/iosSimulatorArm64/debugFramework"
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/iphonesimulator18.2"
     preBuildScripts:
       - script: |
           cd "$SRCROOT/.."

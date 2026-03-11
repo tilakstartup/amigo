@@ -379,8 +379,10 @@ class SessionManager(
      */
     suspend fun ensureSessionSynced(): Boolean {
         return try {
+            println("🔄 [SessionManager] ensureSessionSynced() START")
             val session = _currentSession.value
             if (session != null) {
+                println("🔄 [SessionManager] Current session exists, syncing...")
                 syncSupabaseSession(session)
                 println("✅ SessionManager: Session synced with Supabase")
                 true
@@ -389,23 +391,30 @@ class SessionManager(
                 // Try to restore and sync
                 val restored = restoreSession()
                 if (restored != null) {
+                    println("🔄 [SessionManager] Session restored, syncing...")
                     syncSupabaseSession(restored)
                     _currentSession.value = restored
                     _isAuthenticated.value = true
                     println("✅ SessionManager: Session restored and synced")
                     true
                 } else {
+                    println("❌ [SessionManager] No session to restore")
                     false
                 }
             }
         } catch (e: Exception) {
             println("❌ SessionManager: Failed to sync session: ${e.message}")
+            e.printStackTrace()
             false
         }
     }
 
     private suspend fun syncSupabaseSession(session: Session) {
         try {
+            println("🔄 [SessionManager] syncSupabaseSession() START")
+            println("🔄 [SessionManager] Session user.id: ${session.user.id}")
+            println("🔄 [SessionManager] Access token length: ${session.accessToken.length}")
+            
             val expiresIn = if (session.expiresAt > 0) {
                 val now = Clock.System.now().epochSeconds
                 val remaining = session.expiresAt - now
@@ -413,6 +422,9 @@ class SessionManager(
             } else {
                 3600L
             }
+            
+            println("🔄 [SessionManager] Calculated expiresIn: $expiresIn seconds")
+            println("🔄 [SessionManager] Calling supabase.auth.importSession()...")
 
             supabase.auth.importSession(
                 io.github.jan.supabase.gotrue.user.UserSession(
@@ -420,11 +432,24 @@ class SessionManager(
                     refreshToken = session.refreshToken,
                     expiresIn = expiresIn,
                     tokenType = "Bearer",
-                    user = null
+                    user = null  // Note: We pass null here, Supabase will decode from token
                 )
             )
+            
+            println("✅ [SessionManager] supabase.auth.importSession() completed")
+            
+            // Verify the session was imported
+            val importedSession = supabase.auth.currentSessionOrNull()
+            if (importedSession != null) {
+                println("✅ [SessionManager] Verified: Supabase session exists after import")
+                println("✅ [SessionManager] Imported session user.id: ${importedSession.user?.id ?: "null"}")
+                println("✅ [SessionManager] Imported session token length: ${importedSession.accessToken?.length ?: 0}")
+            } else {
+                println("⚠️ [SessionManager] WARNING: No Supabase session found after import!")
+            }
         } catch (e: Exception) {
-            println("Failed to sync Supabase session: ${e.message}")
+            println("❌ [SessionManager] Failed to sync Supabase session: ${e.message}")
+            e.printStackTrace()
         }
     }
     

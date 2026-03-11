@@ -311,7 +311,7 @@ class AmigoAgentConversation(
      * 
      * This method:
      * 1. Ensures Supabase session is synced (imports session if needed)
-     * 2. Extracts the user ID from the Supabase session (or JWT token if session.user is null)
+     * 2. Extracts the user ID from SessionManager (which has the authenticated user)
      * 3. Creates an ActionContext with authentication information
      * 4. Executes each invocation through the ActionGroupRegistry
      * 5. Returns results for each invocation
@@ -335,37 +335,26 @@ class AmigoAgentConversation(
             Logger.w("AmigoAgentConversation", "⚠️ WARNING: Failed to sync Supabase session - database operations may fail")
         }
         
-        // Get userId from Supabase client session
-        Logger.i("AmigoAgentConversation", "📋 Checking Supabase session...")
-        Logger.i("AmigoAgentConversation", "📋 supabaseClient is null: ${supabaseClient == null}")
+        // Get userId from SessionManager (the source of truth for authentication)
+        // SessionManager maintains the authenticated user session and can extract userId from JWT if needed
+        Logger.i("AmigoAgentConversation", "📋 Getting userId from SessionManager...")
+        val user = sessionManager.getCurrentUser()
+        val userId = user?.id
+        val isAuthenticated = userId != null && userId.isNotBlank()
         
-        val userId = try {
-            val session = supabaseClient?.auth?.currentSessionOrNull()
-            Logger.i("AmigoAgentConversation", "📋 currentSessionOrNull() returned: ${if (session == null) "null" else "session exists"}")
-            
-            if (session != null) {
-                Logger.i("AmigoAgentConversation", "📋 Session user id: ${session.user?.id ?: "null"}")
-                Logger.i("AmigoAgentConversation", "📋 Session access token length: ${session.accessToken?.length ?: 0}")
-                
-                // If session.user.id is null, decode the JWT token to extract the user ID
-                // This handles cases where Supabase session object is incomplete
-                if (session.user?.id == null && session.accessToken != null) {
-                    Logger.i("AmigoAgentConversation", "📋 Attempting to decode JWT token to extract userId...")
-                    extractUserIdFromJWT(session.accessToken)
-                } else {
-                    session.user?.id
-                }
-            } else {
-                null
+        Logger.i("AmigoAgentConversation", "📋 SessionManager user: ${if (user != null) "exists (id=${user.id}, email=${user.email})" else "null"}")
+        Logger.i("AmigoAgentConversation", "📋 Action context - userId: ${userId ?: "null"}, authenticated: $isAuthenticated")
+        
+        // Verify Supabase session is synced by checking currentSessionOrNull
+        try {
+            val supabaseSession = supabaseClient?.auth?.currentSessionOrNull()
+            Logger.i("AmigoAgentConversation", "📋 Supabase session check: ${if (supabaseSession != null) "exists (token=${supabaseSession.accessToken?.take(20)}...)" else "null"}")
+            if (supabaseSession != null) {
+                Logger.i("AmigoAgentConversation", "📋 Supabase session user id: ${supabaseSession.user?.id ?: "null"}")
             }
         } catch (e: Exception) {
-            Logger.w("AmigoAgentConversation", "Could not get user from Supabase: ${e.message}")
-            Logger.w("AmigoAgentConversation", "Exception type: ${e::class.simpleName}")
-            null
+            Logger.w("AmigoAgentConversation", "⚠️ Error checking Supabase session: ${e.message}")
         }
-        val isAuthenticated = userId != null
-        
-        Logger.i("AmigoAgentConversation", "📋 Action context - userId: ${userId ?: "null"}, authenticated: $isAuthenticated")
         
         val context = ActionContext(
             userId = userId,
@@ -498,13 +487,36 @@ class AmigoAgentConversation(
 
     private suspend fun handleAgentResponse(
         response: AmigoAgentApiResponse,
-        infoAutoAckDepth: Int = 0
+        infoAutoAckDepth: Int = 0,
+        inputTypeRetryCount: Int = 0
     ) {
         response.data?.collected?.forEach { (key, value) ->
             jsonElementToString(value)?.let { profileData[key] = it }
         }
 
-        val renderType = response.ui?.render?.type?.lowercase().orEmpty()
+        // Validate input.type - if "none" or invalid, ask agent to respond with valid input.type
+        val inputType = response.input?.type?.lowercase().orEmpty()
+        val validInputTypes = setOf("text", "quick_pills", "dropdown", "yes_no", "date", "weight")
+        
+        if (inputType !in validInputTypes && inputType.isNotEmpty()) {
+            if (inputTypeRetryCount < 2) {
+                Logger.w("AmigoAgentConversation", "⚠️ Agent sent invalid input.type='$inputType' (retry $inputTypeRetryCount/2) - asking agent to respond with valid input.type")
+                val correctionMessage = "You sent input.type='$inputType' which is INVALID. You MUST respond again with a valid input.type. Valid values are: text, quick_pills, dropdown, yes_no, date, or weight. Respond immediately with the SAME message but with a valid input.type."
+                val followUp = requestAgent(userMessage = correctionMessage)
+                handleAgentResponse(followUp, infoAutoAckDepth, inputTypeRetryCount + 1)
+                return
+            } else {
+                Logger.e("AmigoAgentConversation", "❌ Agent failed to provide valid input.type after 2 retries. Normalizing '$inputType' to 'text' to prevent infinite loop.")
+                // Continue processing with normalized type - will be handled by normalizeReplyType below
+            }
+        }
+
+        // Normalize render type: only "message" and "message_with_summary" are valid, everything else becomes "info"
+        val rawRenderType = response.ui?.render?.type?.lowercase().orEmpty()
+        val renderType = when (rawRenderType) {
+            "message", "message_with_summary" -> rawRenderType
+            else -> "info"
+        }
         val messageText = response.ui?.render?.text?.takeIf { it.isNotBlank() }
             ?: "Let’s continue."
 

@@ -1,0 +1,63 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "0b07907cd525df8a9cd25bdad15d960fd37f4f4ce573daa93f0d93f2c9c9bfe7"
+    }
+  ],
+  "containerPath" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "undefined_arch",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : true,
+      "platform" : "iphonesimulator",
+      "sdk" : "iphonesimulator18.2",
+      "sdkVariant" : "iphonesimulator",
+      "supportedArchitectures" : [
+        "i386",
+        "x86_64"
+      ],
+      "targetArchitecture" : "undefined_arch"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Products",
+      "derivedDataPath" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build",
+      "indexDataStoreFolderPath" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+          "SDKROOT" : "iphonesimulator18.2"
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

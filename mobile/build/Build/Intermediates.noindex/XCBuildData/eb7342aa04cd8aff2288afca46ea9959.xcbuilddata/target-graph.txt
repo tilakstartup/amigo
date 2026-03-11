@@ -1,0 +1,2 @@
+Target dependency graph (1 target)
+Target 'Amigo' in project 'Amigo' (no dependencies)

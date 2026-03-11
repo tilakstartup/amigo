@@ -1,0 +1,198 @@
+{
+  "" : {
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/Amigo-master.dia",
+    "emit-module-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/Amigo-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/Amigo-master-emit-module.dia",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/Amigo-master.swiftdeps"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/AmigoApp.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AmigoApp.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AmigoApp.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AmigoApp.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AmigoApp.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AmigoApp.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AmigoApp.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AmigoApp.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AmigoApp~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Auth/AuthViewModel.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AuthViewModel.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AuthViewModel.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AuthViewModel.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AuthViewModel.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AuthViewModel.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AuthViewModel.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AuthViewModel.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AuthViewModel~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Auth/LoginView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/LoginView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/LoginView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/LoginView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/LoginView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/LoginView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/LoginView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/LoginView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/LoginView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Auth/SignUpView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SignUpView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SignUpView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SignUpView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SignUpView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SignUpView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SignUpView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SignUpView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SignUpView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/BedrockTestView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/BedrockTestView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/BedrockTestView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/BedrockTestView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/BedrockTestView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/BedrockTestView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/BedrockTestView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/BedrockTestView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/BedrockTestView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/ContentView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ContentView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ContentView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ContentView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ContentView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ContentView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ContentView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/MainTabView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/MainTabView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/MainTabView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/MainTabView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/MainTabView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/MainTabView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/MainTabView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/MainTabView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/MainTabView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Onboarding/ConversationalOnboardingView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Onboarding/ConversationalOnboardingViewModel.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingViewModel.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingViewModel.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingViewModel.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingViewModel.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingViewModel.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingViewModel.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingViewModel.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ConversationalOnboardingViewModel~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Onboarding/GoalSelectionView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalSelectionView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalSelectionView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalSelectionView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalSelectionView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalSelectionView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalSelectionView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalSelectionView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalSelectionView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Onboarding/OnboardingCoordinator.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/OnboardingCoordinator.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/OnboardingCoordinator.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/OnboardingCoordinator.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/OnboardingCoordinator.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/OnboardingCoordinator.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/OnboardingCoordinator.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/OnboardingCoordinator.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/OnboardingCoordinator~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Onboarding/PermissionsView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/PermissionsView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/PermissionsView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/PermissionsView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/PermissionsView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/PermissionsView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/PermissionsView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/PermissionsView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/PermissionsView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Onboarding/ProfileSetupView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileSetupView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileSetupView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileSetupView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileSetupView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileSetupView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileSetupView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileSetupView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileSetupView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Onboarding/WelcomeView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/WelcomeView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/WelcomeView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/WelcomeView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/WelcomeView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/WelcomeView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/WelcomeView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/WelcomeView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/WelcomeView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Profile/GoalManagementView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalManagementView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalManagementView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalManagementView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalManagementView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalManagementView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalManagementView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalManagementView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/GoalManagementView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Profile/ProfileView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/ProfileView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Profile/SmartGoalPlanningView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SmartGoalPlanningView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SmartGoalPlanningView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SmartGoalPlanningView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SmartGoalPlanningView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SmartGoalPlanningView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SmartGoalPlanningView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SmartGoalPlanningView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/SmartGoalPlanningView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Shared/AgentConversationView.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationView.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationView.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationView.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationView.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationView.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationView.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationView.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationView~partial.swiftmodule"
+  },
+  "/Users/tilakputta/projects/apps/healthamigoai/mobile/ios/Amigo/Shared/AgentConversationViewModel.swift" : {
+    "const-values" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationViewModel.swiftconstvalues",
+    "dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationViewModel.d",
+    "diagnostics" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationViewModel.dia",
+    "index-unit-output-path" : "/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationViewModel.o",
+    "llvm-bc" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationViewModel.bc",
+    "object" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationViewModel.o",
+    "swift-dependencies" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationViewModel.swiftdeps",
+    "swiftmodule" : "/Users/tilakputta/projects/apps/healthamigoai/mobile/build/Build/Intermediates.noindex/Amigo.build/Debug-iphonesimulator/Amigo.build/Objects-normal/x86_64/AgentConversationViewModel~partial.swiftmodule"
+  }
+}

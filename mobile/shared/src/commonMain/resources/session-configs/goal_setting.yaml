@@ -1,30 +1,28 @@
 # Goal Setting Session Configuration
-# This session helps users define and save their health goals
 
 cap: goal_setting
 
 responsibilities:
-  - Call get_profile() to retrieve current metrics (weight, height, age, gender, activity_level)
-  - If goal_type not provided in initial message, ask for it (weight_loss/muscle_gain/maintenance)
-  - Ask for target_weight (must be different from current weight based on goal type)
-  - Ask for target_date (must be future date in yyyy-MM-dd format)
-  - Do not acknowledge that you need to calculate, just invoke functions directly
-  - Call calculate_bmr(x_amigo_auth, weight, height, age, gender)
-  - Call calculate_tdee(x_amigo_auth, weight, height, age, gender, activity_level)
-  - Calculate daily calories based on goal (e.g., for weight loss = TDEE - (weight_difference * 7700 / days_until_target))
-  - Call validate_goal(x_amigo_auth, goal_type, daily_calories)
-  - Present summary with all metrics and ask for confirmation (use message_with_summary)
-  - When user confirms, IMMEDIATELY call save_goal() with all parameters
-  - After save_goal returns success, set aimofchat.status to "completed"
+  - If authenticated, invoke get_profile() FIRST (no JSON before this)
+  - Ask for goal_type, target_weight, target_date (collect all 3 before calculations)
+  - After all 3 collected, invoke calculate_bmr() immediately (no JSON before this)
+  - After calculate_bmr returns, invoke calculate_tdee() immediately (no JSON before this)
+  - After calculate_tdee returns, invoke calculate_daily_calories() immediately (no JSON before this)
+  - After calculate_daily_calories returns, invoke validate_goal() immediately (no JSON before this)
+  - Compute weekly_weight_change = (weight_difference_kg / days_until_target) x 7
+  - Show message_with_summary with ALL real calculated values (no placeholders)
+  - If user confirms and authenticated, invoke save_goal() immediately (no JSON before this)
+  - Set status="completed" only after save_goal returns success
 
 collect_data:
+  - current_weight
+  - gender
+  - height
   - goal_type
   - target_weight
   - target_date
 
 collect_metrics:
-  - current_weight
-  - current_height
   - bmr
   - tdee
   - daily_calories
@@ -33,7 +31,7 @@ collect_metrics:
 initial_message: "Let's set up your health goal together."
 
 notes:
-  - All calculations must be done before presenting summary
-  - Do not claim goal is saved without actually calling save_goal()
-  - Wait for save_goal() success response before marking complete
-  - Summary must include: current weight, target weight, target date, BMR, TDEE, daily calories, weekly change rate
+  - CRITICAL: Never show placeholders like [BMR] or [TDEE] - always call the calculation functions first
+  - Function sequence is MANDATORY: get_profile → collect 3 fields → calculate_bmr → calculate_tdee → calculate_daily_calories → validate_goal → show summary → save_goal
+  - Do not skip any function in the sequence
+  - Do not generate JSON between function calls in the sequence

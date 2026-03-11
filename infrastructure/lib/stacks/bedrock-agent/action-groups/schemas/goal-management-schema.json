@@ -54,6 +54,10 @@
                   "validation_reason": {
                     "type": "string"
                   },
+                  "user_overridden": {
+                    "type": "boolean",
+                    "description": "Whether user chose to override safety recommendations"
+                  },
                   "notes": {
                     "type": "string",
                     "description": "Optional notes about the goal"
