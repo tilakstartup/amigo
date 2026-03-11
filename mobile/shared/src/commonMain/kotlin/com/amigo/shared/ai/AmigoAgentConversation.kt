@@ -8,8 +8,8 @@ import com.amigo.shared.auth.SessionManager
 import com.amigo.shared.config.AppConfig
 import com.amigo.shared.utils.Logger
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.gotrue.user.UserInfo
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.user.UserInfo
 import io.ktor.util.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -310,51 +310,44 @@ class AmigoAgentConversation(
      * Process action invocations from Bedrock Agent using the ActionGroupRegistry.
      * 
      * This method:
-     * 1. Ensures Supabase session is synced (imports session if needed)
-     * 2. Extracts the user ID from SessionManager (which has the authenticated user)
+     * 1. Ensures we have a valid access token (auto-refreshes if needed)
+     * 2. Extracts the user ID from the Supabase session
      * 3. Creates an ActionContext with authentication information
      * 4. Executes each invocation through the ActionGroupRegistry
      * 5. Returns results for each invocation
      * 
      * @param invocations List of function invocations from the Bedrock Agent
      * @return List of invocation results (success or failure for each)
-     * 
-     * CRITICAL: This method MUST sync the Supabase session before executing actions,
-     * otherwise database operations will fail with "No active session" errors due to RLS policies.
      */
     private suspend fun processActionInvocations(
         invocations: List<FunctionInvocation>
     ): List<InvocationResult> {
-        // CRITICAL: Ensure Supabase session is synced BEFORE executing actions
-        // This imports the session into Supabase so RLS policies work correctly
-        Logger.i("AmigoAgentConversation", "📋 Syncing Supabase session before action execution...")
-        val sessionSynced = sessionManager.ensureSessionSynced()
-        Logger.i("AmigoAgentConversation", "📋 Session sync result: $sessionSynced")
+        // Get fresh access token - this will auto-refresh if needed
+        Logger.i("AmigoAgentConversation", "📋 Getting fresh access token...")
+        val accessToken = sessionManager.getAccessToken()
         
-        if (!sessionSynced) {
-            Logger.w("AmigoAgentConversation", "⚠️ WARNING: Failed to sync Supabase session - database operations may fail")
-        }
-        
-        // Get userId from SessionManager (the source of truth for authentication)
-        // SessionManager maintains the authenticated user session and can extract userId from JWT if needed
-        Logger.i("AmigoAgentConversation", "📋 Getting userId from SessionManager...")
-        val user = sessionManager.getCurrentUser()
-        val userId = user?.id
-        val isAuthenticated = userId != null && userId.isNotBlank()
-        
-        Logger.i("AmigoAgentConversation", "📋 SessionManager user: ${if (user != null) "exists (id=${user.id}, email=${user.email})" else "null"}")
-        Logger.i("AmigoAgentConversation", "📋 Action context - userId: ${userId ?: "null"}, authenticated: $isAuthenticated")
-        
-        // Verify Supabase session is synced by checking currentSessionOrNull
-        try {
-            val supabaseSession = supabaseClient?.auth?.currentSessionOrNull()
-            Logger.i("AmigoAgentConversation", "📋 Supabase session check: ${if (supabaseSession != null) "exists (token=${supabaseSession.accessToken?.take(20)}...)" else "null"}")
-            if (supabaseSession != null) {
-                Logger.i("AmigoAgentConversation", "📋 Supabase session user id: ${supabaseSession.user?.id ?: "null"}")
+        if (accessToken == null) {
+            Logger.e("AmigoAgentConversation", "❌ No valid access token - user not authenticated")
+            return invocations.map { invocation ->
+                InvocationResult(
+                    actionGroup = invocation.actionGroup,
+                    functionName = invocation.functionName,
+                    success = false,
+                    error = "Authentication required"
+                )
             }
-        } catch (e: Exception) {
-            Logger.w("AmigoAgentConversation", "⚠️ Error checking Supabase session: ${e.message}")
         }
+        
+        Logger.i("AmigoAgentConversation", "✅ Access token retrieved (first 20 chars): ${accessToken.take(20)}...")
+        
+        // Get user ID from SessionManager (which handles the SDK 3.x workaround internally)
+        val userId = sessionManager.getCurrentUser()?.id
+        
+        // Consider authenticated if we have both userId and a valid access token
+        val hasValidToken = accessToken.isNotBlank()
+        val isAuthenticated = !userId.isNullOrBlank() && hasValidToken
+        
+        Logger.i("ProfileManager", "📋 User ID: ${userId ?: "null"}, hasValidToken: $hasValidToken, authenticated: $isAuthenticated")
         
         val context = ActionContext(
             userId = userId,
@@ -758,13 +751,15 @@ class AmigoAgentConversation(
         _messages.value = conversationHistory.toList()
     }
 
-    private fun buildSessionContext(
+    private suspend fun buildSessionContext(
         cap: String,
         responsibilities: List<String>,
         collectData: List<String>,
         collectMetrics: List<String>
     ): String {
+        // Get user ID from SessionManager (which handles the SDK 3.x workaround internally)
         val userId = sessionManager.getCurrentUser()?.id.orEmpty()
+        
         val responsibilitiesJson = responsibilities.joinToString(",\n") { "\"$it\"" }
         val collectDataJson = collectData.joinToString(",\n") { "\"$it\"" }
         val metricsJson = collectMetrics.joinToString(",\n") { "\"$it\"" }
@@ -790,54 +785,6 @@ class AmigoAgentConversation(
 
     private fun generateMessageId(): String {
         return "msg_${TimeProvider.currentTimeMillis()}_${(0..9999).random()}"
-    }
-    
-    /**
-     * Extract user ID from a JWT access token.
-     * 
-     * JWT tokens have the format: header.payload.signature
-     * The payload is base64url-encoded JSON containing claims including 'sub' (subject/user ID).
-     * 
-     * This method:
-     * 1. Splits the token into its three parts
-     * 2. Decodes the payload from base64url to a string
-     * 3. Parses the JSON to extract the 'sub' claim
-     * 
-     * @param token The JWT access token
-     * @return The user ID from the 'sub' claim, or null if extraction fails
-     * 
-     * Note: JWT uses base64url encoding (not standard base64), which uses '-' and '_'
-     * instead of '+' and '/', and may omit padding. This method handles the conversion.
-     */
-    private fun extractUserIdFromJWT(token: String): String? {
-        return try {
-            val parts = token.split(".")
-            if (parts.size != 3) {
-                Logger.w("AmigoAgentConversation", "JWT token doesn't have 3 parts: ${parts.size}")
-                return null
-            }
-            
-            val payload = parts[1]
-            // Convert base64url to standard base64 and add padding if needed
-            val base64 = payload.replace('-', '+').replace('_', '/')
-            val paddedBase64 = when (base64.length % 4) {
-                2 -> base64 + "=="
-                3 -> base64 + "="
-                else -> base64
-            }
-            
-            val decodedString = paddedBase64.decodeBase64Bytes().decodeToString()
-            Logger.i("AmigoAgentConversation", "📋 Decoded JWT payload: ${decodedString.take(200)}")
-            
-            // Parse JSON and extract 'sub' field (user ID)
-            val jsonPayload = json.parseToJsonElement(decodedString).jsonObject
-            val sub = jsonPayload["sub"]?.jsonPrimitive?.content
-            Logger.i("AmigoAgentConversation", "📋 Extracted userId from JWT 'sub' field: $sub")
-            sub
-        } catch (e: Exception) {
-            Logger.w("AmigoAgentConversation", "Failed to decode JWT: ${e.message}")
-            null
-        }
     }
 }
 

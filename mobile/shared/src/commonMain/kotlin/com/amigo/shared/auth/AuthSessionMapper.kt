@@ -1,6 +1,6 @@
 package com.amigo.shared.auth
 
-import kotlinx.datetime.Clock
+import com.amigo.shared.utils.CurrentTime
 
 internal fun normalizeUserId(rawId: Any?): String {
     return rawId?.toString()?.trim().orEmpty()
@@ -22,5 +22,5 @@ internal fun normalizeEpochSeconds(rawExpiresAt: Any?): Long {
         else -> parsed
     }
 
-    return epoch ?: (Clock.System.now().epochSeconds + 3600L)
+    return epoch ?: (CurrentTime.nowEpochSeconds() + 3600L)
 }

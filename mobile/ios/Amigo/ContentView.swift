@@ -3,6 +3,7 @@ import shared
 
 struct ContentView: View {
     @ObservedObject var viewModel: AuthViewModel
+    @State private var currentUser: User?
     
     var body: some View {
         NavigationView {
@@ -16,7 +17,7 @@ struct ContentView: View {
                     .font(.title)
                     .fontWeight(.bold)
                 
-                if let user = viewModel.getCurrentUser() {
+                if let user = currentUser {
                     Text("Signed in as:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -36,6 +37,9 @@ struct ContentView: View {
             }
             .padding()
             .navigationTitle("Dashboard")
+            .task {
+                currentUser = try? await viewModel.getCurrentUser()
+            }
         }
     }
 }

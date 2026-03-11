@@ -80,4 +80,9 @@ xcrun simctl list devices | grep "iPhone 16 Pro"
 
 ```
 APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Debug-iphonesimulator/Amigo.app" -type d 2>/dev/null | head -1) && xcrun simctl install B82E40CD-DF97-4C0C-A2B6-AEFB0B3C4DEF "$APP_PATH" && xcrun simctl launch --console B82E40CD-DF97-4C0C-A2B6-AEFB0B3C4DEF com.amigoai.ios 2>&1
+
+
+
+ xcrun simctl spawn booted log stream --predicate 'process == "Amigo"' --level debug --st
+yle compact 2>&1 | grep -E "(ProfileManager|GoalManagement|Logger)" --line-buffered
 ```

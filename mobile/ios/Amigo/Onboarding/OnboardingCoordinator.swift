@@ -45,7 +45,7 @@ struct OnboardingCoordinator: View {
             NSLog("🔧 OnboardingCoordinator: Starting to save profile...")
             do {
                 try await sessionManager.initialize()
-                _ = try await sessionManager.validateSession()
+                // SDK 3.x automatically validates session
                 guard let userId = try await resolveUserId() else {
                     throw NSError(domain: "OnboardingCoordinator", code: -1,
                                 userInfo: [NSLocalizedDescriptionKey: "Session expired. Please sign in again."])
@@ -81,7 +81,7 @@ struct OnboardingCoordinator: View {
     
     private func saveProfileData(userId: String, profileData: [String: String]) async throws {
         let profileManager = ProfileManagerFactory.shared.create()
-        let currentUser = sessionManager.getCurrentUser()
+        let currentUser = try? await sessionManager.getCurrentUser()
         let currentUserEmail = currentUser?.email ?? ""
         let currentAvatarUrl = currentUser?.avatarUrl
         
@@ -175,7 +175,7 @@ struct OnboardingCoordinator: View {
         // Force one session resync and retry once
         NSLog("🔧 OnboardingCoordinator: Save failed, re-syncing session and retrying...")
         try await sessionManager.initialize()
-        _ = try await sessionManager.validateSession()
+        // SDK 3.x automatically validates session
 
         if try await profileManager.updateProfileOrNull(userId: userId, updates: profileUpdate) != nil {
             NSLog("✅ OnboardingCoordinator: Profile updated successfully after retry")
@@ -272,7 +272,7 @@ struct OnboardingCoordinator: View {
     }
 
     private func resolveUserId() async throws -> String? {
-        if let user = sessionManager.getCurrentUser(), !user.id.isEmpty {
+        if let user = try? await sessionManager.getCurrentUser(), !user.id.isEmpty {
             return user.id
         }
 

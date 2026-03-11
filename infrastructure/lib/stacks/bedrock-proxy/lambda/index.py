@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 from urllib import request as urllib_request
 from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin
 
 # Initialize Bedrock client (AWS_REGION is automatically available in Lambda)
 bedrock_runtime = boto3.client('bedrock-runtime')
@@ -12,7 +11,6 @@ bedrock_agent_runtime = boto3.client('bedrock-agent-runtime')
 
 # Supabase JWT verification
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_EDGE_BASE = os.environ.get('SUPABASE_EDGE_BASE') or f"{SUPABASE_URL}/functions/v1"
 
 
 def _read_agent_events(response):
@@ -26,146 +24,25 @@ def _read_agent_events(response):
     return text, return_control
 
 
-def _invoke_edge(http_method, api_path, jwt_bearer, payload):
-    target = urljoin(f"{SUPABASE_EDGE_BASE}/", api_path.lstrip('/'))
-    data = None
-    headers = {
-        'X-Amigo-Auth': jwt_bearer,
-        'Content-Type': 'application/json'
-    }
-    if http_method.upper() != 'GET':
-        data = json.dumps(payload or {}).encode('utf-8')
-
-    req = urllib_request.Request(target, method=http_method.upper(), data=data)
-    for k, v in headers.items():
-        req.add_header(k, v)
-
-    try:
-        with urllib_request.urlopen(req, timeout=20) as response:
-            raw = response.read().decode('utf-8')
-            try:
-                body = json.loads(raw)
-            except Exception:
-                body = {'raw': raw}
-            return response.status, body
-    except HTTPError as e:
-        raw = e.read().decode('utf-8') if hasattr(e, 'read') else str(e)
-        try:
-            body = json.loads(raw)
-        except Exception:
-            body = {'raw': raw}
-        return e.code or 500, body
-    except Exception as e:
-        return 500, {'error': str(e)}
+# Legacy edge function invocation removed - all function execution now happens client-side
+def _invoke_edge_DEPRECATED(http_method, api_path, jwt_bearer, payload):
+    """
+    DEPRECATED: This function was used for server-side edge function calls.
+    Now all functions are executed client-side via RETURN_CONTROL.
+    Kept for reference only.
+    """
+    pass
 
 
-def _build_return_control_results(return_control, jwt_bearer):
-    invocation_id = return_control.get('invocationId')
-    inputs = return_control.get('invocationInputs', [])
-    results = []
-
-    for item in inputs:
-        api_input = item.get('apiInvocationInput')
-        function_input = item.get('functionInvocationInput')
-
-        if api_input:
-            action_group = api_input.get('actionGroup', 'onboarding-operations')
-            api_path = api_input.get('apiPath', '')
-            http_method = api_input.get('httpMethod', 'GET')
-
-            payload = {}
-            request_body = api_input.get('requestBody', {})
-            content = request_body.get('content', {})
-            app_json = content.get('application/json', {})
-            properties = app_json.get('properties', [])
-            for prop in properties:
-                name = prop.get('name')
-                value = prop.get('value')
-                if name:
-                    payload[name] = value
-            
-            # For save-onboarding-data, wrap individual fields in payload_json for edge function
-            if api_path == '/save-onboarding-data' and payload:
-                payload = {'payload_json': json.dumps(payload)}
-
-            status_code, body = _invoke_edge(http_method, api_path, jwt_bearer, payload)
-            api_result = {
-                'actionGroup': action_group,
-                'apiPath': api_path,
-                'httpMethod': http_method,
-                'httpStatusCode': status_code,
-                'responseBody': {
-                    'TEXT': {
-                        'body': json.dumps(body)
-                    }
-                }
-            }
-            if status_code >= 400:
-                api_result['responseState'] = 'FAILURE'
-
-            results.append({'apiResult': api_result})
-            continue
-
-        if function_input:
-            action_group = function_input.get('actionGroup', 'onboarding-operations')
-            function_name = function_input.get('function', '')
-            parameters = function_input.get('parameters', [])
-
-            args = {}
-            for param in parameters:
-                name = param.get('name')
-                value = param.get('value')
-                if name:
-                    args[name] = value
-
-            arg_auth = args.get('x_amigo_auth')
-            if isinstance(arg_auth, str):
-                token_text = arg_auth.strip()
-                has_template = (
-                    '{x_amigo_auth}' in token_text or '<user_jwt>' in token_text or '{' in token_text or '<' in token_text
-                )
-                if has_template:
-                    arg_auth = jwt_bearer
-
-            header_token = arg_auth if isinstance(arg_auth, str) and arg_auth.strip() else jwt_bearer
-            if not header_token.startswith('Bearer '):
-                header_token = f'Bearer {header_token}'
-
-            raw = header_token[len('Bearer '):].strip() if header_token.startswith('Bearer ') else header_token
-            if raw.count('.') != 2:
-                header_token = jwt_bearer
-
-            function_map = {
-                'get_profile': ('GET', '/get-profile'),
-                'save_onboarding_data': ('POST', '/save-onboarding-data'),
-                'get_onboarding_status': ('GET', '/get-onboarding-status'),
-                'calculate_bmr': ('POST', '/health-calculations'),
-                'calculate_tdee': ('POST', '/health-calculations'),
-                'validate_goal': ('POST', '/health-calculations'),
-                'calculate_macros': ('POST', '/health-calculations'),
-            }
-            http_method, api_path = function_map.get(function_name, ('POST', f'/{function_name}'))
-            payload = {k: v for k, v in args.items() if k != 'x_amigo_auth'}
-            if function_name in ('calculate_bmr', 'calculate_tdee', 'validate_goal', 'calculate_macros'):
-                payload['operation'] = function_name
-
-            status_code, body = _invoke_edge(http_method, api_path, header_token, payload)
-            
-            function_result = {
-                'actionGroup': action_group,
-                'function': function_name,
-                'responseBody': {
-                    'TEXT': {
-                        'body': json.dumps(body)
-                    }
-                }
-            }
-            if status_code >= 400:
-                function_result['responseState'] = 'FAILURE'
-
-            results.append({'functionResult': function_result})
-
-    return invocation_id, results
+# Legacy server-side execution removed - all function execution now happens client-side
+# This function is no longer used but kept for reference
+def _build_return_control_results_DEPRECATED(return_control, jwt_bearer):
+    """
+    DEPRECATED: This function was used for server-side function execution.
+    Now all functions are executed client-side via RETURN_CONTROL.
+    Kept for reference only.
+    """
+    pass
 
 def verify_supabase_token(token):
     """Verify Supabase JWT token by calling Supabase API"""

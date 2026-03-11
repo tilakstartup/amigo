@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS public.users_profiles (
     unit_preference TEXT CHECK (unit_preference IN ('metric', 'imperial')) DEFAULT 'metric',
     language TEXT DEFAULT 'en',
     theme TEXT CHECK (theme IN ('light', 'dark', 'auto')) DEFAULT 'auto',
+    goal_type TEXT CHECK (goal_type IN ('weight_loss', 'muscle_gain', 'maintenance', 'improved_energy', 'better_sleep')),
+    goal_by_when DATE,
+    onboarding_completed BOOLEAN DEFAULT FALSE,
+    onboarding_completed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

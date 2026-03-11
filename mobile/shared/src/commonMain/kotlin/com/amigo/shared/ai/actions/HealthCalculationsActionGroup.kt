@@ -1,5 +1,6 @@
 package com.amigo.shared.ai.actions
 
+import com.amigo.shared.utils.CurrentTime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -61,6 +62,7 @@ object HealthCalculationsActionGroup : ActionGroup {
         )
     )
     
+    @Suppress("DEPRECATION")
     override suspend fun executeFunction(
         functionName: String,
         params: Map<String, String>,
@@ -183,8 +185,8 @@ object HealthCalculationsActionGroup : ActionGroup {
             val targetMonth = dateParts[1].toInt()
             val targetDay = dateParts[2].toInt()
             
-            // Get current date using Clock.System
-            val now = kotlinx.datetime.Clock.System.now()
+            // Get current date using CurrentTime
+            val now = CurrentTime.now()
             val currentEpochDays = (now.toEpochMilliseconds() / (24 * 60 * 60 * 1000)).toInt()
             
             val targetLocalDate = kotlinx.datetime.LocalDate(targetYear, targetMonth, targetDay)
@@ -263,7 +265,7 @@ object HealthCalculationsActionGroup : ActionGroup {
             val targetYear = dateParts[0].toInt()
             val targetMonth = dateParts[1].toInt()
             val targetDay = dateParts[2].toInt()
-            val now = kotlinx.datetime.Clock.System.now()
+            val now = CurrentTime.now()
             val currentEpochDays = (now.toEpochMilliseconds() / (24 * 60 * 60 * 1000)).toInt()
             val targetLocalDate = kotlinx.datetime.LocalDate(targetYear, targetMonth, targetDay)
             val daysUntilTarget = (targetLocalDate.toEpochDays() - currentEpochDays)

@@ -2,10 +2,10 @@ package com.amigo.shared.auth
 
 import com.amigo.shared.auth.models.*
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.gotrue.providers.Google
-import io.github.jan.supabase.gotrue.providers.Apple
-import io.github.jan.supabase.gotrue.providers.builtin.OTP
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.Apple
+import io.github.jan.supabase.auth.providers.builtin.OTP
 
 class OAuthAuthenticator(private val supabase: SupabaseClient) {
     

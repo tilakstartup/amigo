@@ -1,14 +1,25 @@
 plugins {
-    kotlin("multiplatform") version "1.9.22"
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("multiplatform") version "2.3.0"
+    kotlin("plugin.serialization") version "2.3.0"
     id("com.android.library")
 }
 
 kotlin {
     androidTarget {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+    
+    // Suppress deprecation warnings for all targets
+    targets.all {
         compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
+            compilerOptions.configure {
+                // Don't treat warnings as errors
+                allWarningsAsErrors.set(false)
+                freeCompilerArgs.addAll(
+                    "-Xexpect-actual-classes"
+                )
             }
         }
     }
@@ -33,19 +44,19 @@ kotlin {
                 // Serialization
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
                 
-                // Ktor for networking
-                implementation("io.ktor:ktor-client-core:2.3.7")
-                implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+                // Ktor for networking - Updated to 3.4.0 for Supabase 3.4.1 compatibility
+                implementation("io.ktor:ktor-client-core:3.4.0")
+                implementation("io.ktor:ktor-client-content-negotiation:3.4.0")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.4.0")
                 
                 // DateTime
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
                 
-                // Supabase
-                implementation("io.github.jan-tennert.supabase:postgrest-kt:2.0.4")
-                implementation("io.github.jan-tennert.supabase:storage-kt:2.0.4")
-                implementation("io.github.jan-tennert.supabase:realtime-kt:2.0.4")
-                implementation("io.github.jan-tennert.supabase:gotrue-kt:2.0.4")
+                // Supabase - Updated to 3.4.1 for better session management
+                implementation("io.github.jan-tennert.supabase:postgrest-kt:3.4.1")
+                implementation("io.github.jan-tennert.supabase:storage-kt:3.4.1")
+                implementation("io.github.jan-tennert.supabase:realtime-kt:3.4.1")
+                implementation("io.github.jan-tennert.supabase:auth-kt:3.4.1")
             }
         }
         
@@ -58,7 +69,7 @@ kotlin {
         
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-android:2.3.7")
+                implementation("io.ktor:ktor-client-android:3.4.0")
                 implementation("androidx.security:security-crypto:1.1.0-alpha06")
             }
         }
@@ -73,7 +84,7 @@ kotlin {
             iosSimulatorArm64Main.dependsOn(this)
             
             dependencies {
-                implementation("io.ktor:ktor-client-darwin:2.3.7")
+                implementation("io.ktor:ktor-client-darwin:3.4.0")
             }
         }
     }

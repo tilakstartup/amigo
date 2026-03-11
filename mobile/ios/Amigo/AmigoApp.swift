@@ -85,7 +85,7 @@ struct AmigoApp: App {
         Task {
             do {
                 try await sessionManager.initialize()
-                _ = try await sessionManager.validateSession()
+                // SDK 3.x automatically manages session validation
 
                 guard let userId = try await resolveUserIdForOnboarding(), !userId.isEmpty else {
                     await MainActor.run {
@@ -114,7 +114,7 @@ struct AmigoApp: App {
     }
 
     private func resolveUserIdForOnboarding() async throws -> String? {
-        if let user = authViewModel.getCurrentUser(), !user.id.isEmpty {
+        if let user = try? await authViewModel.getCurrentUser(), !user.id.isEmpty {
             return user.id
         }
 
@@ -153,42 +153,53 @@ struct AmigoApp: App {
         
         // Check if this is an auth callback
         if url.scheme == "amigo" && url.host == "auth" {
-            // Extract tokens from URL fragment
-            if let fragment = url.fragment {
-                NSLog("🔗 Fragment: \(fragment)")
-                
-                // Parse fragment parameters
-                let params = fragment.components(separatedBy: "&").reduce(into: [String: String]()) { result, param in
-                    let parts = param.components(separatedBy: "=")
-                    if parts.count == 2 {
-                        result[parts[0]] = parts[1]
-                    }
-                }
-                
-                NSLog("🔗 Parsed params: \(params.keys.joined(separator: ", "))")
-                
-                if let accessToken = params["access_token"],
-                   let refreshToken = params["refresh_token"] {
-                    NSLog("✅ Tokens found - access: \(accessToken.prefix(20))..., refresh: \(refreshToken.prefix(20))...")
+            NSLog("🔗 OAuth callback detected")
+            
+            // Parse tokens from URL fragment
+            // URL format: amigo://auth#access_token=xxx&refresh_token=yyy&...
+            Task {
+                do {
+                    let fragment = url.fragment ?? ""
+                    NSLog("🔗 URL fragment: \(fragment)")
                     
-                    Task {
-                        await authViewModel.handleDeepLinkSession(accessToken: accessToken, refreshToken: refreshToken)
-                        
-                        // Log user after session is handled
-                        if let user = authViewModel.getCurrentUser() {
-                            NSLog("✅ User after deep link: ID=\(user.id), email=\(user.email)")
-                        } else {
-                            NSLog("❌ No user after deep link handling")
+                    // Parse query parameters from fragment
+                    var params: [String: String] = [:]
+                    for param in fragment.components(separatedBy: "&") {
+                        let parts = param.components(separatedBy: "=")
+                        if parts.count == 2 {
+                            params[parts[0]] = parts[1]
                         }
                     }
-                } else {
-                    NSLog("❌ Missing tokens in params")
+                    
+                    guard let accessToken = params["access_token"],
+                          let refreshToken = params["refresh_token"] else {
+                        NSLog("❌ Missing tokens in OAuth callback")
+                        await MainActor.run {
+                            authViewModel.errorMessage = "Missing authentication tokens"
+                        }
+                        return
+                    }
+                    
+                    // Parse expires_in from URL (default to 3600 if not present)
+                    let expiresIn = Int64(params["expires_in"] ?? "3600") ?? 3600
+                    
+                    NSLog("🔗 Extracted tokens from URL")
+                    NSLog("🔗 Access token length: \(accessToken.count)")
+                    NSLog("🔗 Refresh token length: \(refreshToken.count)")
+                    NSLog("🔗 Expires in: \(expiresIn) seconds")
+                    
+                    // Use the AuthViewModel's deep link handler
+                    await authViewModel.handleDeepLinkSession(accessToken: accessToken, refreshToken: refreshToken, expiresIn: expiresIn)
+                    
+                } catch {
+                    NSLog("❌ Error handling OAuth callback: \(error.localizedDescription)")
+                    await MainActor.run {
+                        authViewModel.errorMessage = "Failed to handle OAuth callback: \(error.localizedDescription)"
+                    }
                 }
-            } else {
-                NSLog("❌ No fragment in URL")
             }
         } else {
-            NSLog("🔗 Not an auth callback: scheme=\(url.scheme ?? "nil"), host=\(url.host ?? "nil")")
+            NSLog("🔗 Non-auth deep link: \(url)")
         }
     }
 }

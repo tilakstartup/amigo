@@ -2,6 +2,7 @@ package com.amigo.shared.ai.actions
 
 import com.amigo.shared.profile.ProfileManager
 import com.amigo.shared.data.models.GoalType
+import com.amigo.shared.utils.Logger
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -43,15 +44,15 @@ object GoalManagementActionGroup : ActionGroup {
         params: Map<String, String>,
         context: ActionContext
     ): Result<JsonObject> {
-        println("🎯 [GoalManagement] executeFunction called")
-        println("🎯 [GoalManagement] Function: $functionName")
-        println("🎯 [GoalManagement] Parameters: $params")
-        println("🎯 [GoalManagement] Context userId: ${context.userId}")
-        println("🎯 [GoalManagement] Context isAuthenticated: ${context.isAuthenticated}")
+        Logger.i("GoalManagement", "🎯 executeFunction called")
+        Logger.i("GoalManagement", "🎯 Function: $functionName")
+        Logger.i("GoalManagement", "🎯 Parameters: $params")
+        Logger.i("GoalManagement", "🎯 Context userId: ${context.userId}")
+        Logger.i("GoalManagement", "🎯 Context isAuthenticated: ${context.isAuthenticated}")
         
         // Verify authentication
         if (!context.isAuthenticated) {
-            println("❌ [GoalManagement] Authentication required")
+            Logger.e("GoalManagement", "❌ Authentication required")
             return Result.failure(
                 IllegalStateException("Authentication required for goal management")
             )
@@ -59,11 +60,11 @@ object GoalManagementActionGroup : ActionGroup {
         
         return when (functionName) {
             "save_goal" -> {
-                println("✅ [GoalManagement] Calling saveGoal")
+                Logger.i("GoalManagement", "✅ Calling saveGoal")
                 saveGoal(params, context)
             }
             else -> {
-                println("❌ [GoalManagement] Unknown function: $functionName")
+                Logger.e("GoalManagement", "❌ Unknown function: $functionName")
                 Result.failure(
                     IllegalArgumentException("Unknown function: $functionName")
                 )
@@ -75,26 +76,26 @@ object GoalManagementActionGroup : ActionGroup {
         params: Map<String, String>,
         context: ActionContext
     ): Result<JsonObject> {
-        println("🎯 [GoalManagement] saveGoal started")
+        Logger.i("GoalManagement", "🎯 saveGoal started")
         val userId = context.userId
         if (userId.isNullOrEmpty()) {
-            println("❌ [GoalManagement] User ID is null or empty")
+            Logger.e("GoalManagement", "❌ User ID is null or empty")
             return Result.failure(IllegalStateException("User ID required for saving goal"))
         }
-        println("✅ [GoalManagement] User ID: $userId")
+        Logger.i("GoalManagement", "✅ User ID: $userId")
         
         val supabase = context.supabaseClient
         if (supabase == null) {
-            println("❌ [GoalManagement] Supabase client not available")
+            Logger.e("GoalManagement", "❌ Supabase client not available")
             return Result.failure(IllegalStateException("Supabase client not available"))
         }
-        println("✅ [GoalManagement] Supabase client available")
+        Logger.i("GoalManagement", "✅ Supabase client available")
         
         return try {
             val goalTypeStr = params["goal_type"]?.lowercase()
-            println("🎯 [GoalManagement] Goal type: $goalTypeStr")
+            Logger.i("GoalManagement", "🎯 Goal type: $goalTypeStr")
             if (goalTypeStr == null) {
-                println("❌ [GoalManagement] Missing goal_type")
+                Logger.e("GoalManagement", "❌ Missing goal_type")
                 return Result.failure(IllegalArgumentException("Missing goal_type"))
             }
             
@@ -103,30 +104,30 @@ object GoalManagementActionGroup : ActionGroup {
                 "muscle_gain" -> GoalType.MUSCLE_GAIN
                 "maintenance" -> GoalType.MAINTENANCE
                 else -> {
-                    println("❌ [GoalManagement] Invalid goal_type: $goalTypeStr")
+                    Logger.e("GoalManagement", "❌ Invalid goal_type: $goalTypeStr")
                     return Result.failure(IllegalArgumentException("Invalid goal_type: $goalTypeStr"))
                 }
             }
-            println("✅ [GoalManagement] Goal type enum: $goalType")
+            Logger.i("GoalManagement", "✅ Goal type enum: $goalType")
             
             val currentWeight = params["current_weight"]?.toDoubleOrNull()
-            println("🎯 [GoalManagement] Current weight: $currentWeight")
+            Logger.i("GoalManagement", "🎯 Current weight: $currentWeight")
             if (currentWeight == null) {
-                println("❌ [GoalManagement] Invalid current_weight")
+                Logger.e("GoalManagement", "❌ Invalid current_weight")
                 return Result.failure(IllegalArgumentException("Invalid current_weight"))
             }
             
             val targetWeight = params["target_weight"]?.toDoubleOrNull()
-            println("🎯 [GoalManagement] Target weight: $targetWeight")
+            Logger.i("GoalManagement", "🎯 Target weight: $targetWeight")
             if (targetWeight == null) {
-                println("❌ [GoalManagement] Invalid target_weight")
+                Logger.e("GoalManagement", "❌ Invalid target_weight")
                 return Result.failure(IllegalArgumentException("Invalid target_weight"))
             }
             
             val targetDate = params["target_date"]
-            println("🎯 [GoalManagement] Target date: $targetDate")
+            Logger.i("GoalManagement", "🎯 Target date: $targetDate")
             if (targetDate == null) {
-                println("❌ [GoalManagement] Missing target_date")
+                Logger.e("GoalManagement", "❌ Missing target_date")
                 return Result.failure(IllegalArgumentException("Missing target_date"))
             }
             
@@ -140,15 +141,15 @@ object GoalManagementActionGroup : ActionGroup {
             val validationReason = params["validation_reason"]
             val userOverridden = params["user_overridden"]?.toBooleanStrictOrNull() ?: false
             
-            println("🎯 [GoalManagement] Optional params - height: $currentHeight, activity: $activityLevel")
-            println("🎯 [GoalManagement] Calculations - BMR: $calculatedBmr, TDEE: $calculatedTdee, calories: $calculatedDailyCalories")
-            println("🎯 [GoalManagement] User overridden: $userOverridden")
+            Logger.i("GoalManagement", "🎯 Optional params - height: $currentHeight, activity: $activityLevel")
+            Logger.i("GoalManagement", "🎯 Calculations - BMR: $calculatedBmr, TDEE: $calculatedTdee, calories: $calculatedDailyCalories")
+            Logger.i("GoalManagement", "🎯 User overridden: $userOverridden")
             
             val profileManager = ProfileManager(supabase)
-            println("🎯 [GoalManagement] Calling ProfileManager.updateGoal")
+            Logger.i("GoalManagement", "🎯 Calling ProfileManager.updateGoal")
             
-            // Save goal using ProfileManager
-            profileManager.updateGoal(
+            // Save goal using ProfileManager and propagate result status
+            val updateResult = profileManager.updateGoal(
                 userId = userId,
                 goalType = goalType,
                 targetWeightKg = targetWeight,
@@ -166,7 +167,13 @@ object GoalManagementActionGroup : ActionGroup {
                 userOverridden = userOverridden
             )
             
-            println("✅ [GoalManagement] Goal saved successfully!")
+            if (updateResult.isFailure) {
+                val error = updateResult.exceptionOrNull()
+                Logger.e("GoalManagement", "❌ ProfileManager.updateGoal failed: ${error?.message}")
+                return Result.failure(error ?: IllegalStateException("Failed to update goal"))
+            }
+            
+            Logger.i("GoalManagement", "✅ Goal saved successfully!")
             Result.success(buildJsonObject {
                 put("status", "success")
                 put("message", "Goal saved successfully")
@@ -176,7 +183,7 @@ object GoalManagementActionGroup : ActionGroup {
                 put("target_date", targetDate)
             })
         } catch (e: Exception) {
-            println("❌ [GoalManagement] Exception: ${e.message}")
+            Logger.e("GoalManagement", "❌ Exception: ${e.message}")
             e.printStackTrace()
             Result.failure(e)
         }

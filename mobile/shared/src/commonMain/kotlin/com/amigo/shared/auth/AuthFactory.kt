@@ -15,6 +15,11 @@ object AuthFactory {
     }
     
     /**
+     * Get the Supabase client instance
+     */
+    fun getSupabaseClient() = SupabaseClientProvider.getClient()
+    
+    /**
      * Create EmailAuthenticator instance
      */
     fun createEmailAuthenticator(): EmailAuthenticator {

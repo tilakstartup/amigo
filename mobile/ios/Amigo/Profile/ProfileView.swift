@@ -3,12 +3,13 @@ import shared
 
 struct ProfileView: View {
     @ObservedObject var viewModel: AuthViewModel
+    @State private var currentUser: User?
     
     var body: some View {
         NavigationView {
             List {
                 Section {
-                    if let user = viewModel.getCurrentUser() {
+                    if let user = currentUser {
                         HStack {
                             Image(systemName: "person.circle.fill")
                                 .font(.system(size: 50))
@@ -65,14 +66,19 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profile")
+            .task {
+                currentUser = try? await viewModel.getCurrentUser()
+            }
         }
     }
     
     private func resetOnboarding() {
-        if let user = viewModel.getCurrentUser() {
-            let userKey = "hasCompletedOnboarding_\(user.id)"
-            UserDefaults.standard.removeObject(forKey: userKey)
-            exit(0)
+        Task {
+            if let user = try? await viewModel.getCurrentUser() {
+                let userKey = "hasCompletedOnboarding_\(user.id)"
+                UserDefaults.standard.removeObject(forKey: userKey)
+                exit(0)
+            }
         }
     }
 }

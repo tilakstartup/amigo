@@ -4,6 +4,11 @@ import com.amigo.shared.data.models.UnitPreference
 import com.amigo.shared.data.models.Theme
 import com.amigo.shared.data.models.GoalType
 import com.amigo.shared.data.models.ActivityLevel
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.add
 
 data class ProfileUpdate(
     val firstName: String? = null,
@@ -24,26 +29,30 @@ data class ProfileUpdate(
     val language: String? = null,
     val theme: Theme? = null
 ) {
-    fun toMap(): Map<String, Any?> {
-        val map = mutableMapOf<String, Any?>()
-        firstName?.let { map["first_name"] = it }
-        lastName?.let { map["last_name"] = it }
-        displayName?.let { map["display_name"] = it }
-        avatarUrl?.let { map["avatar_url"] = it }
-        age?.let { map["age"] = it }
-        heightCm?.let { map["height_cm"] = it }
-        weightKg?.let { map["weight_kg"] = it }
-        gender?.let { map["gender"] = it }
-        goalType?.let { map["goal_type"] = it.name.lowercase() }
-        goalByWhen?.let { map["goal_by_when"] = it }
-        activityLevel?.let { map["activity_level"] = it.name.lowercase() }
-        dietaryPreferences?.let { map["dietary_preferences"] = it }
-        onboardingCompleted?.let { map["onboarding_completed"] = it }
-        onboardingCompletedAt?.let { map["onboarding_completed_at"] = it }
-        unitPreference?.let { map["unit_preference"] = it.name.lowercase() }
-        language?.let { map["language"] = it }
-        theme?.let { map["theme"] = it.name.lowercase() }
-        return map
+    fun toMap(): JsonObject {
+        return buildJsonObject {
+            firstName?.let { put("first_name", it) }
+            lastName?.let { put("last_name", it) }
+            displayName?.let { put("display_name", it) }
+            avatarUrl?.let { put("avatar_url", it) }
+            age?.let { put("age", it) }
+            heightCm?.let { put("height_cm", it) }
+            weightKg?.let { put("weight_kg", it) }
+            gender?.let { put("gender", it) }
+            goalType?.let { put("goal_type", it.name.lowercase()) }
+            goalByWhen?.let { put("goal_by_when", it) }
+            activityLevel?.let { put("activity_level", it.name.lowercase()) }
+            dietaryPreferences?.let { prefs ->
+                putJsonArray("dietary_preferences") {
+                    prefs.forEach { add(it) }
+                }
+            }
+            onboardingCompleted?.let { put("onboarding_completed", it) }
+            onboardingCompletedAt?.let { put("onboarding_completed_at", it) }
+            unitPreference?.let { put("unit_preference", it.name.lowercase()) }
+            language?.let { put("language", it) }
+            theme?.let { put("theme", it.name.lowercase()) }
+        }
     }
     
     /**

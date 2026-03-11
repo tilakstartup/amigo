@@ -5,11 +5,13 @@ import com.amigo.shared.data.models.UnitPreference
 import com.amigo.shared.data.models.Theme
 import com.amigo.shared.data.models.GoalType
 import com.amigo.shared.data.models.ActivityLevel
+import com.amigo.shared.utils.Logger
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
-import kotlinx.datetime.Clock
+import com.amigo.shared.utils.CurrentTime
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -55,7 +57,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
             
             Result.success(profile)
         } catch (e: Exception) {
-            println("❌ ProfileManager.getProfile failed for userId=$userId: ${e.message}")
+            Logger.e("ProfileManager", "❌ getProfile failed for userId=$userId: ${e.message}")
             Result.failure(e)
         }
     }
@@ -71,7 +73,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
             
             Result.success(created)
         } catch (e: Exception) {
-            println("❌ ProfileManager.createProfile failed for userId=${profile.id}, email=${profile.email}: ${e.message}")
+            Logger.e("ProfileManager", "❌ createProfile failed for userId=${profile.id}, email=${profile.email}: ${e.message}")
             Result.failure(e)
         }
     }
@@ -91,7 +93,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
             
             Result.success(updated)
         } catch (e: Exception) {
-            println("❌ ProfileManager.updateProfile failed for userId=$userId: ${e.message}")
+            Logger.e("ProfileManager", "❌ updateProfile failed for userId=$userId: ${e.message}")
             Result.failure(e)
         }
     }
@@ -124,6 +126,7 @@ class ProfileManager(private val supabase: SupabaseClient) {
     /**
      * Update user's health goal
      */
+    @Suppress("DEPRECATION")
     suspend fun updateGoal(
         userId: String,
         goalType: GoalType,
@@ -137,120 +140,168 @@ class ProfileManager(private val supabase: SupabaseClient) {
         calculatedDailyCalories: Double? = null,
         calculatedBmiStart: Double? = null,
         calculatedBmiTarget: Double? = null,
-        weeklyMilestones: List<Map<String, Any>>? = null,
+        weeklyMilestones: String? = null,  // JSON string
         isRealistic: Boolean? = null,
         recommendedTargetDate: String? = null,
         validationReason: String? = null,
-        goalContext: Map<String, Any>? = null,
+        goalContext: String? = null,  // JSON string
         userOverridden: Boolean? = null
     ): Result<UserProfile> {
         return try {
-            // Verify Supabase has an active session
-            val currentSession = supabase.auth.currentSessionOrNull()
-            if (currentSession == null) {
-                println("❌ ProfileManager: No active Supabase session found!")
+            // Get current session - Supabase SDK manages session state
+            val session = supabase.auth.currentSessionOrNull()
+            if (session == null) {
+                Logger.e("ProfileManager", "❌ No active Supabase session found!")
                 return Result.failure(Exception("No active session. Please log in again."))
             }
-            println("✅ ProfileManager: Active session found for user: ${currentSession.user?.id}")
             
-            // Verify the session user matches the userId parameter
-            val sessionUserId = currentSession.user?.id
-            if (sessionUserId != userId) {
-                println("⚠️ ProfileManager: Session user ID ($sessionUserId) doesn't match target user ID ($userId)")
+            Logger.i("ProfileManager", "✅ Active session retrieved")
+            Logger.i("ProfileManager", "🔍 Session token (first 50 chars): ${session.accessToken.take(50)}")
+            Logger.i("ProfileManager", "🔍 Session expiresAt: ${session.expiresAt}")
+            Logger.i("ProfileManager", "🔍 Using provided userId: $userId")
+            
+            // Use the provided userId parameter instead of trying to get it from session
+            // This works around the Supabase SDK 3.x issue where session.user is null after importSession()
+            if (userId.isBlank()) {
+                Logger.e("ProfileManager", "❌ Provided user ID is blank")
+                return Result.failure(Exception("Invalid user ID"))
             }
             
             val goalTypeValue = goalType.name.lowercase()
-            val updates = mutableMapOf<String, Any>(
-                "goal_type" to goalTypeValue
-            )
-            
-            if (targetDate != null) {
-                updates["goal_by_when"] = targetDate
+            // Try to update users_profiles, but don't fail if it doesn't work
+            // The goal_type and goal_by_when fields may not exist in the table
+            val updates = buildJsonObject {
+                put("goal_type", goalTypeValue)
+                targetDate?.let { put("goal_by_when", it) }
             }
             
-            println("🔵 ProfileManager: Updating users_profiles for user: $userId")
-            val updated = supabase.from("users_profiles")
-                .update(updates) {
-                    filter {
-                        eq("id", userId)
+            Logger.i("ProfileManager", "🔵 Attempting to update users_profiles for user: $userId")
+            Logger.i("ProfileManager", "🔵 Update payload: $updates")
+            
+            var updated: UserProfile? = null
+            try {
+                updated = supabase.from("users_profiles")
+                    .update(updates) {
+                        filter {
+                            eq("id", userId)
+                        }
                     }
+                    .decodeSingleOrNull<UserProfile>()
+                    
+                if (updated != null) {
+                    Logger.i("ProfileManager", "✅ users_profiles updated successfully")
+                } else {
+                    Logger.w("ProfileManager", "⚠️ users_profiles update returned null - columns may not exist, continuing anyway")
                 }
-                .decodeSingle<UserProfile>()
-            println("✅ ProfileManager: users_profiles updated successfully")
+            } catch (e: Exception) {
+                Logger.w("ProfileManager", "⚠️ users_profiles update failed (non-critical): ${e.message}")
+                Logger.w("ProfileManager", "⚠️ Continuing with goal save anyway")
+                // Don't throw - this update is not critical for goal saving
+            }
+            
+            // If users_profiles update failed, fetch the current profile to return later
+            if (updated == null) {
+                Logger.i("ProfileManager", "🔵 Fetching current profile since update was skipped")
+                updated = try {
+                    supabase.from("users_profiles")
+                        .select(columns = Columns.ALL) {
+                            filter {
+                                eq("id", userId)
+                            }
+                        }
+                        .decodeSingle<UserProfile>()
+                } catch (e: Exception) {
+                    Logger.e("ProfileManager", "❌ Failed to fetch profile: ${e.message}")
+                    throw Exception("User profile not found")
+                }
+            }
 
-            println("🔵 ProfileManager: Deactivating old goals for user: $userId")
+            Logger.i("ProfileManager", "🔵 Deactivating old goals for user: $userId")
             supabase.from("health_goals")
-                .update(mapOf("is_active" to false)) {
+                .update(buildJsonObject {
+                    put("is_active", false)
+                }) {
                     filter {
                         eq("user_id", userId)
                         eq("is_active", true)
                     }
                 }
-            println("✅ ProfileManager: Old goals deactivated")
+            Logger.i("ProfileManager", "✅ Old goals deactivated")
 
-            val healthGoalPayload = mutableMapOf<String, Any>(
-                "user_id" to userId,
-                "goal_type" to goalTypeValue,
-                "is_active" to true,
-                "start_date" to Clock.System.now().toString()
-            )
-            
-            targetDate?.let {
-                healthGoalPayload["target_date"] = it
-                healthGoalPayload["end_date"] = "${it}T00:00:00Z"
+            val healthGoalPayload = buildJsonObject {
+                put("user_id", userId)
+                put("goal_type", goalTypeValue)
+                put("is_active", true)
+                put("start_date", CurrentTime.nowIso8601())
+                
+                targetDate?.let {
+                    put("target_date", it)
+                    put("end_date", "${it}T00:00:00Z")
+                }
+                targetWeightKg?.let { put("target_weight", it) }
+                currentWeightKg?.let { put("current_weight", it) }
+                currentHeightCm?.let { put("current_height", it) }
+                normalizeHealthGoalActivityLevel(activityLevel)?.let { put("activity_level", it) }
+                calculatedBmr?.let { put("calculated_bmr", it) }
+                calculatedTdee?.let { put("calculated_tdee", it) }
+                calculatedDailyCalories?.let { put("calculated_daily_calories", it) }
+                calculatedBmiStart?.let { put("calculated_bmi_start", it) }
+                calculatedBmiTarget?.let { put("calculated_bmi_target", it) }
+                isRealistic?.let { put("is_realistic", it) }
+                recommendedTargetDate?.let { put("recommended_target_date", it) }
+                validationReason?.let { put("validation_reason", it) }
+                userOverridden?.let { put("user_overridden", it) }
+                // Note: weeklyMilestones and goalContext are skipped for now as they need special handling
             }
-            targetWeightKg?.let { healthGoalPayload["target_weight"] = it }
-            currentWeightKg?.let { healthGoalPayload["current_weight"] = it }
-            currentHeightCm?.let { healthGoalPayload["current_height"] = it }
-            normalizeHealthGoalActivityLevel(activityLevel)?.let { healthGoalPayload["activity_level"] = it }
-            calculatedBmr?.let { healthGoalPayload["calculated_bmr"] = it }
-            calculatedTdee?.let { healthGoalPayload["calculated_tdee"] = it }
-            calculatedDailyCalories?.let { healthGoalPayload["calculated_daily_calories"] = it }
-            calculatedBmiStart?.let { healthGoalPayload["calculated_bmi_start"] = it }
-            calculatedBmiTarget?.let { healthGoalPayload["calculated_bmi_target"] = it }
-            isRealistic?.let { healthGoalPayload["is_realistic"] = it }
-            recommendedTargetDate?.let { healthGoalPayload["recommended_target_date"] = it }
-            validationReason?.let { healthGoalPayload["validation_reason"] = it }
-            userOverridden?.let { healthGoalPayload["user_overridden"] = it }
-            // Note: weeklyMilestones and goalContext are skipped for now as they need special handling
 
-            println("🔵 ProfileManager: Inserting health goal")
-            println("🔵 ProfileManager: user_id=$userId, goal_type=$goalTypeValue")
-            println("🔵 ProfileManager: Payload keys: ${healthGoalPayload.keys}")
-            println("🔵 ProfileManager: Session user: ${currentSession.user?.id}")
-            println("🔵 ProfileManager: Session access token present: ${currentSession.accessToken.isNotEmpty()}")
-            println("🔵 ProfileManager: Session access token (first 50 chars): ${currentSession.accessToken.take(50)}")
+            Logger.i("ProfileManager", "🔵 Inserting health goal")
+            Logger.i("ProfileManager", "🔵 user_id=$userId, goal_type=$goalTypeValue")
+            Logger.i("ProfileManager", "🔵 Payload keys: ${healthGoalPayload.keys}")
+            Logger.i("ProfileManager", "🔵 Session user: ${session.user?.id}")
+            Logger.i("ProfileManager", "🔵 Session access token present: ${session.accessToken.isNotEmpty()}")
+            Logger.i("ProfileManager", "🔵 Session access token (first 50 chars): ${session.accessToken.take(50)}")
             
             // CRITICAL: Must select() after insert to detect RLS violations
             // Without select(), RLS policy failures are silent
             try {
-                println("🔵 ProfileManager: Calling insert with select...")
-                val insertedGoal = supabase.from("health_goals")
-                    .insert(healthGoalPayload) {
-                        select()
-                    }
-                    .decodeSingleOrNull<Map<String, Any>>()
+                Logger.i("ProfileManager", "🔵 Calling insert with select...")
+                Logger.i("ProfileManager", "🔵 healthGoalPayload = $healthGoalPayload")
                 
-                if (insertedGoal != null) {
-                    println("✅ ProfileManager: Health goal inserted successfully!")
-                    println("✅ ProfileManager: Inserted goal id: ${insertedGoal["id"]}")
+                val insertResponse = try {
+                    supabase.from("health_goals")
+                        .insert(healthGoalPayload) {
+                            select()
+                        }
+                        .decodeSingleOrNull<kotlinx.serialization.json.JsonObject>()
+                } catch (decodeError: Exception) {
+                    Logger.e("ProfileManager", "❌ Decode error (likely empty response from RLS block): ${decodeError.message}")
+                    null
+                }
+                
+                if (insertResponse != null) {
+                    Logger.i("ProfileManager", "✅ Health goal inserted successfully!")
+                    Logger.i("ProfileManager", "✅ Inserted goal id: ${insertResponse["id"]}")
                 } else {
-                    println("❌ ProfileManager: Insert returned null - likely RLS policy blocked it")
-                    println("❌ ProfileManager: This means auth.uid() doesn't match user_id: $userId")
-                    throw Exception("Failed to insert health goal - RLS policy violation")
+                    Logger.e("ProfileManager", "❌ Insert returned null - RLS policy blocked it")
+                    Logger.e("ProfileManager", "❌ This means auth.uid() doesn't match user_id: $userId")
+                    Logger.e("ProfileManager", "❌ Session user ID: ${session.user?.id}")
+                    Logger.e("ProfileManager", "❌ Target user ID: $userId")
+                    throw Exception("Failed to insert health goal - RLS policy violation. Session user: ${session.user?.id}, Target user: $userId")
                 }
             } catch (insertError: Exception) {
-                println("❌ ProfileManager: Health goal insert FAILED: ${insertError.message}")
-                println("❌ ProfileManager: Error type: ${insertError::class.simpleName}")
-                println("❌ ProfileManager: This is likely an RLS policy violation")
-                println("❌ ProfileManager: Check that auth.uid() matches user_id: $userId")
+                Logger.e("ProfileManager", "❌ Health goal insert FAILED: ${insertError.message}")
+                Logger.e("ProfileManager", "❌ Error type: ${insertError::class.simpleName}")
+                Logger.e("ProfileManager", "❌ Full error: $insertError")
+                Logger.e("ProfileManager", "❌ This is likely an RLS policy violation")
+                Logger.e("ProfileManager", "❌ Check that auth.uid() matches user_id: $userId")
+                Logger.e("ProfileManager", "❌ Session user ID: ${session.user?.id}")
                 insertError.printStackTrace()
                 throw insertError
             }
             
-            Result.success(updated)
+            Result.success(updated!!)  // updated is guaranteed to be non-null here
         } catch (e: Exception) {
-            println("❌ ProfileManager.updateGoal failed for userId=$userId: ${e.message}")
+            Logger.e("ProfileManager", "❌ updateGoal failed for userId=$userId: ${e.message}")
             Result.failure(e)
         }
     }
@@ -281,15 +332,22 @@ class ProfileManager(private val supabase: SupabaseClient) {
     /**
      * Save onboarding data and mark onboarding as complete
      */
+    @Suppress("DEPRECATION")
     suspend fun completeOnboarding(
         userId: String,
         onboardingData: ProfileUpdate
     ): Result<UserProfile> {
         return try {
             // Add onboarding completion timestamp
-            val updates = onboardingData.toMap().toMutableMap()
-            updates["onboarding_completed"] = true
-            updates["onboarding_completed_at"] = Clock.System.now().toString()
+            val updates = buildJsonObject {
+                // Copy all fields from onboardingData
+                onboardingData.toMap().forEach { (key, value) ->
+                    put(key, value)
+                }
+                // Add onboarding completion
+                put("onboarding_completed", true)
+                put("onboarding_completed_at", CurrentTime.nowIso8601())
+            }
             
             val updated = supabase.from("users_profiles")
                 .update(updates) {

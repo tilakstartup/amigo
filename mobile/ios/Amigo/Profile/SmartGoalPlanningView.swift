@@ -730,7 +730,7 @@ class AIGoalPlanningViewModel: ObservableObject {
             var userId: String? = nil
             
             // Approach 1: Try getCurrentUser
-            if let user = sessionManager.getCurrentUser(), !user.id.isEmpty {
+            if let user = try? await sessionManager.getCurrentUser(), !user.id.isEmpty {
                 userId = user.id
                 NSLog("✅ [AIGoalPlanning] Got user from getCurrentUser: %@", userId!)
             }
@@ -760,14 +760,10 @@ class AIGoalPlanningViewModel: ObservableObject {
                 return
             }
             
-            // Ensure Supabase session is synced before database operation
-            NSLog("🔄 [AIGoalPlanning] Ensuring Supabase session is synced...")
-            let sessionSynced = try await sessionManager.ensureSessionSynced()
-            if sessionSynced.boolValue == false {
-                NSLog("❌ [AIGoalPlanning] Failed to sync Supabase session")
-                return
-            }
-            NSLog("✅ [AIGoalPlanning] Supabase session synced successfully")
+            // SDK 3.x automatically manages session
+            NSLog("🔄 [AIGoalPlanning] Initializing session...")
+            try await sessionManager.initialize()
+            NSLog("✅ [AIGoalPlanning] Session initialized")
         
         let profileManager = ProfileManagerFactory.shared.create()
         
@@ -778,6 +774,16 @@ class AIGoalPlanningViewModel: ObservableObject {
                 "projected_weight_kg": milestone.projectedWeightKg,
                 "percent_complete": milestone.percentComplete
             ] as [String: Any]
+        }
+        
+        // Convert milestone payload to JSON string
+        let milestoneJsonString: String?
+        if let jsonData = try? JSONSerialization.data(withJSONObject: milestonePayload, options: []),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            milestoneJsonString = jsonString
+        } else {
+            milestoneJsonString = nil
+            NSLog("⚠️ [AIGoalPlanning] Failed to serialize milestones to JSON")
         }
         
         // Convert goal type string to GoalType enum
@@ -810,7 +816,7 @@ class AIGoalPlanningViewModel: ObservableObject {
                 calculatedDailyCalories: KotlinDouble(value: plan.calculations.dailyCalories),
                 calculatedBmiStart: KotlinDouble(value: plan.currentMetrics.bmi),
                 calculatedBmiTarget: KotlinDouble(value: plan.targetMetrics.targetBMI),
-                weeklyMilestones: milestonePayload,
+                weeklyMilestones: milestoneJsonString,
                 isRealistic: KotlinBoolean(value: plan.validation.isRealistic),
                 recommendedTargetDate: nil,
                 validationReason: plan.validation.reason,
@@ -936,7 +942,7 @@ class ManualGoalPlanningViewModel: ObservableObject {
             NSLog("📝 [ManualGoalPlanning] No session JSON found in storage")
         }
         // Check if sessionManager already has a user BEFORE calling initialize
-        var userBeforeInit = sessionManager.getCurrentUser()
+        var userBeforeInit = try? await sessionManager.getCurrentUser()
         NSLog("🔍 [ManualGoalPlanning] User BEFORE initialize: id=%@, email=%@", 
               userBeforeInit?.id ?? "nil", userBeforeInit?.email ?? "nil")
         
@@ -948,7 +954,7 @@ class ManualGoalPlanningViewModel: ObservableObject {
             NSLog("❌ [ManualGoalPlanning] Failed to initialize session in initialize(): %@", error.localizedDescription)
         }
         
-        let currentUser = sessionManager.getCurrentUser()
+        let currentUser = try? await sessionManager.getCurrentUser()
         NSLog("🔍 [ManualGoalPlanning] initialize() - Current user: id=%@, email=%@", 
               currentUser?.id ?? "nil", currentUser?.email ?? "nil")
         
@@ -1059,6 +1065,16 @@ class ManualGoalPlanningViewModel: ObservableObject {
                 "percent_complete": milestone.percentComplete
             ] as [String: Any]
         }
+        
+        // Convert milestone payload to JSON string
+        let milestoneJsonString: String?
+        if let jsonData = try? JSONSerialization.data(withJSONObject: milestonePayload, options: []),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            milestoneJsonString = jsonString
+        } else {
+            milestoneJsonString = nil
+            NSLog("⚠️ [ManualGoalPlanning] Failed to serialize milestones to JSON")
+        }
 
         // Try to save directly - let ProfileManager handle the session
         // ProfileManager uses the Supabase client which should have the session
@@ -1069,7 +1085,7 @@ class ManualGoalPlanningViewModel: ObservableObject {
             var userId: String? = nil
             
             // Approach 1: Try getCurrentUser
-            if let user = sessionManager.getCurrentUser(), !user.id.isEmpty {
+            if let user = try? await sessionManager.getCurrentUser(), !user.id.isEmpty {
                 userId = user.id
                 NSLog("✅ [ManualGoalPlanning] Got user from getCurrentUser: %@", userId!)
             }
@@ -1098,16 +1114,10 @@ class ManualGoalPlanningViewModel: ObservableObject {
                 return
             }
             
-            // Ensure Supabase session is synced before database operation
-            NSLog("🔄 [ManualGoalPlanning] Ensuring Supabase session is synced...")
-            let sessionSynced = try await sessionManager.ensureSessionSynced()
-            if sessionSynced.boolValue == false {
-                NSLog("❌ [ManualGoalPlanning] Failed to sync Supabase session")
-                saveError = "Failed to sync session. Please try again."
-                isSaving = false
-                return
-            }
-            NSLog("✅ [ManualGoalPlanning] Supabase session synced successfully")
+            // SDK 3.x automatically manages session
+            NSLog("🔄 [ManualGoalPlanning] Initializing session...")
+            try await sessionManager.initialize()
+            NSLog("✅ [ManualGoalPlanning] Session initialized")
             
             NSLog("🔵 [ManualGoalPlanning] Calling ProfileManager.updateGoal for user: %@", finalUserId)
             _ = try await profileManager.updateGoal(
@@ -1123,7 +1133,7 @@ class ManualGoalPlanningViewModel: ObservableObject {
                 calculatedDailyCalories: KotlinDouble(value: plan.calculations.dailyCalories),
                 calculatedBmiStart: KotlinDouble(value: plan.currentMetrics.bmi),
                 calculatedBmiTarget: KotlinDouble(value: plan.targetMetrics.targetBMI),
-                weeklyMilestones: milestonePayload,
+                weeklyMilestones: milestoneJsonString,
                 isRealistic: KotlinBoolean(value: plan.validation.isRealistic),
                 recommendedTargetDate: nil,
                 validationReason: plan.validation.reason,

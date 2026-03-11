@@ -8,7 +8,7 @@ import com.amigo.shared.data.models.UsageQuotas
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
-import kotlinx.datetime.Clock
+import com.amigo.shared.utils.CurrentTime
 
 class SubscriptionManager(private val supabase: SupabaseClient) {
     
@@ -35,6 +35,7 @@ class SubscriptionManager(private val supabase: SupabaseClient) {
     /**
      * Create a new subscription for a user
      */
+    @Suppress("DEPRECATION")
     suspend fun createSubscription(
         userId: String,
         tier: SubscriptionTier,
@@ -42,7 +43,7 @@ class SubscriptionManager(private val supabase: SupabaseClient) {
         platformSubscriptionId: String? = null
     ): Result<Subscription> {
         return try {
-            val now = Clock.System.now().toString()
+            val now = CurrentTime.nowIso8601()
             val subscription = mapOf(
                 "user_id" to userId,
                 "tier" to tier.name.lowercase(),

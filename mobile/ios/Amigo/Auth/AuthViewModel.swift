@@ -37,7 +37,7 @@ class AuthViewModel: ObservableObject {
             isAuthenticated = authStatus
             
             if authStatus {
-                let user = sessionManager.getCurrentUser()
+                let user = try await sessionManager.getCurrentUser()
                 print("✅ [iOS AuthViewModel] User logged in: id=\(user?.id ?? "nil"), email=\(user?.email ?? "nil")")
             } else {
                 print("⚠️ [iOS AuthViewModel] No authenticated user")
@@ -60,7 +60,7 @@ class AuthViewModel: ObservableObject {
             let result = try await emailAuthenticator.signIn(email: email, password: password)
             
             if let success = result as? AuthResult.Success {
-                try await sessionManager.saveSession(session: success.session)
+                // SDK 3.x automatically saves the session
                 isAuthenticated = true
             } else if let error = result as? AuthResult.Error {
                 // Provide user-friendly message for email not confirmed
@@ -96,7 +96,7 @@ class AuthViewModel: ObservableObject {
             let result = try await emailAuthenticator.signUp(email: email, password: password)
             
             if let success = result as? AuthResult.Success {
-                try await sessionManager.saveSession(session: success.session)
+                // SDK 3.x automatically saves the session
                 isAuthenticated = true
             } else if let confirmation = result as? AuthResult.EmailConfirmationRequired {
                 successMessage = "Account created! Please check your email (\(confirmation.email)) to confirm your account."
@@ -124,9 +124,7 @@ class AuthViewModel: ObservableObject {
                 print("✅ [iOS AuthViewModel] Session user.id: \(success.session.user.id)")
                 print("✅ [iOS AuthViewModel] Session email: \(success.session.user.email)")
                 print("✅ [iOS AuthViewModel] Access token length: \(success.session.accessToken.count)")
-                print("🔐 [iOS AuthViewModel] Calling sessionManager.saveSession()...")
-                try await sessionManager.saveSession(session: success.session)
-                print("✅ [iOS AuthViewModel] Session saved, setting isAuthenticated=true")
+                print("✅ [iOS AuthViewModel] SDK 3.x automatically saves session")
                 isAuthenticated = true
             } else if let error = result as? AuthResult.Error {
                 print("❌ [iOS AuthViewModel] Google sign-in ERROR: \(error.message)")
@@ -155,9 +153,7 @@ class AuthViewModel: ObservableObject {
                 print("✅ [iOS AuthViewModel] Session user.id: \(success.session.user.id)")
                 print("✅ [iOS AuthViewModel] Session email: \(success.session.user.email)")
                 print("✅ [iOS AuthViewModel] Access token length: \(success.session.accessToken.count)")
-                print("🔐 [iOS AuthViewModel] Calling sessionManager.saveSession()...")
-                try await sessionManager.saveSession(session: success.session)
-                print("✅ [iOS AuthViewModel] Session saved, setting isAuthenticated=true")
+                print("✅ [iOS AuthViewModel] SDK 3.x automatically saves session")
                 isAuthenticated = true
             } else if let error = result as? AuthResult.Error {
                 print("❌ [iOS AuthViewModel] Apple sign-in ERROR: \(error.message)")
@@ -192,30 +188,27 @@ class AuthViewModel: ObservableObject {
         successMessage = nil
     }
     
-    func getCurrentUser() -> User? {
-        return sessionManager.getCurrentUser()
+    func getCurrentUser() async throws -> User? {
+        return try await sessionManager.getCurrentUser()
     }
     
-    func handleDeepLinkSession(accessToken: String, refreshToken: String) async {
+    func handleDeepLinkSession(accessToken: String, refreshToken: String, expiresIn: Int64 = 3600) async {
         print("🔗 [iOS AuthViewModel] handleDeepLinkSession() START")
         print("🔗 [iOS AuthViewModel] Access token length: \(accessToken.count)")
         print("🔗 [iOS AuthViewModel] Refresh token length: \(refreshToken.count)")
+        print("🔗 [iOS AuthViewModel] Expires in: \(expiresIn) seconds")
         isLoading = true
         errorMessage = nil
         
         do {
-            print("🔗 [iOS AuthViewModel] Calling sessionManager.handleDeepLinkSession()...")
-            let result = try await sessionManager.handleDeepLinkSession(accessToken: accessToken, refreshToken: refreshToken)
+            print("🔗 [iOS AuthViewModel] Setting session from tokens...")
+            try await sessionManager.setSessionFromTokens(accessToken: accessToken, refreshToken: refreshToken, expiresIn: expiresIn)
             
-            if let success = result as? AuthResult.Success {
-                print("✅ [iOS AuthViewModel] Deep link session SUCCESS")
-                print("✅ [iOS AuthViewModel] User ID: \(success.session.user.id)")
-                print("✅ [iOS AuthViewModel] User email: \(success.session.user.email)")
-                isAuthenticated = true
-            } else if let error = result as? AuthResult.Error {
-                print("❌ [iOS AuthViewModel] Deep link session ERROR: \(error.message)")
-                errorMessage = error.message
-            }
+            print("✅ [iOS AuthViewModel] Session set successfully")
+            // Trust that the session is valid - don't check for user
+            // The user field may be null initially but the session is authenticated
+            isAuthenticated = true
+            print("✅ [iOS AuthViewModel] User authenticated via deep link")
         } catch {
             print("❌ [iOS AuthViewModel] Deep link session EXCEPTION: \(error.localizedDescription)")
             errorMessage = "Failed to handle session: \(error.localizedDescription)"

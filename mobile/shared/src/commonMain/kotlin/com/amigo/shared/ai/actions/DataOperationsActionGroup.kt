@@ -1,6 +1,7 @@
 package com.amigo.shared.ai.actions
 
 import com.amigo.shared.profile.ProfileManager
+import com.amigo.shared.utils.CurrentTime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -45,6 +46,7 @@ object DataOperationsActionGroup : ActionGroup {
         )
     )
     
+    @Suppress("DEPRECATION")
     override suspend fun executeFunction(
         functionName: String,
         params: Map<String, String>,
@@ -170,47 +172,47 @@ object DataOperationsActionGroup : ActionGroup {
             
             // Build ProfileUpdate from payload
             val profileManager = ProfileManager(supabase)
-            val updates = mutableMapOf<String, Any?>()
-            
-            // Extract fields from payload
-            payload["first_name"]?.jsonPrimitive?.contentOrNull?.let {
-                updates["first_name"] = it
-            }
-            
-            payload["last_name"]?.jsonPrimitive?.contentOrNull?.let {
-                updates["last_name"] = it
-            }
-            
-            payload["age"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()?.let {
-                updates["age"] = it
-            }
-            
-            payload["weight"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()?.let {
-                updates["weight_kg"] = it
-            }
-            
-            payload["height"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()?.let {
-                updates["height_cm"] = it
-            }
-            
-            payload["activity_level"]?.jsonPrimitive?.contentOrNull?.let { level ->
-                updates["activity_level"] = level.lowercase()
-            }
-            
-            payload["gender"]?.jsonPrimitive?.contentOrNull?.let { gender ->
-                updates["gender"] = gender.lowercase()
-            }
-            
-            payload["onboarding_completed"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()?.let {
-                updates["onboarding_completed"] = it
-                if (it) {
-                    updates["onboarding_completed_at"] = kotlinx.datetime.Clock.System.now().toString()
+            val updatesBuilder = buildJsonObject {
+                // Extract fields from payload
+                payload["first_name"]?.jsonPrimitive?.contentOrNull?.let {
+                    put("first_name", it)
+                }
+                
+                payload["last_name"]?.jsonPrimitive?.contentOrNull?.let {
+                    put("last_name", it)
+                }
+                
+                payload["age"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()?.let {
+                    put("age", it)
+                }
+                
+                payload["weight"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()?.let {
+                    put("weight_kg", it)
+                }
+                
+                payload["height"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()?.let {
+                    put("height_cm", it)
+                }
+                
+                payload["activity_level"]?.jsonPrimitive?.contentOrNull?.let { level ->
+                    put("activity_level", level.lowercase())
+                }
+                
+                payload["gender"]?.jsonPrimitive?.contentOrNull?.let { gender ->
+                    put("gender", gender.lowercase())
+                }
+                
+                payload["onboarding_completed"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()?.let {
+                    put("onboarding_completed", it)
+                    if (it) {
+                        put("onboarding_completed_at", CurrentTime.nowIso8601())
+                    }
                 }
             }
             
             // Update profile in Supabase
             val result = supabase.from("users_profiles")
-                .update(updates) {
+                .update(updatesBuilder) {
                     filter {
                         eq("id", userId)
                     }
@@ -220,7 +222,7 @@ object DataOperationsActionGroup : ActionGroup {
                 put("status", "success")
                 put("message", "Onboarding data saved successfully")
                 put("userId", userId)
-                put("fields_updated", updates.keys.joinToString(", "))
+                put("fields_updated", updatesBuilder.keys.joinToString(", "))
             })
         } catch (e: Exception) {
             Result.success(buildJsonObject {

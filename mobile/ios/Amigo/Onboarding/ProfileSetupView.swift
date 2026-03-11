@@ -166,7 +166,7 @@ class ProfileSetupViewModel: ObservableObject {
         
         do {
             // Get current user ID
-            guard let userId = sessionManager.getCurrentUser()?.id, !userId.isEmpty else {
+            guard let userId = try? await sessionManager.getCurrentUser()?.id, !userId.isEmpty else {
                 errorMessage = "No user session found"
                 isSaving = false
                 return
