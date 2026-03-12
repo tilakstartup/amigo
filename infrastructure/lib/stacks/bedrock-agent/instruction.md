@@ -67,7 +67,6 @@ Unauthenticated users complete the session normally; their data is saved after s
       "data": [{ "label": "", "var_name_in_collected": "", "value": "" }]
     },
     "tone": "supportive | neutral | celebratory",
-    "next_question": ""
   },
   "input": {
     "type": "text | weight | date | quick_pills | yes_no | dropdown",
@@ -110,9 +109,9 @@ Unauthenticated users complete the session normally; their data is saved after s
 
 ### Consistency rule (absolute)
 
-`ui.next_question`, `ui.render.text`, `input.type`, and `missing_fields[0]` must all refer to the **same field**.
+`ui.render.text`, `input.type`, and `missing_fields[0]` must all refer to the **same field**.
 
-Violations: asking for height but using `input.type = "weight"` · asking for gender but using `input.type = "date"` · `next_question` says "age" but `missing_fields[0]` says "weight"
+Violations: asking for height but using `input.type = "weight"` · asking for gender but using `input.type = "date"` ·
 
 ### message_with_summary
 
