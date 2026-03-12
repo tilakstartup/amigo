@@ -73,12 +73,11 @@ export class BedrockAgentStack extends cdk.Stack {
     const instruction = fs.readFileSync(path.join(__dirname, 'instruction.md'), 'utf-8');
 
     // Create Bedrock Agent
-    // Using Claude Sonnet 4 via US inference profile - Latest and most capable model
     this.agent = new bedrock.CfnAgent(this, 'Agent', {
       agentName: `amigo-${environment}`,
       description: 'Amigo AI Health Coach - Conversational agent for health tracking and coaching',
       agentResourceRoleArn: agentRole.roleArn,
-      foundationModel: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+      foundationModel: 'anthropic.claude-3-haiku-20240307-v1:0',
       instruction,
       idleSessionTtlInSeconds: 600,
     });
