@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.time.Instant
 
 class AuthViewModel(
@@ -75,7 +76,7 @@ class AuthViewModel(
                 
                 when (result) {
                     is AuthResult.Success -> {
-                        sessionManager.saveSession(result.session)
+                        sessionManager.setSessionFromTokens(result.session.accessToken, result.session.refreshToken, result.session.expiresAt)
                     }
                     is AuthResult.EmailConfirmationRequired -> {
                         // Email confirmation not needed for sign in
@@ -118,7 +119,7 @@ class AuthViewModel(
                 
                 when (result) {
                     is AuthResult.Success -> {
-                        sessionManager.saveSession(result.session)
+                        sessionManager.setSessionFromTokens(result.session.accessToken, result.session.refreshToken, result.session.expiresAt)
                     }
                     is AuthResult.EmailConfirmationRequired -> {
                         _successMessage.value = "Account created! Please check your email (${result.email}) to confirm your account."
@@ -145,7 +146,7 @@ class AuthViewModel(
                 
                 when (result) {
                     is AuthResult.Success -> {
-                        sessionManager.saveSession(result.session)
+                        sessionManager.setSessionFromTokens(result.session.accessToken, result.session.refreshToken, result.session.expiresAt)
                     }
                     is AuthResult.EmailConfirmationRequired -> {
                         // Email confirmation not needed for OAuth
@@ -188,20 +189,8 @@ class AuthViewModel(
         _errorMessage.value = null
         
         try {
-            val result = sessionManager.handleDeepLinkSession(accessToken, refreshToken)
-            
-            when (result) {
-                is AuthResult.Success -> {
-                    // Session imported successfully
-                    _isAuthenticated.value = true
-                }
-                is AuthResult.EmailConfirmationRequired -> {
-                    // Not applicable for deep link
-                }
-                is AuthResult.Error -> {
-                    _errorMessage.value = result.message
-                }
-            }
+            sessionManager.setSessionFromTokens(accessToken, refreshToken)
+            _isAuthenticated.value = true
         } catch (e: Exception) {
             _errorMessage.value = "Failed to handle session: ${e.message}"
         } finally {
@@ -210,7 +199,9 @@ class AuthViewModel(
     }
     
     fun getCurrentUser(): com.amigo.shared.auth.models.User? {
-        return sessionManager.getCurrentUser()
+        return runBlocking {
+            sessionManager.getCurrentUser()
+        }
     }
     
     fun saveOnboardingProfile(userId: String, profileData: Map<String, String>) {

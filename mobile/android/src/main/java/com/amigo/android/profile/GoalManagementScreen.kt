@@ -303,12 +303,12 @@ class GoalManagementViewModel(
     private val profileManager = ProfileManagerFactory.create()
     
     fun loadCurrentGoal() {
-        val userId = sessionManager.getCurrentUser()?.id ?: run {
-            _errorMessage.value = "No user session found"
-            return
-        }
-        
         viewModelScope.launch {
+            val userId = sessionManager.getCurrentUser()?.id ?: run {
+                _errorMessage.value = "No user session found"
+                return@launch
+            }
+        
             _isLoading.value = true
             _errorMessage.value = null
             
@@ -341,10 +341,10 @@ class GoalManagementViewModel(
     }
     
     fun confirmGoalChange() {
-        val userId = sessionManager.getCurrentUser()?.id ?: return
-        val newGoal = _selectedGoal.value ?: return
-        
         viewModelScope.launch {
+            val userId = sessionManager.getCurrentUser()?.id ?: return@launch
+            val newGoal = _selectedGoal.value ?: return@launch
+        
             _isLoading.value = true
             _errorMessage.value = null
             _showConfirmation.value = false

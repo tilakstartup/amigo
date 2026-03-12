@@ -70,6 +70,23 @@ class MainActivity : ComponentActivity() {
         if (data != null && data.scheme == "amigo" && data.host == "auth") {
             Log.d("MainActivity", "Deep link received: $data")
             
+            // Check for error parameters first
+            val error = data.getQueryParameter("error")
+            val errorCode = data.getQueryParameter("error_code")
+            val errorDescription = data.getQueryParameter("error_description")
+            
+            if (error != null) {
+                Log.e("MainActivity", "OAuth error: $error, code: $errorCode, description: $errorDescription")
+                
+                // Handle specific OAuth state error - this is a common issue with Supabase mobile OAuth
+                if (errorCode == "bad_oauth_state") {
+                    Log.w("MainActivity", "OAuth state validation failed - this is a known issue with Supabase mobile OAuth")
+                    // For now, we'll show an error message to the user
+                    // TODO: Implement custom OAuth flow or retry mechanism
+                }
+                return
+            }
+            
             // Extract auth tokens from URL fragment
             val fragment = data.fragment
             if (fragment != null) {
@@ -96,7 +113,11 @@ class MainActivity : ComponentActivity() {
                             Log.e("MainActivity", "Error handling session: ${e.message}", e)
                         }
                     }
+                } else {
+                    Log.w("MainActivity", "No access token or refresh token found in fragment")
                 }
+            } else {
+                Log.w("MainActivity", "No fragment found in deep link")
             }
         }
     }
