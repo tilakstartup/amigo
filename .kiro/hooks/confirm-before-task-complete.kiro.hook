@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Confirm Before Task Completion",
+  "description": "Asks the user to confirm that everything works properly before marking a task as completed",
+  "version": "1",
+  "when": {
+    "type": "preTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Before marking this task as completed, please ask the user to confirm that everything is working as expected. Wait for their confirmation before proceeding."
+  }
+}

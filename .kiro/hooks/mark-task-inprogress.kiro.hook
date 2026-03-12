@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Mark Task In Progress",
+  "description": "Automatically marks a task as in progress before task execution begins",
+  "version": "1",
+  "when": {
+    "type": "preTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Mark this task as in progress before starting work on it"
+  }
+}
