@@ -257,12 +257,62 @@ Agent → Action Groups (RETURN_CONTROL)
 3. Implement retry logic for network calls
 4. Optimize Bedrock model selection (Haiku for speed, Sonnet for quality)
 
+## Codebase Analysis (March 12, 2026)
+
+### Code Quality Metrics
+- **Total Modules**: 9 (ai, auth, data, goals, profile, session, subscription, config, utils)
+- **Shared Components**: 40+ classes/objects
+- **Platform-Specific**: 15+ ViewModels (Android/iOS)
+- **Infrastructure**: 2 CDK stacks (Bedrock Proxy, Bedrock Agent)
+- **Database**: 9 migrations (PostgreSQL schema)
+
+### Unused Code Identified
+1. **Greeting.kt** - Sample KMP file, never instantiated
+2. **Platform.kt** - Sample KMP file, never instantiated
+3. **MealLogRepository.kt** - Empty stub with TODO, no implementation
+4. **BedrockClient.analyzeImage()** - TODO, not supported by Lambda
+5. **BedrockClient.invokeModelStreaming()** - TODO, falls back to regular invoke
+6. **Lambda deprecated functions** - Server-side execution code (kept for reference)
+
+### Dead Imports & Unused Code
+- No significant dead imports found
+- All factory classes are actively used
+- All action groups are registered and callable
+- All ViewModels are instantiated in screens/views
+
+### Integration Points Summary
+- **Mobile ↔ Shared**: Direct Kotlin dependency (Android), embedded framework (iOS)
+- **Mobile ↔ Backend**: Supabase SDK (auth, postgrest, storage, realtime)
+- **Mobile ↔ AI**: Lambda proxy via Ktor HTTP client
+- **Infrastructure ↔ Backend**: Lambda verifies JWT with Supabase
+- **Infrastructure ↔ AI**: CDK manages Bedrock Agent and action groups
+
+### Architectural Strengths
+1. ✅ Clean separation of concerns (shared logic, platform UI)
+2. ✅ Consistent factory pattern for dependency management
+3. ✅ MVVM pattern properly implemented on both platforms
+4. ✅ RETURN_CONTROL pattern enables client-side function execution
+5. ✅ Comprehensive error handling with Result types
+6. ✅ Secure token management (Keychain/EncryptedSharedPreferences)
+7. ✅ Proper use of coroutines and async/await
+
+### Architectural Weaknesses
+1. ⚠️ No DI framework (Hilt/Koin) - manual dependency passing
+2. ⚠️ Onboarding state stored locally, not synced with backend
+3. ⚠️ No offline support (no local database)
+4. ⚠️ No streaming support in Lambda
+5. ⚠️ No rate limiting on API Gateway
+6. ⚠️ Single region deployment only
+
 ## Next Steps
 
-1. Complete session initialization platform integration (Tasks 3-7)
-2. Clean up unused code (Greeting.kt, MealLogRepository stub)
-3. Implement streaming support or remove TODOs
-4. Add comprehensive test coverage
-5. Implement offline support with local database
-6. Add health platform integrations
-7. Complete meal logging feature
+1. ✅ Complete session initialization platform integration (Tasks 3-7)
+2. 🗑️ Clean up unused code (Greeting.kt, Platform.kt, MealLogRepository stub)
+3. 🔄 Implement streaming support or remove TODOs
+4. 📊 Add comprehensive test coverage
+5. 💾 Implement offline support with local database
+6. 🏥 Add health platform integrations
+7. 🍽️ Complete meal logging feature
+8. 🔐 Add rate limiting to API Gateway
+9. 🌍 Implement multi-region deployment
+10. 🔑 Move secrets to AWS Secrets Manager
