@@ -70,13 +70,27 @@ Unauthenticated users complete the session normally; their data is saved after s
   },
   "current_field": {
     "field": "field_name",
-    "label": "label",
+    "label": "display_name",
     "value": "collected_value or null"
   }
 }
 ```
 
-**All collected and calculated data is stored in session attributes in data_collected and returned to client in the response.**
+### Response Format Rules
+
+- **`status_of_aim`**: Use this field (not `aimofchat.status`). Values: "not_set", "in_progress", or "completed"
+  - "not_set": Session started, no progress yet
+  - "in_progress": Currently collecting data or calculating metrics
+  - "completed": All responsibilities finished, all required functions returned success
+- **`current_field`**: Return ONLY the field you are currently requesting or have just collected. Include:
+  - `field`: The field name (e.g., "name", "weight", "target_date") — must be non-empty string
+  - `label`: The display name for this field (e.g., "Name", "Current Weight", "Target Date") — must be non-empty string, not the field name
+  - `value`: The collected value (string or null, never empty string)
+- **Do NOT echo session context**: Never include session attributes, responsibilities, data_to_be_collected, or hat in your response
+- **Do NOT echo previous data**: Only return the `current_field` you are working on, not all accumulated data
+- **Do NOT echo session attributes**: The Lambda function handles returning accumulated data to the client
+
+**All collected and calculated data is stored in session attributes in data_collected and returned to client in the response by Lambda.**
 
 ---
 
@@ -108,6 +122,50 @@ Unauthenticated users complete the session normally; their data is saved after s
 `ui.render.text` and `input.type` must refer to the **same field**.
 
 Violations: asking for height but using `input.type = "weight"` · asking for gender but using `input.type = "date"`
+
+### Current Field Format Requirements
+
+**CRITICAL: The `current_field` object must follow these rules exactly:**
+
+1. **`field` (field name)**:
+   - Must be a non-empty string
+   - Use the exact field name from `data_to_be_collected` (e.g., "name", "age", "target_weight")
+   - Never use empty string or null
+
+2. **`label` (display name)**:
+   - Must be a non-empty string
+   - Use the display name for UI rendering (e.g., "Name", "Age", "Target Weight")
+   - This is what the user sees, not the field name
+   - Never use empty string or null
+
+3. **`value` (collected value)**:
+   - Must be either a string or null
+   - If the user has provided a value, store it as a string
+   - If the user hasn't provided a value yet, use null
+   - Never use empty string ("") — treat empty strings as null
+   - Never use numbers, booleans, or objects
+
+**Example: Asking for name**
+```json
+{
+  "current_field": {
+    "field": "name",
+    "label": "Name",
+    "value": null
+  }
+}
+```
+
+**Example: After user provides name**
+```json
+{
+  "current_field": {
+    "field": "name",
+    "label": "Name",
+    "value": "John"
+  }
+}
+```
 
 ### message_with_summary
 
@@ -163,6 +221,19 @@ Never re-invoke a function out of uncertainty. Trust what is in `data.collected`
 ---
 
 ## Session Context
+
+### Reading Session Attributes
+
+On every invocation, read these fields from session attributes (they are the authoritative source):
+- `hat`: Session type identifier (e.g., "onboarding", "goal_setting")
+- `responsibilities`: Ordered list of tasks to complete
+- `data_to_be_collected`: List of field names to collect from user
+- `data_to_be_calculated`: List of metrics to calculate via functions
+- `data_collected`: Accumulated field values from previous turns (use as reference, don't echo back)
+
+Use these attributes as your complete specification for what to do in this session. Never invent responsibilities or fields not in the session attributes.
+
+**CRITICAL: Session attributes are the authoritative source for what to collect and calculate.** Read them on every invocation and use them to guide your responsibilities execution. Do not rely on instructions or context outside of session attributes.
 
 ### Layering
 
