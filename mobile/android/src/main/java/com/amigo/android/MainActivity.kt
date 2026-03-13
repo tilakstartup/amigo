@@ -17,10 +17,15 @@ import androidx.navigation.compose.rememberNavController
 import com.amigo.android.auth.AuthViewModel
 import com.amigo.android.auth.LoginScreen
 import com.amigo.android.auth.SignUpScreen
+import com.amigo.android.session.SessionInitializationViewModel
+import com.amigo.android.session.SessionUiState
+import com.amigo.android.session.LoadingScreen
+import com.amigo.android.session.ErrorScreen
 import com.amigo.android.ui.theme.AmigoTheme
 import com.amigo.shared.auth.AuthFactory
 import com.amigo.shared.auth.SecureStorage
 import com.amigo.shared.config.AppConfig
+import com.amigo.shared.session.SessionInitializerFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -129,20 +134,24 @@ fun AmigoApp(viewModel: AuthViewModel) {
     val navController = rememberNavController()
     val context = androidx.compose.ui.platform.LocalContext.current
     
-    // Check onboarding status
-    var hasCompletedOnboarding by remember { mutableStateOf(false) }
+    // Create session initializer
+    val sessionInitializer = remember {
+        SessionInitializerFactory.create(viewModel.sessionManager)
+    }
     
-    // Update onboarding status when authentication changes
+    val sessionViewModel = remember {
+        SessionInitializationViewModel(sessionInitializer)
+    }
+    
+    val sessionUiState by sessionViewModel.uiState.collectAsState()
+    
+    // Initialize session when authenticated
     LaunchedEffect(isAuthenticated) {
         if (isAuthenticated) {
-            // Check user-specific onboarding status
             val user = viewModel.getCurrentUser()
             if (user != null) {
-                val prefs = context.getSharedPreferences("amigo_prefs", android.content.Context.MODE_PRIVATE)
-                hasCompletedOnboarding = prefs.getBoolean("hasCompletedOnboarding_${user.id}", false)
+                sessionViewModel.initialize(user.id)
             }
-        } else {
-            hasCompletedOnboarding = false
         }
     }
     
@@ -168,7 +177,23 @@ fun AmigoApp(viewModel: AuthViewModel) {
                 }
             }
         }
-        !hasCompletedOnboarding -> {
+        sessionUiState is SessionUiState.Loading || sessionUiState is SessionUiState.Idle -> {
+            // Show loading indicator
+            LoadingScreen()
+        }
+        sessionUiState is SessionUiState.Error -> {
+            // Show error with retry
+            ErrorScreen(
+                message = (sessionUiState as SessionUiState.Error).message,
+                onRetry = {
+                    val user = viewModel.getCurrentUser()
+                    if (user != null) {
+                        sessionViewModel.retry(user.id)
+                    }
+                }
+            )
+        }
+        sessionUiState is SessionUiState.NavigateToOnboarding -> {
             // Show conversational onboarding
             val onboardingViewModel = remember {
                 com.amigo.android.onboarding.AgentConversationViewModel(
@@ -179,28 +204,24 @@ fun AmigoApp(viewModel: AuthViewModel) {
             com.amigo.android.onboarding.AgentConversationScreen(
                 viewModel = onboardingViewModel,
                 onComplete = {
-                    // Mark onboarding as complete for this user
+                    // Save profile data to Supabase
                     val user = viewModel.getCurrentUser()
                     if (user != null) {
-                        val prefs = context.getSharedPreferences("amigo_prefs", android.content.Context.MODE_PRIVATE)
-                        prefs.edit().putBoolean("hasCompletedOnboarding_${user.id}", true).apply()
-                        
-                        // Save profile data to Supabase
                         val profileData = onboardingViewModel.getProfileData()
                         viewModel.saveOnboardingProfile(user.id, profileData)
                         
-                        hasCompletedOnboarding = true
+                        // Refresh session state after onboarding
+                        sessionViewModel.initialize(user.id)
                     }
                 }
             )
         }
-        else -> {
+        sessionUiState is SessionUiState.NavigateToMain -> {
             // Show main app with bottom navigation
             MainScreen(
                 authViewModel = viewModel,
                 sessionManager = viewModel.sessionManager,
                 onSignOut = {
-                    // Sign out logic
                     kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
                         viewModel.signOut()
                     }

@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Pre-Spec Architecture Analysis",
+  "description": "Analyzes codebase architecture and identifies unused code to build knowledge for writing better specs aligned with existing patterns",
+  "version": "1",
+  "when": {
+    "type": "promptSubmit"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Before we start a new spec, perform a comprehensive architecture analysis: (1) Map the existing codebase structure across mobile (Kotlin/Swift), infrastructure (TypeScript/Python), and database layers. (2) Identify unused code, dead imports, unreferenced functions, classes, or modules. (3) Document key architectural patterns, dependencies, integration points, and data flows. (4) Update or create documentation ONLY in these locations: docs/infrastructure/ARCHITECTURE.md, docs/mobile/shared/ARCHITECTURE.md, docs/mobile/ios/ARCHITECTURE.md, docs/mobile/android/ARCHITECTURE.md. Update existing files if they exist, create new ones only if needed. Keep docs minimal and focused. (5) Summarize findings including cleanup opportunities. Use this knowledge to inform better spec writing that aligns with existing patterns, avoids conflicts, and leverages established infrastructure."
+  }
+}

@@ -11,7 +11,9 @@ targets:
     platform: iOS
     deploymentTarget: "16.0"
     sources:
-      - Amigo
+      - path: Amigo
+        includes:
+          - "**/*.swift"
     info:
       path: Amigo/Info.plist
       properties:

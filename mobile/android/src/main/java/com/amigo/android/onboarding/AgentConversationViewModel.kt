@@ -3,7 +3,8 @@ package com.amigo.android.onboarding
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-// import com.amigo.shared.ai.*
+import com.amigo.shared.ai.AmigoAgentConversation
+import com.amigo.shared.ai.AmigoAgentConversationFactory
 import com.amigo.shared.ai.models.ConversationMessage
 import com.amigo.shared.ai.models.FeatureIntro
 import com.amigo.shared.ai.models.OnboardingState
@@ -18,17 +19,13 @@ class AgentConversationViewModel(
     private val sessionManager: SessionManager
 ) : ViewModel() {
     
-    /*
     private val engine: AmigoAgentConversation by lazy {
-        AmigoAgentConversationFactory.create(
+        AmigoAgentConversationFactory.createWithDefaultClient(
             AppConfig.BEDROCK_API_ENDPOINT,
-            sessionManager,
-            null
+            sessionManager
         )
     }
-    */
     
-    /*
     val messages: StateFlow<List<MessageViewModel>> = engine.messages
         .map { messagesList ->
             messagesList.map { msg ->
@@ -51,12 +48,7 @@ class AgentConversationViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-    */
     
-    // Temporary placeholder
-    val messages: StateFlow<List<MessageViewModel>> = MutableStateFlow(emptyList<MessageViewModel>()).asStateFlow()
-    
-    /*
     val isTyping: StateFlow<Boolean> = engine.isTyping
         .map { it }
         .stateIn(
@@ -64,22 +56,13 @@ class AgentConversationViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
-    */
     
-    // Temporary placeholder
-    val isTyping: StateFlow<Boolean> = MutableStateFlow(false).asStateFlow()
-    
-    /*
     private val _conversationState = engine.conversationState
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = OnboardingState.Initial
         )
-    */
-    
-    // Temporary placeholder
-    private val _conversationState = MutableStateFlow(OnboardingState.Initial).asStateFlow()
     
     val isComplete: StateFlow<Boolean> = _conversationState
         .map { it is OnboardingState.Complete }
@@ -115,8 +98,6 @@ class AgentConversationViewModel(
     private var isSubmitting = false
     
     fun startOnboarding() {
-        // Temporarily disabled
-        /*
         viewModelScope.launch {
             try {
                 // Use the predefined onboarding session config
@@ -125,12 +106,9 @@ class AgentConversationViewModel(
                 println("Error starting onboarding: ${e.message}")
             }
         }
-        */
     }
     
     suspend fun sendMessage() {
-        // Temporarily disabled
-        /*
         val message = userInput.value.trim()
         if (message.isEmpty() || isSubmitting) return
         
@@ -146,12 +124,9 @@ class AgentConversationViewModel(
         } finally {
             isSubmitting = false
         }
-        */
     }
     
     suspend fun sendQuickReply(reply: String) {
-        // Temporarily disabled
-        /*
         if (isSubmitting) return
         
         isSubmitting = true
@@ -163,13 +138,10 @@ class AgentConversationViewModel(
         } finally {
             isSubmitting = false
         }
-        */
     }
     
     fun getProfileData(): Map<String, String> {
-        // Temporarily return empty map
-        return emptyMap()
-        // return engine.getProfileData().toMap()
+        return engine.getProfileData().toMap()
     }
 }
 

@@ -2,9 +2,14 @@ package com.amigo.shared.auth
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -17,29 +22,54 @@ class SessionManager(
     private val _isAuthenticated = MutableStateFlow(false)
     val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
     
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    
     private companion object {
         const val USER_ID_KEY = "cached_user_id"
+        const val USER_EMAIL_KEY = "cached_user_email"
+        const val USER_DISPLAY_NAME_KEY = "cached_user_display_name"
+        const val USER_AVATAR_URL_KEY = "cached_user_avatar_url"
     }
 
     /**
      * Initializes the session.
      * The Supabase SDK 3.x automatically loads and manages sessions.
-     * We just need to observe the sessionStatus flow.
+     * We observe the sessionStatus flow to keep isAuthenticated in sync.
      */
     suspend fun initialize() {
         // Check initial session status
         val session = supabase.auth.currentSessionOrNull()
         _isAuthenticated.value = session != null
         
-        // Note: In a real app, you'd want to collect sessionStatus in a coroutine
-        // to keep isAuthenticated in sync. For now, we rely on explicit checks.
+        // Observe session status changes to keep isAuthenticated in sync
+        scope.launch {
+            supabase.auth.sessionStatus.collect { status ->
+                when (status) {
+                    is SessionStatus.Authenticated -> {
+                        println("✅ [SessionManager] Session authenticated")
+                        _isAuthenticated.value = true
+                    }
+                    is SessionStatus.NotAuthenticated -> {
+                        println("❌ [SessionManager] Session not authenticated")
+                        _isAuthenticated.value = false
+                    }
+                    else -> {
+                        println("⏳ [SessionManager] Session status: $status")
+                        // Keep current state for other statuses (Initializing, RefreshFailure, etc.)
+                    }
+                }
+            }
+        }
     }
 
     suspend fun signOut() {
         supabase.auth.signOut()
         _isAuthenticated.value = false
-        // Clear cached user_id
+        // Clear all cached user data
         secureStorage.remove(USER_ID_KEY)
+        secureStorage.remove(USER_EMAIL_KEY)
+        secureStorage.remove(USER_DISPLAY_NAME_KEY)
+        secureStorage.remove(USER_AVATAR_URL_KEY)
     }
 
     /**
@@ -88,22 +118,26 @@ class SessionManager(
             )
         }
         
-        // Workaround: Get cached user_id from secure storage
-        println("⚠️ [SessionManager] Session user is null, checking cached user_id")
+        // Workaround: Get cached user data from secure storage
+        println("⚠️ [SessionManager] Session user is null, checking cached user data")
         val cachedUserId = secureStorage.getString(USER_ID_KEY)
         if (cachedUserId != null) {
-            println("✅ [SessionManager] Found cached user_id: $cachedUserId")
+            val cachedEmail = secureStorage.getString(USER_EMAIL_KEY) ?: ""
+            val cachedDisplayName = secureStorage.getString(USER_DISPLAY_NAME_KEY)
+            val cachedAvatarUrl = secureStorage.getString(USER_AVATAR_URL_KEY)
+            
+            println("✅ [SessionManager] Found cached user data: id=$cachedUserId, email=$cachedEmail, displayName=$cachedDisplayName, avatarUrl=$cachedAvatarUrl")
             return com.amigo.shared.auth.models.User(
                 id = cachedUserId,
-                email = "", // We don't cache email, but user_id is what matters
-                displayName = null,
-                avatarUrl = null,
+                email = cachedEmail,
+                displayName = cachedDisplayName,
+                avatarUrl = cachedAvatarUrl,
                 createdAt = "",
                 emailVerified = false
             )
         }
         
-        println("❌ [SessionManager] No cached user_id found")
+        println("❌ [SessionManager] No cached user data found")
         return null
     }
     
@@ -111,7 +145,7 @@ class SessionManager(
      * Set session from OAuth tokens (for deep link handling).
      * In SDK 3.x, we create a UserSession and import it.
      * 
-     * We also extract and cache the user_id from the access token JWT
+     * We also extract and cache user data from the access token JWT
      * as a workaround for the SDK bug where session.user is null after importSession().
      */
     suspend fun setSessionFromTokens(accessToken: String, refreshToken: String, expiresIn: Long = 3600) {
@@ -121,13 +155,16 @@ class SessionManager(
             println("🔗 [SessionManager] Refresh token length: ${refreshToken.length}")
             println("🔗 [SessionManager] Expires in: $expiresIn seconds")
             
-            // Extract and cache user_id from JWT before importing session
-            val userId = extractUserIdFromJWT(accessToken)
-            if (userId != null) {
-                println("🔗 [SessionManager] Caching user_id: $userId")
-                secureStorage.saveString(USER_ID_KEY, userId)
+            // Extract and cache user data from JWT before importing session
+            val userData = extractUserDataFromJWT(accessToken)
+            if (userData != null) {
+                println("🔗 [SessionManager] Caching user data: id=${userData.userId}, email=${userData.email}, displayName=${userData.displayName}, avatarUrl=${userData.avatarUrl}")
+                secureStorage.saveString(USER_ID_KEY, userData.userId)
+                secureStorage.saveString(USER_EMAIL_KEY, userData.email)
+                userData.displayName?.let { secureStorage.saveString(USER_DISPLAY_NAME_KEY, it) }
+                userData.avatarUrl?.let { secureStorage.saveString(USER_AVATAR_URL_KEY, it) }
             } else {
-                println("⚠️ [SessionManager] Could not extract user_id from JWT")
+                println("⚠️ [SessionManager] Could not extract user data from JWT")
             }
             
             // Create a UserSession from the tokens
@@ -154,11 +191,24 @@ class SessionManager(
     }
     
     /**
-     * Extract user ID from a JWT access token.
-     * JWT format: header.payload.signature
-     * The payload contains the 'sub' claim which is the user ID.
+     * User data extracted from JWT.
      */
-    private fun extractUserIdFromJWT(token: String): String? {
+    private data class JWTUserData(
+        val userId: String,
+        val email: String,
+        val displayName: String?,
+        val avatarUrl: String?
+    )
+    
+    /**
+     * Extract user data from a JWT access token.
+     * JWT format: header.payload.signature
+     * The payload contains user information including:
+     * - 'sub': user ID
+     * - 'email': user email
+     * - 'user_metadata': object with display_name, avatar_url, etc.
+     */
+    private fun extractUserDataFromJWT(token: String): JWTUserData? {
         return try {
             val parts = token.split(".")
             if (parts.size != 3) return null
@@ -174,10 +224,29 @@ class SessionManager(
             
             val decodedString = paddedBase64.decodeBase64Bytes().decodeToString()
             
-            // Parse JSON and extract 'sub' field
+            // Parse JSON and extract user fields
             val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
             val jsonPayload = json.parseToJsonElement(decodedString).jsonObject
-            jsonPayload["sub"]?.jsonPrimitive?.content
+            
+            val userId = jsonPayload["sub"]?.jsonPrimitive?.content ?: return null
+            val email = jsonPayload["email"]?.jsonPrimitive?.content ?: ""
+            
+            // Extract user_metadata if present
+            val userMetadata = jsonPayload["user_metadata"]?.jsonObject
+            val displayName = userMetadata?.get("full_name")?.jsonPrimitive?.content
+                ?: userMetadata?.get("name")?.jsonPrimitive?.content
+                ?: userMetadata?.get("display_name")?.jsonPrimitive?.content
+            val avatarUrl = userMetadata?.get("avatar_url")?.jsonPrimitive?.content
+                ?: userMetadata?.get("picture")?.jsonPrimitive?.content
+            
+            println("🔍 [SessionManager] Extracted from JWT: userId=$userId, email=$email, displayName=$displayName, avatarUrl=$avatarUrl")
+            
+            JWTUserData(
+                userId = userId,
+                email = email,
+                displayName = displayName,
+                avatarUrl = avatarUrl
+            )
         } catch (e: Exception) {
             println("⚠️ [SessionManager] Failed to decode JWT: ${e.message}")
             null

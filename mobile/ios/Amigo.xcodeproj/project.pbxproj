@@ -10,9 +10,11 @@
 		046CBD79DA6F8740DEFFA8CD /* ConversationalOnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869D2555E55A4E957A14A78E /* ConversationalOnboardingViewModel.swift */; };
 		052EE3AE8A4856D3524B5394 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA351020F48AAEB24F28875 /* ContentView.swift */; };
 		0C478C45CC1982AC0E26A23D /* SmartGoalPlanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 856E5BD9E87566C1CAC71FA8 /* SmartGoalPlanningView.swift */; };
+		18297FAFC2C7CC604A99770B /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B36739444AF490E7D1A65588 /* ErrorView.swift */; };
 		241CFAC9A32285E7DF2C87DF /* ProfileSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D893EB649C468CEB5FB2B9FD /* ProfileSetupView.swift */; };
 		2A61E94A7CB4BCAD94D7694D /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 365B7CD982B22CA98EFB2187 /* ProfileView.swift */; };
-		2FF2C38738440B0991C101C0 /* onboarding.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 74C142A5BBE5DCD4D858EB76 /* onboarding.yaml */; };
+		491596C1C555A8C67109D18E /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C0529393A18D1C1433F67 /* LoadingView.swift */; };
+		5553E25C3C5B7B00656BA32A /* SessionInitializationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160E5D0F227791E6661A034C /* SessionInitializationViewModel.swift */; };
 		5A6171455060BDA858F886C5 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25F9A7B2666F62C63322E72 /* OnboardingCoordinator.swift */; };
 		6616FD403EE8128F4C78D86A /* GoalSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88F53A35CD647C97D11DB60F /* GoalSelectionView.swift */; };
 		7600A09E7C7D23D70A0CD5B3 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6CA8FCCEB894A0DFAB738F /* LoginView.swift */; };
@@ -20,8 +22,8 @@
 		973E3C3747329ABE7C868C99 /* SignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3795444891A845954C7EA39D /* SignUpView.swift */; };
 		ACE4F32893987B55D7DB4BDB /* PermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BA39EA583A661A89384C931 /* PermissionsView.swift */; };
 		BEFA5A0CCE28AA69D09CC7DB /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687E2254EA7C599417E70EE9 /* MainTabView.swift */; };
+		BF81FB6B60EFCC1BA604B9C2 /* SessionCoordinatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEACED6688F942F6483A0DB1 /* SessionCoordinatorView.swift */; };
 		CA58EDE998027CB6104C7BF8 /* BedrockTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4AE547B95DFBAB0A34F0277 /* BedrockTestView.swift */; };
-		CC2E48095A186CE5EDD0F9DB /* goal_setting.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 56272D8A9DEF590630A72938 /* goal_setting.yaml */; };
 		DFACECD5E4F8BADCEDE0181B /* GoalManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A449ADBA4627DC98CC9B60 /* GoalManagementView.swift */; };
 		E630575F64746F4E9E033AA0 /* AgentConversationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF245DDD8B268271545CFBB4 /* AgentConversationViewModel.swift */; };
 		E7DDF6A2B5E4CC8588251D52 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C153B460A6B20DF05D3F24C8 /* WelcomeView.swift */; };
@@ -32,20 +34,20 @@
 
 /* Begin PBXFileReference section */
 		01A449ADBA4627DC98CC9B60 /* GoalManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalManagementView.swift; sourceTree = "<group>"; };
+		091C0529393A18D1C1433F67 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		0BA39EA583A661A89384C931 /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
+		160E5D0F227791E6661A034C /* SessionInitializationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionInitializationViewModel.swift; sourceTree = "<group>"; };
 		3305E04868BC111AB25AEB08 /* Amigo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Amigo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		365B7CD982B22CA98EFB2187 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		3795444891A845954C7EA39D /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
 		443A80772400C2129D9E54F7 /* ConversationalOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationalOnboardingView.swift; sourceTree = "<group>"; };
 		4BA351020F48AAEB24F28875 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		56272D8A9DEF590630A72938 /* goal_setting.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = goal_setting.yaml; sourceTree = "<group>"; };
 		687E2254EA7C599417E70EE9 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
-		74C142A5BBE5DCD4D858EB76 /* onboarding.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = onboarding.yaml; sourceTree = "<group>"; };
-		7B6B027DCA3E47CC52B69507 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		856E5BD9E87566C1CAC71FA8 /* SmartGoalPlanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartGoalPlanningView.swift; sourceTree = "<group>"; };
 		869D2555E55A4E957A14A78E /* ConversationalOnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationalOnboardingViewModel.swift; sourceTree = "<group>"; };
 		88F53A35CD647C97D11DB60F /* GoalSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalSelectionView.swift; sourceTree = "<group>"; };
 		9E6CA8FCCEB894A0DFAB738F /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		B36739444AF490E7D1A65588 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
 		B80DECC1C1F7E8667BD37F5F /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		BF245DDD8B268271545CFBB4 /* AgentConversationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentConversationViewModel.swift; sourceTree = "<group>"; };
 		C153B460A6B20DF05D3F24C8 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
@@ -54,10 +56,21 @@
 		D5386EA3ED62E01A615ACD5B /* AgentConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentConversationView.swift; sourceTree = "<group>"; };
 		D893EB649C468CEB5FB2B9FD /* ProfileSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSetupView.swift; sourceTree = "<group>"; };
 		E79E57DD71B2E862187BB38C /* AmigoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmigoApp.swift; sourceTree = "<group>"; };
-		ECFF3DA1B6222E3F067DA77B /* Amigo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Amigo.entitlements; sourceTree = "<group>"; };
+		FEACED6688F942F6483A0DB1 /* SessionCoordinatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinatorView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		2F4935CC641261716086E2FA /* Session */ = {
+			isa = PBXGroup;
+			children = (
+				B36739444AF490E7D1A65588 /* ErrorView.swift */,
+				091C0529393A18D1C1433F67 /* LoadingView.swift */,
+				FEACED6688F942F6483A0DB1 /* SessionCoordinatorView.swift */,
+				160E5D0F227791E6661A034C /* SessionInitializationViewModel.swift */,
+			);
+			path = Session;
+			sourceTree = "<group>";
+		};
 		33D80055B0D7278B54C658FE /* Auth */ = {
 			isa = PBXGroup;
 			children = (
@@ -66,14 +79,6 @@
 				3795444891A845954C7EA39D /* SignUpView.swift */,
 			);
 			path = Auth;
-			sourceTree = "<group>";
-		};
-		505091F0E2EB90464998A76D /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				BEB3D2D84EB5F512D6E943EA /* session-configs */,
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 		6C342F9E6DDD525B1A0C394B /* Products */ = {
@@ -105,16 +110,14 @@
 		A7F305F3480D1C0736B15C2B /* Amigo */ = {
 			isa = PBXGroup;
 			children = (
-				ECFF3DA1B6222E3F067DA77B /* Amigo.entitlements */,
 				E79E57DD71B2E862187BB38C /* AmigoApp.swift */,
 				D4AE547B95DFBAB0A34F0277 /* BedrockTestView.swift */,
 				4BA351020F48AAEB24F28875 /* ContentView.swift */,
-				7B6B027DCA3E47CC52B69507 /* Info.plist */,
 				687E2254EA7C599417E70EE9 /* MainTabView.swift */,
 				33D80055B0D7278B54C658FE /* Auth */,
 				B9E200332F83211E05B87B3B /* Onboarding */,
 				94C4AC59C75A41F755744C3B /* Profile */,
-				505091F0E2EB90464998A76D /* Resources */,
+				2F4935CC641261716086E2FA /* Session */,
 				CF92FAF2FBE8EF4606E09344 /* Shared */,
 			);
 			path = Amigo;
@@ -132,15 +135,6 @@
 				C153B460A6B20DF05D3F24C8 /* WelcomeView.swift */,
 			);
 			path = Onboarding;
-			sourceTree = "<group>";
-		};
-		BEB3D2D84EB5F512D6E943EA /* session-configs */ = {
-			isa = PBXGroup;
-			children = (
-				56272D8A9DEF590630A72938 /* goal_setting.yaml */,
-				74C142A5BBE5DCD4D858EB76 /* onboarding.yaml */,
-			);
-			path = "session-configs";
 			sourceTree = "<group>";
 		};
 		CF92FAF2FBE8EF4606E09344 /* Shared */ = {
@@ -161,7 +155,6 @@
 			buildPhases = (
 				22619CB386B5B2343E269342 /* Build KMP Framework */,
 				EE0BC0308D0FB0D5ED7F4F35 /* Sources */,
-				CD9C9E9AC0B4B54D832ADBEE /* Resources */,
 			);
 			buildRules = (
 			);
@@ -204,18 +197,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXResourcesBuildPhase section */
-		CD9C9E9AC0B4B54D832ADBEE /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				CC2E48095A186CE5EDD0F9DB /* goal_setting.yaml in Resources */,
-				2FF2C38738440B0991C101C0 /* onboarding.yaml in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
-
 /* Begin PBXShellScriptBuildPhase section */
 		22619CB386B5B2343E269342 /* Build KMP Framework */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -251,14 +232,18 @@
 				052EE3AE8A4856D3524B5394 /* ContentView.swift in Sources */,
 				E86987E7A3CEE1152ADFAEEB /* ConversationalOnboardingView.swift in Sources */,
 				046CBD79DA6F8740DEFFA8CD /* ConversationalOnboardingViewModel.swift in Sources */,
+				18297FAFC2C7CC604A99770B /* ErrorView.swift in Sources */,
 				DFACECD5E4F8BADCEDE0181B /* GoalManagementView.swift in Sources */,
 				6616FD403EE8128F4C78D86A /* GoalSelectionView.swift in Sources */,
+				491596C1C555A8C67109D18E /* LoadingView.swift in Sources */,
 				7600A09E7C7D23D70A0CD5B3 /* LoginView.swift in Sources */,
 				BEFA5A0CCE28AA69D09CC7DB /* MainTabView.swift in Sources */,
 				5A6171455060BDA858F886C5 /* OnboardingCoordinator.swift in Sources */,
 				ACE4F32893987B55D7DB4BDB /* PermissionsView.swift in Sources */,
 				241CFAC9A32285E7DF2C87DF /* ProfileSetupView.swift in Sources */,
 				2A61E94A7CB4BCAD94D7694D /* ProfileView.swift in Sources */,
+				BF81FB6B60EFCC1BA604B9C2 /* SessionCoordinatorView.swift in Sources */,
+				5553E25C3C5B7B00656BA32A /* SessionInitializationViewModel.swift in Sources */,
 				973E3C3747329ABE7C868C99 /* SignUpView.swift in Sources */,
 				0C478C45CC1982AC0E26A23D /* SmartGoalPlanningView.swift in Sources */,
 				E7DDF6A2B5E4CC8588251D52 /* WelcomeView.swift in Sources */,

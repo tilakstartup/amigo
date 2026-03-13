@@ -21,7 +21,7 @@
                 "properties": {
                   "goal_type": {
                     "type": "string",
-                    "enum": ["weight_loss", "muscle_gain", "maintenance"]
+                    "enum": ["weight_loss", "muscle_gain", "maintenance", "improved_energy", "better_sleep"]
                   },
                   "current_weight": {
                     "type": "number"

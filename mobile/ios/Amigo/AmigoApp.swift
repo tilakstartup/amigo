@@ -4,7 +4,6 @@ import shared
 @main
 struct AmigoApp: App {
     @StateObject private var authViewModel: AuthViewModel
-    @State private var hasCompletedOnboarding: Bool
     @State private var hasCompletedWelcome: Bool
     
     // Shared session manager instance
@@ -32,9 +31,8 @@ struct AmigoApp: App {
             sessionManager: sharedSessionManager
         ))
         
-        // Check onboarding status (device-level for welcome, will check user-level for onboarding)
+        // Check onboarding status (device-level for welcome)
         _hasCompletedWelcome = State(initialValue: UserDefaults.standard.bool(forKey: "hasCompletedWelcome"))
-        _hasCompletedOnboarding = State(initialValue: false) // Will be checked per-user
     }
     
     var body: some Scene {
@@ -49,103 +47,18 @@ struct AmigoApp: App {
                 } else if !authViewModel.isAuthenticated {
                     // Show authentication screens
                     LoginView(viewModel: authViewModel)
-                } else if !hasCompletedOnboarding {
-                    // Show post-auth onboarding
-                    OnboardingCoordinator(
-                        isOnboardingComplete: $hasCompletedOnboarding,
+                } else {
+                    // Use SessionCoordinatorView for authenticated users
+                    SessionCoordinatorView(
+                        authViewModel: authViewModel,
                         sessionManager: sessionManager
                     )
-                } else {
-                    // Show main app with bottom navigation
-                    MainTabView(viewModel: authViewModel)
                 }
             }
             .onOpenURL { url in
                 handleDeepLink(url)
             }
-            .onChange(of: authViewModel.isAuthenticated) { isAuthenticated in
-                if isAuthenticated {
-                    // Check user-specific onboarding status when user logs in
-                    checkUserOnboardingStatus()
-                } else {
-                    // Reset onboarding status when user logs out
-                    hasCompletedOnboarding = false
-                }
-            }
-            .onAppear {
-                // Check onboarding status on app launch if already authenticated
-                if authViewModel.isAuthenticated {
-                    checkUserOnboardingStatus()
-                }
-            }
         }
-    }
-    
-    private func checkUserOnboardingStatus() {
-        Task {
-            do {
-                try await sessionManager.initialize()
-                // SDK 3.x automatically manages session validation
-
-                guard let userId = try await resolveUserIdForOnboarding(), !userId.isEmpty else {
-                    await MainActor.run {
-                        hasCompletedOnboarding = false
-                    }
-                    return
-                }
-
-                let profileManager = ProfileManagerFactory.shared.create()
-                if let profile = try await profileManager.getProfileOrNull(userId: userId),
-                   profile.onboardingCompleted {
-                    await MainActor.run {
-                        hasCompletedOnboarding = true
-                    }
-                } else {
-                    await MainActor.run {
-                        hasCompletedOnboarding = false
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    hasCompletedOnboarding = false
-                }
-            }
-        }
-    }
-
-    private func resolveUserIdForOnboarding() async throws -> String? {
-        if let user = try? await authViewModel.getCurrentUser(), !user.id.isEmpty {
-            return user.id
-        }
-
-        guard let accessToken = try await sessionManager.getAccessToken(), !accessToken.isEmpty else {
-            return nil
-        }
-
-        return extractSubFromJWT(accessToken)
-    }
-
-    private func extractSubFromJWT(_ token: String) -> String? {
-        let parts = token.split(separator: ".")
-        guard parts.count >= 2 else { return nil }
-
-        var payload = String(parts[1])
-            .replacingOccurrences(of: "-", with: "+")
-            .replacingOccurrences(of: "_", with: "/")
-
-        let remainder = payload.count % 4
-        if remainder > 0 {
-            payload += String(repeating: "=", count: 4 - remainder)
-        }
-
-        guard let data = Data(base64Encoded: payload),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let sub = json["sub"] as? String,
-              !sub.isEmpty else {
-            return nil
-        }
-
-        return sub
     }
     
     private func handleDeepLink(_ url: URL) {
