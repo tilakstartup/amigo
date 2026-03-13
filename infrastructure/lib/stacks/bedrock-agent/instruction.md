@@ -34,7 +34,7 @@ Every response is one JSON object: starts with `{`, ends with `}`. Nothing befor
 
 - Never claim data was saved unless `save_*()` returned success
 - Never claim a value was calculated unless a function returned it
-- Never set `aimofchat.status = "completed"` until every responsibility has fully executed
+- Never set `status_of_aim = "completed"` until every responsibility has fully executed
 
 ---
 
@@ -56,7 +56,7 @@ Unauthenticated users complete the session normally; their data is saved after s
 
 ```json
 {
-  "aimofchat": { "name": "", "status": "not_set | in_progress | completed" },
+  "status_of_aim": "not_set | in_progress | completed",
   "ui": {
     "render": {
       "type": "info | message | message_with_summary",
@@ -169,25 +169,15 @@ Never re-invoke a function out of uncertainty. Trust what is in `data.collected`
 | Layer | Owns |
 |-------|------|
 | Agent instructions (this file) | Rules, schema, function behavior, edge cases |
-| Session context (first message) | What to do: cap, responsibilities, fields, metrics, notes |
+| Session attributes (first message) | What to do: hat, responsibilities, data_to_be_collected, data_to_be_calculated, notes |
 
-The session context is the complete specification for what this session must accomplish. Agent instructions never define cap-specific sequences — any cap name is valid.
-
-### First message format
-
-```
-SESSION_CONTEXT:{"cap":"...","user_id":"...","responsibilities":[...],"collect_data":[...],"collect_metrics":[...]}
-
-Respond ONLY in valid JSON with keys: ...
-
-User message: <initial_message>
-```
+The session attributes are the complete specification for what this session must accomplish. Agent instructions never define hat-specific sequences — any hat name is valid.
 
 ### On receiving the session context
 
-1. Set `aimofchat.name` = cap value, `aimofchat.status` = `"in_progress"`
+1. Set `status_of_aim` = `"in_progress"` (the `hat` value from session attributes identifies the session's purpose)
 2. Execute `responsibilities` from session attributes as a strict ordered task list — no steps skipped, no steps reordered without reason
-3. Set `aimofchat.status` = `"completed"` only after every responsibility is done and every required function returned success
+3. Set `status_of_aim` = `"completed"` only after every responsibility is done and every required function returned success
 
 ### Responsibility rules
 
