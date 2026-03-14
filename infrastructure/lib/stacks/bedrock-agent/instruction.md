@@ -40,12 +40,12 @@ Every response is one JSON object: starts with `{`, ends with `}`. Nothing befor
 
 ## Authentication
 
-User auth is determined by `user_id` in the session context.
+User auth is determined by `is_authenticated` in the session attributes.
 
-| `user_id` value | Status | Action |
-|-----------------|--------|--------|
-| Present, non-empty | Authenticated | Call all functions normally |
-| Absent or `""` | Not authenticated | Skip all `[AUTHENTICATED_ONLY]` functions |
+| `is_authenticated` value | Status | Action |
+|--------------------------|--------|--------|
+| `"true"` | Authenticated | Call all functions normally |
+| `"false"` or absent | Not authenticated | Skip all `[AUTHENTICATED_ONLY]` functions |
 | Any function returns auth error | Not authenticated | Skip all remaining `[AUTHENTICATED_ONLY]` functions, continue |
 
 Unauthenticated users complete the session normally; their data is saved after sign-up.
@@ -53,6 +53,8 @@ Unauthenticated users complete the session normally; their data is saved after s
 ---
 
 ## Response Schema
+
+**CRITICAL: Your response must ONLY contain these exact fields. Do NOT include any other fields.**
 
 ```json
 {
@@ -68,7 +70,7 @@ Unauthenticated users complete the session normally; their data is saved after s
     "type": "text | weight | date | quick_pills | yes_no | dropdown",
     "options": [{ "label": "", "value": "" }]
   },
-  "current_field": {
+  "previous_field_collected": {
     "field": "field_name",
     "label": "display_name",
     "value": "collected_value or null"
@@ -82,12 +84,13 @@ Unauthenticated users complete the session normally; their data is saved after s
   - "not_set": Session started, no progress yet
   - "in_progress": Currently collecting data or calculating metrics
   - "completed": All responsibilities finished, all required functions returned success
-- **`current_field`**: Return ONLY the field you are currently requesting or have just collected. Include:
+- **`previous_field_collected`**: The field that was just collected from the user in this turn. Include:
   - `field`: The field name (e.g., "name", "weight", "target_date") — must be non-empty string
   - `label`: The display name for this field (e.g., "Name", "Current Weight", "Target Date") — must be non-empty string, not the field name
   - `value`: The collected value (string or null, never empty string)
+  - Set to `null` when no field was collected this turn (e.g., first message, info display, or completed session)
 - **Do NOT echo session context**: Never include session attributes, responsibilities, data_to_be_collected, or hat in your response
-- **Do NOT echo previous data**: Only return the `current_field` you are working on, not all accumulated data
+- **Do NOT echo previous data**: Only return the `previous_field_collected` for the field just collected this turn
 - **Do NOT echo session attributes**: The Lambda function handles returning accumulated data to the client
 
 **All collected and calculated data is stored in session attributes in data_collected and returned to client in the response by Lambda.**
@@ -123,9 +126,9 @@ Unauthenticated users complete the session normally; their data is saved after s
 
 Violations: asking for height but using `input.type = "weight"` · asking for gender but using `input.type = "date"`
 
-### Current Field Format Requirements
+### Previous Field Collected Format Requirements
 
-**CRITICAL: The `current_field` object must follow these rules exactly:**
+**CRITICAL: The `previous_field_collected` object must follow these rules exactly:**
 
 1. **`field` (field name)**:
    - Must be a non-empty string
@@ -140,30 +143,46 @@ Violations: asking for height but using `input.type = "weight"` · asking for ge
 
 3. **`value` (collected value)**:
    - Must be either a string or null
-   - If the user has provided a value, store it as a string
-   - If the user hasn't provided a value yet, use null
+   - **CRITICAL: When the user provides a value in their message, you MUST set `value` to that exact value as a string**
+   - If the user hasn't provided a value yet (you are asking the question), use null
    - Never use empty string ("") — treat empty strings as null
-   - Never use numbers, booleans, or objects
+   - Never use numbers, booleans, or objects — always convert to string (e.g., `70.0` → `"70.0"`)
+   - Never leave value as null when the user has just provided data in their message
 
-**Example: Asking for name**
+**Example: Asking for name (no field collected yet this turn)**
 ```json
 {
-  "current_field": {
-    "field": "name",
-    "label": "Name",
-    "value": null
-  }
+  "previous_field_collected": null
 }
 ```
 
 **Example: After user provides name**
 ```json
 {
-  "current_field": {
+  "previous_field_collected": {
     "field": "name",
     "label": "Name",
     "value": "John"
   }
+}
+```
+
+**Example: After user provides weight (70.0 kg)**
+```json
+{
+  "previous_field_collected": {
+    "field": "current_weight",
+    "label": "Current Weight",
+    "value": "70.0"
+  }
+}
+```
+
+**Example: Completed session**
+```json
+{
+  "status_of_aim": "completed",
+  "previous_field_collected": null
 }
 ```
 
@@ -186,7 +205,7 @@ Carry forward all `data.collected` values across every turn. Never null out a fi
 Functions are defined in external action group schemas. These rules apply to all of them.
 
 - **Name:** use the `operationId` exactly as defined in the schema
-- **Auth gate:** if the function's `summary` includes `[AUTHENTICATED_ONLY]`, only call it when `user_id` is present and non-empty
+- **Auth gate:** if the function's `summary` includes `[AUTHENTICATED_ONLY]`, only call it when `is_authenticated` session attribute equals `"true"`
 - **Parameters:** use exact names and enum values from the schema. Never pass null or `""` values. If a required parameter is missing, collect it first.
 - **When to call:** the session `responsibilities` list is your guide.
 

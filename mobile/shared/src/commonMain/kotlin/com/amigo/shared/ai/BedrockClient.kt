@@ -11,13 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
 import kotlin.math.pow
 
 /**
@@ -37,12 +31,12 @@ class BedrockClient(
             })
         }
     }
-    
-    private val json = Json { 
+
+    private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
     }
-    
+
     /**
      * Invoke Claude model with a text prompt via Lambda proxy
      */
@@ -55,15 +49,15 @@ class BedrockClient(
     ): Result<BedrockResponse> {
         return withRetry {
             Logger.i("BedrockClient", "🔵 Starting API call to $apiEndpoint")
-            
+
             val authToken = getAuthToken()
             if (authToken == null) {
                 Logger.e("BedrockClient", "❌ No authentication token available")
                 return@withRetry Result.failure(Exception("No authentication token available"))
             }
-            
+
             Logger.i("BedrockClient", "✅ Auth token obtained (length: ${authToken.length})")
-            
+
             val requestBody = LambdaRequest(
                 prompt = prompt,
                 modelId = modelId,
@@ -71,11 +65,9 @@ class BedrockClient(
                 temperature = temperature,
                 systemPrompt = systemPrompt
             )
-            
+
             Logger.i("BedrockClient", "📤 Sending request - Model: $modelId, MaxTokens: $maxTokens, Temp: $temperature")
-            Logger.i("BedrockClient", "📤 Prompt length: ${prompt.length} chars")
-            Logger.i("BedrockClient", "📤 System prompt: ${if (systemPrompt != null) "${systemPrompt.length} chars" else "none"}")
-            
+
             val response = httpClient.post(apiEndpoint) {
                 headers {
                     append(HttpHeaders.ContentType, "application/json")
@@ -84,24 +76,20 @@ class BedrockClient(
                 }
                 setBody(json.encodeToString(LambdaRequest.serializer(), requestBody))
             }
-            
+
             Logger.i("BedrockClient", "📥 Received response - Status: ${response.status}")
-            
+
             if (response.status.isSuccess()) {
                 val responseText = response.bodyAsText()
-                Logger.i("BedrockClient", "✅ Response body length: ${responseText.length} chars")
-                
-                val lambdaResponse = json.decodeFromString<LambdaResponse>(responseText)
-                Logger.i("BedrockClient", "✅ Completion length: ${lambdaResponse.completion.length} chars")
-                Logger.i("BedrockClient", "✅ Tokens - Input: ${lambdaResponse.usage.inputTokens}, Output: ${lambdaResponse.usage.outputTokens}")
-                
+                val lambdaResponse = json.decodeFromString<LambdaModelResponse>(responseText)
                 Result.success(BedrockResponse(
-                    completion = lambdaResponse.completion,
+                    completion = null,
                     stopReason = lambdaResponse.stopReason,
                     usage = BedrockUsage(
                         inputTokens = lambdaResponse.usage.inputTokens,
                         outputTokens = lambdaResponse.usage.outputTokens
-                    )
+                    ),
+                    completionText = lambdaResponse.completion
                 ))
             } else {
                 val errorText = response.bodyAsText()
@@ -112,36 +100,46 @@ class BedrockClient(
     }
 
     /**
-     * Invoke Bedrock Agent through Lambda proxy (with server-side return-control handling)
+     * Invoke Bedrock Agent through Lambda proxy (with server-side return-control handling).
+     *
+     * @param message User message text
+     * @param sessionId Session identifier
+     * @param agentId Bedrock agent ID
+     * @param agentAliasId Bedrock agent alias ID
+     * @param sessionConfig Session configuration (only on first message; null for subsequent messages)
+     * @param returnControlInvocationResults Function results from client (for return-control turns)
      */
     suspend fun invokeAgent(
         message: String,
         sessionId: String,
         agentId: String,
         agentAliasId: String,
-        cap: String = "onboarding",
-        sessionContext: String? = null,
-        returnControlInvocationResults: List<ReturnControlResult>? = null
+        sessionConfig: SessionConfigPayload? = null,
+        returnControlInvocationResults: List<ReturnControlResult>? = null,
+        dataCollected: kotlinx.serialization.json.JsonObject? = null
     ): Result<BedrockResponse> {
-        return withRetry {
+        // Never retry return-control results — the invocationId is consumed on first attempt
+        // and Bedrock will reject a second attempt with "no active invocationId found"
+        val effectiveMaxRetries = if (!returnControlInvocationResults.isNullOrEmpty()) 1 else maxRetries
+        return withRetry(maxAttempts = effectiveMaxRetries) {
             Logger.i("BedrockClient", "🔵 ========== AGENT API CALL START ==========")
             Logger.i("BedrockClient", "🔵 Endpoint: $apiEndpoint")
             Logger.i("BedrockClient", "🔵 AgentId: $agentId")
             Logger.i("BedrockClient", "🔵 AgentAliasId: $agentAliasId")
             Logger.i("BedrockClient", "🔵 SessionId: $sessionId")
-            Logger.i("BedrockClient", "🔵 Cap: $cap")
+            Logger.i("BedrockClient", "🔵 SessionConfig: ${if (sessionConfig != null) "present (hat=${sessionConfig.hat})" else "null"}")
             Logger.i("BedrockClient", "🔵 Message length: ${message.length} chars")
 
             val authToken = getAuthToken()
-            Logger.i("BedrockClient", "🔑 Auth token retrieved: ${if (authToken == null) "NULL" else if (authToken.isEmpty()) "EMPTY" else "Present (${authToken.length} chars)"}")
-            
+            Logger.i("BedrockClient", "🔑 Auth token: ${if (authToken == null) "NULL" else if (authToken.isEmpty()) "EMPTY" else "Present (${authToken.length} chars)"}")
+
             if (authToken == null) {
                 Logger.e("BedrockClient", "❌ No authentication token available")
                 return@withRetry Result.failure(Exception("No authentication token available"))
             }
-            
-            // For onboarding, empty token is allowed (Lambda will handle anonymous requests)
-            if (authToken.isEmpty() && cap == "onboarding") {
+
+            val hat = sessionConfig?.hat ?: ""
+            if (authToken.isEmpty() && hat == "onboarding") {
                 Logger.i("BedrockClient", "⚠️ Onboarding request without auth token (allowed)")
             }
 
@@ -151,88 +149,83 @@ class BedrockClient(
                 sessionId = sessionId,
                 agentId = agentId,
                 agentAliasId = agentAliasId,
-                cap = cap,
-                sessionContext = sessionContext,
-                returnControlInvocationResults = returnControlInvocationResults
+                sessionConfig = sessionConfig,
+                returnControlInvocationResults = returnControlInvocationResults,
+                dataCollected = dataCollected
             )
 
-            Logger.i("BedrockClient", "📤 Serializing request body...")
             val requestBodyJson = json.encodeToString(LambdaRequest.serializer(), requestBody)
             Logger.i("BedrockClient", "📤 Request body size: ${requestBodyJson.length} chars")
-            Logger.i("BedrockClient", "📤 Making HTTP POST request...")
 
             try {
                 val response = httpClient.post(apiEndpoint) {
                     headers {
                         append(HttpHeaders.ContentType, "application/json")
-                        // Always send Authorization header (even if empty for onboarding)
                         append(HttpHeaders.Authorization, "Bearer $authToken")
                         if (authToken.isNotEmpty()) {
                             append("X-Amigo-Auth", "Bearer $authToken")
                         }
-                        Logger.i("BedrockClient", "📤 Headers set: Content-Type, Authorization")
                     }
                     setBody(requestBodyJson)
                 }
 
                 Logger.i("BedrockClient", "📥 Response received - Status: ${response.status.value} ${response.status.description}")
-                Logger.i("BedrockClient", "📥 Response headers: ${response.headers.entries().joinToString { "${it.key}: ${it.value}" }}")
 
                 if (response.status.isSuccess()) {
                     val responseText = response.bodyAsText()
                     Logger.i("BedrockClient", "📥 Response body size: ${responseText.length} chars")
                     Logger.i("BedrockClient", "📥 FULL RESPONSE: $responseText")
-                    
-                    Logger.i("BedrockClient", "📥 Parsing response JSON...")
-                    val lambdaResponse = json.decodeFromString<LambdaResponse>(responseText)
-                    Logger.i("BedrockClient", "✅ Response parsed successfully")
-                    Logger.i("BedrockClient", "✅ Completion length: ${lambdaResponse.completion.length} chars")
-                    Logger.i("BedrockClient", "✅ Completion text: '${lambdaResponse.completion}'")
-                    Logger.i("BedrockClient", "✅ Stop reason: ${lambdaResponse.stopReason}")
-                    Logger.i("BedrockClient", "✅ Tokens - Input: ${lambdaResponse.usage.inputTokens}, Output: ${lambdaResponse.usage.outputTokens}")
-                    
-                    // Log if we received invocations
+
+                    val lambdaResponse = json.decodeFromString<LambdaAgentResponse>(responseText)
+
+                    // Check for error field
+                    if (lambdaResponse.error != null) {
+                        Logger.e("BedrockClient", "❌ Lambda returned error: ${lambdaResponse.error}")
+                        Logger.i("BedrockClient", "🔵 ========== AGENT API CALL ERROR RESPONSE ==========")
+                        return@withRetry Result.success(
+                            BedrockResponse(
+                                completion = null,
+                                error = lambdaResponse.error,
+                                invocationId = lambdaResponse.invocationId
+                            )
+                        )
+                    }
+
                     if (!lambdaResponse.invocations.isNullOrEmpty()) {
                         Logger.i("BedrockClient", "📋 Received ${lambdaResponse.invocations.size} function invocations")
                         lambdaResponse.invocations.forEach { inv ->
                             Logger.i("BedrockClient", "  - ${inv.actionGroup}.${inv.functionName}(${inv.params.keys.joinToString()})")
-                            Logger.i("BedrockClient", "    Params: ${inv.params}")
                         }
                     }
-                    
+
                     Logger.i("BedrockClient", "🔵 ========== AGENT API CALL SUCCESS ==========")
                     Result.success(
                         BedrockResponse(
                             completion = lambdaResponse.completion,
-                            stopReason = lambdaResponse.stopReason,
-                            usage = BedrockUsage(
-                                inputTokens = lambdaResponse.usage.inputTokens,
-                                outputTokens = lambdaResponse.usage.outputTokens
-                            ),
+                            dataCollected = lambdaResponse.dataCollected,
                             invocations = lambdaResponse.invocations,
-                            invocationId = lambdaResponse.invocationId
+                            invocationId = lambdaResponse.invocationId,
+                            error = null
                         )
                     )
                 } else {
                     val errorText = response.bodyAsText()
-                    Logger.e("BedrockClient", "❌ Agent API error - Status: ${response.status.value} ${response.status.description}")
+                    Logger.e("BedrockClient", "❌ Agent API error - Status: ${response.status.value}")
                     Logger.e("BedrockClient", "❌ Error body: $errorText")
-                    Logger.e("BedrockClient", "🔵 ========== AGENT API CALL FAILED ==========")
+                    Logger.i("BedrockClient", "🔵 ========== AGENT API CALL FAILED ==========")
                     Result.failure(Exception("Lambda Agent API error: ${response.status} - $errorText"))
                 }
             } catch (e: Exception) {
                 Logger.e("BedrockClient", "❌ Exception during HTTP request: ${e.message}")
                 Logger.e("BedrockClient", "❌ Exception type: ${e::class.simpleName}")
-                Logger.e("BedrockClient", "❌ Stack trace: ${e.stackTraceToString()}")
-                Logger.e("BedrockClient", "🔵 ========== AGENT API CALL EXCEPTION ==========")
+                Logger.i("BedrockClient", "🔵 ========== AGENT API CALL EXCEPTION ==========")
                 throw e
             }
         }
     }
-    
+
     /**
      * Analyze an image with Claude via Lambda proxy
-     * Note: Image analysis requires sending base64 image in prompt
      */
     suspend fun analyzeImage(
         imageData: ByteArray,
@@ -240,11 +233,9 @@ class BedrockClient(
         modelId: String = "anthropic.claude-3-5-sonnet-20241022-v2:0",
         maxTokens: Int = 2048
     ): Result<BedrockResponse> {
-        // TODO: Lambda function needs to be updated to support image content
-        // For now, return an error
         return Result.failure(Exception("Image analysis not yet supported via Lambda proxy"))
     }
-    
+
     /**
      * Stream responses from Claude (for real-time chat)
      */
@@ -256,20 +247,18 @@ class BedrockClient(
         systemPrompt: String? = null,
         onChunk: (String) -> Unit
     ): Result<BedrockResponse> {
-        // TODO: Implement streaming support in Lambda
-        // For now, fall back to regular invoke
         return invokeModel(modelId, prompt, maxTokens, temperature, systemPrompt)
     }
-    
+
     /**
      * Retry logic with exponential backoff
      */
-    private suspend fun <T> withRetry(block: suspend () -> Result<T>): Result<T> {
+    private suspend fun <T> withRetry(maxAttempts: Int = maxRetries, block: suspend () -> Result<T>): Result<T> {
         var lastException: Exception? = null
-        
-        repeat(maxRetries) { attempt ->
+
+        repeat(maxAttempts) { attempt ->
             try {
-                Logger.i("BedrockClient", "🔄 Attempt ${attempt + 1}/$maxRetries")
+                Logger.i("BedrockClient", "🔄 Attempt ${attempt + 1}/$maxAttempts")
                 val result = block()
                 if (result.isSuccess) {
                     Logger.i("BedrockClient", "✅ Request succeeded on attempt ${attempt + 1}")
@@ -281,24 +270,30 @@ class BedrockClient(
                 lastException = e
                 Logger.e("BedrockClient", "❌ Attempt ${attempt + 1} threw exception: ${e.message}")
             }
-            
-            if (attempt < maxRetries - 1) {
+
+            if (attempt < maxAttempts - 1) {
                 val delayMs = (2.0.pow(attempt) * 1000).toLong()
                 Logger.i("BedrockClient", "⏳ Waiting ${delayMs}ms before retry...")
                 delay(delayMs)
             }
         }
-        
-        Logger.e("BedrockClient", "❌ All $maxRetries attempts failed. Last error: ${lastException?.message}")
+
+        Logger.e("BedrockClient", "❌ All $maxAttempts attempts failed. Last error: ${lastException?.message}")
         return Result.failure(lastException ?: Exception("Unknown error"))
     }
-    
+
     fun close() {
         httpClient.close()
     }
 }
 
-// Request/Response models for Lambda API
+// ─── Request models ───────────────────────────────────────────────────────────
+
+/**
+ * Unified Lambda request payload.
+ * For agent mode: set mode="agent", message, sessionId, agentId, agentAliasId.
+ * For model mode: set prompt, modelId, maxTokens, temperature, systemPrompt.
+ */
 @Serializable
 private data class LambdaRequest(
     val mode: String? = null,
@@ -306,9 +301,10 @@ private data class LambdaRequest(
     val sessionId: String? = null,
     val agentId: String? = null,
     val agentAliasId: String? = null,
-    val cap: String? = null,
-    val sessionContext: String? = null,
+    val sessionConfig: SessionConfigPayload? = null,
     val returnControlInvocationResults: List<ReturnControlResult>? = null,
+    @SerialName("data_collected")
+    val dataCollected: JsonObject? = null,
     val prompt: String = "",
     val modelId: String = "",
     val maxTokens: Int = 2048,
@@ -316,15 +312,27 @@ private data class LambdaRequest(
     val systemPrompt: String? = null
 )
 
+// ─── Response models ──────────────────────────────────────────────────────────
+
+/** Lambda response for model (non-agent) invocations */
 @Serializable
-private data class LambdaResponse(
+private data class LambdaModelResponse(
     val completion: String,
     val stopReason: String,
-    val usage: LambdaUsage,
-    val userId: String,
-    val timestamp: String,
+    val usage: LambdaUsage
+)
+
+/** Lambda response for agent invocations (new unified format) */
+@Serializable
+private data class LambdaAgentResponse(
+    val completion: JsonObject? = null,
+    @SerialName("data_collected")
+    val dataCollected: JsonObject? = null,
     val invocations: List<FunctionInvocation>? = null,
-    val invocationId: String? = null
+    val invocationId: String? = null,
+    val error: String? = null,
+    val userId: String? = null,
+    val timestamp: String? = null
 )
 
 @Serializable
@@ -333,14 +341,43 @@ private data class LambdaUsage(
     val outputTokens: Int
 )
 
-// Public response model
+// ─── Public models ────────────────────────────────────────────────────────────
+
+/**
+ * Session configuration payload sent to Lambda on the first message of a session.
+ * Includes all SessionConfig fields plus initial_message (which is @Transient in SessionConfig).
+ */
+@Serializable
+data class SessionConfigPayload(
+    val hat: String,
+    val responsibilities: List<String>,
+    @SerialName("data_to_be_collected")
+    val dataToBeCollected: List<String>,
+    @SerialName("data_to_be_calculated")
+    val dataToBeCalculated: List<String> = emptyList(),
+    val notes: List<String> = emptyList(),
+    val initial_message: String
+)
+
+/** Public response model returned by BedrockClient */
 @Serializable
 data class BedrockResponse(
-    val completion: String,
-    val stopReason: String,
-    val usage: BedrockUsage? = null,
+    /** Agent JSON response object (null on error or for model-mode responses) */
+    val completion: JsonObject? = null,
+    /** Accumulated data collected across turns (null on error) */
+    @SerialName("data_collected")
+    val dataCollected: JsonObject? = null,
+    /** Function invocations to execute client-side (null if none) */
     val invocations: List<FunctionInvocation>? = null,
-    val invocationId: String? = null
+    /** Invocation ID for subsequent returnControlInvocationResults */
+    val invocationId: String? = null,
+    /** Error message (null on success) */
+    val error: String? = null,
+    // Legacy fields for model-mode (invokeModel)
+    val stopReason: String? = null,
+    val usage: BedrockUsage? = null,
+    /** Raw text completion for model-mode responses */
+    val completionText: String? = null
 )
 
 @Serializable
@@ -376,5 +413,3 @@ data class FunctionResult(
     val result: String? = null,
     val error: String? = null
 )
-
-

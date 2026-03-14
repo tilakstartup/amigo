@@ -7,23 +7,23 @@ package com.amigo.shared.ai
 object SessionConfigLoader {
     
     /**
-     * Load a session config by cap name.
+     * Load a session config by hat name.
      * Now uses hardcoded SessionConfigs object instead of YAML files.
      */
-    fun loadConfig(cap: String): SessionConfig? {
+    fun loadConfig(hat: String): SessionConfig? {
         return try {
-            println("📦 Loading session config '$cap' from SessionConfigs object...")
-            val config = SessionConfigs.getConfig(cap)
+            println("📦 Loading session config '$hat' from SessionConfigs object...")
+            val config = SessionConfigs.getConfig(hat)
             
             if (config != null) {
-                println("✅ Successfully loaded config for '$cap': ${config.responsibilities.size} responsibilities, ${config.collectData.size} collect_data, ${config.collectMetrics.size} collect_metrics")
+                println("✅ Successfully loaded config for '$hat': ${config.responsibilities.size} responsibilities, ${config.data_to_be_collected.size} data_to_be_collected, ${config.data_to_be_calculated.size} data_to_be_calculated")
             } else {
-                println("❌ No config found for '$cap'")
+                println("❌ No config found for '$hat'")
             }
             
             config
         } catch (e: Exception) {
-            println("❌ FAILED to load session config for '$cap': ${e.message}")
+            println("❌ FAILED to load session config for '$hat': ${e.message}")
             println("❌ Exception type: ${e::class.simpleName}")
             e.printStackTrace()
             null

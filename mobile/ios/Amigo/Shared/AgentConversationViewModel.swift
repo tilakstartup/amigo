@@ -3,27 +3,27 @@ import shared
 import Combine
 
 struct ChatSessionConfig {
-    let cap: String
+    let hat: String
     let responsibilities: [String]
-    let collectData: [String]
-    let collectMetrics: [String]
-    let initialMessage: String
+    let data_to_be_collected: [String]
+    let data_to_be_calculated: [String]
+    let initial_message: String
 }
 
 // MARK: - SessionConfig Helpers
 extension ChatSessionConfig {
     /// Create a ChatSessionConfig from a Kotlin SessionConfig name
     static func from(configName: String) -> ChatSessionConfig? {
-        guard let kotlinConfig = SessionConfigs.shared.getConfig(cap: configName) else {
+        guard let kotlinConfig = SessionConfigs.shared.getConfig(hat: configName) else {
             return nil
         }
         
         return ChatSessionConfig(
-            cap: kotlinConfig.cap,
+            hat: kotlinConfig.hat,
             responsibilities: kotlinConfig.responsibilities.map { $0 as String },
-            collectData: kotlinConfig.collectData.map { $0 as String },
-            collectMetrics: kotlinConfig.collectMetrics.map { $0 as String },
-            initialMessage: kotlinConfig.initialMessage
+            data_to_be_collected: kotlinConfig.data_to_be_collected.map { $0 as String },
+            data_to_be_calculated: kotlinConfig.data_to_be_calculated.map { $0 as String },
+            initial_message: kotlinConfig.initial_message
         )
     }
     
@@ -31,11 +31,11 @@ extension ChatSessionConfig {
     static var onboarding: ChatSessionConfig {
         let kotlinConfig = SessionConfigs.shared.ONBOARDING
         return ChatSessionConfig(
-            cap: kotlinConfig.cap,
+            hat: kotlinConfig.hat,
             responsibilities: kotlinConfig.responsibilities.map { $0 as String },
-            collectData: kotlinConfig.collectData.map { $0 as String },
-            collectMetrics: kotlinConfig.collectMetrics.map { $0 as String },
-            initialMessage: kotlinConfig.initialMessage
+            data_to_be_collected: kotlinConfig.data_to_be_collected.map { $0 as String },
+            data_to_be_calculated: kotlinConfig.data_to_be_calculated.map { $0 as String },
+            initial_message: kotlinConfig.initial_message
         )
     }
     
@@ -43,11 +43,11 @@ extension ChatSessionConfig {
     static var goalSetting: ChatSessionConfig {
         let kotlinConfig = SessionConfigs.shared.GOAL_SETTING
         return ChatSessionConfig(
-            cap: kotlinConfig.cap,
+            hat: kotlinConfig.hat,
             responsibilities: kotlinConfig.responsibilities.map { $0 as String },
-            collectData: kotlinConfig.collectData.map { $0 as String },
-            collectMetrics: kotlinConfig.collectMetrics.map { $0 as String },
-            initialMessage: kotlinConfig.initialMessage
+            data_to_be_collected: kotlinConfig.data_to_be_collected.map { $0 as String },
+            data_to_be_calculated: kotlinConfig.data_to_be_calculated.map { $0 as String },
+            initial_message: kotlinConfig.initial_message
         )
     }
 }
@@ -71,7 +71,7 @@ class AgentConversationViewModel: ObservableObject {
     
     init(sessionManager: SessionManager, chatConfig: ChatSessionConfig) {
         print("🔧 iOS: Initializing AgentConversationViewModel")
-        print("📍 iOS: Cap: \(chatConfig.cap)")
+        print("📍 iOS: Hat: \(chatConfig.hat)")
         self.sessionManager = sessionManager
         self.chatConfig = chatConfig
         setupEngine()
@@ -100,18 +100,18 @@ class AgentConversationViewModel: ObservableObject {
         }
         
         print("📞 iOS: Calling engine.startSession()")
-        print("📍 iOS: Cap: \(chatConfig.cap)")
+        print("📍 iOS: Hat: \(chatConfig.hat)")
         print("📍 iOS: Responsibilities: \(chatConfig.responsibilities.count) items")
-        print("📍 iOS: CollectData: \(chatConfig.collectData.count) fields")
-        print("📍 iOS: InitialMessage: \(chatConfig.initialMessage)")
+        print("📍 iOS: Data to be collected: \(chatConfig.data_to_be_collected.count) fields")
+        print("📍 iOS: Initial message: \(chatConfig.initial_message)")
         
         do {
             _ = try await engine.startSession(
-                cap: chatConfig.cap,
+                hat: chatConfig.hat,
                 responsibilities: chatConfig.responsibilities,
-                collectData: chatConfig.collectData,
-                collectMetrics: chatConfig.collectMetrics,
-                initialMessage: chatConfig.initialMessage
+                data_to_be_collected: chatConfig.data_to_be_collected,
+                data_to_be_calculated: chatConfig.data_to_be_calculated,
+                initial_message: chatConfig.initial_message
             )
             print("✅ iOS: engine.startSession() completed successfully")
             // Start observing messages

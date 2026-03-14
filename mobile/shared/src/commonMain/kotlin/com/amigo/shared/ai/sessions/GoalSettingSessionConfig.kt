@@ -9,30 +9,16 @@ import com.amigo.shared.ai.SessionConfig
 object GoalSettingSessionConfig {
     
     val config = SessionConfig(
-        cap = "goal_setting",
+        hat = "goal_setting",
         responsibilities = listOf(
-            "Get user profile to retrieve current weight, height, age, gender, activity_level",
-            "Confirm or ask for goal type (weight_loss, muscle_gain, or maintenance)",
-            "Ask for target weight in kg",
-            "Ask for target date in yyyy-MM-dd format",
-            "Calculate BMR using calculate_bmr(weight, height, age, gender)",
-            "Calculate TDEE using calculate_tdee(weight, height, age, gender, activity_level)",
-            "Calculate daily calories using calculate_daily_calories(goal_type, tdee, current_weight, target_weight, target_date)",
-            "Validate goal using validate_goal(goal_type, daily_calories, gender, current_weight, target_weight, target_date, tdee)",
-            "If goal is invalid, present the 3 suggestions: extend timeline, adjust target weight, or proceed with user override",
-            "For override option, explain: 'Override lets you keep your original timeline but with custom daily calories. You can set your own calorie target instead of our recommended amount. This may affect the safety and effectiveness of your goal.'",
-            "If user chooses override, ask for their preferred daily calories and store both recommended and user values",
-            "CRITICAL: When user_overridden=true, you MUST collect and include user_daily_calories parameter in save_goal call",
-            "If user chooses a suggestion, recalculate and revalidate with new parameters",
-            "Present final summary with: current weight, target weight, target date, BMR, TDEE, daily calories, weekly weight change rate",
-            "If user_overridden=true, show both recommended calories and user's custom calories in summary",
-            "Ask user to confirm the goal",
-            "When confirmed, call save_goal with all parameters including user_overridden flag and user_daily_calories if applicable",
-            "Set status to completed after successful save"
+            "if user is authenticated, call get_profile immidiately to get user profile information",
+            "greet the user and say you will help them set their health goal",
+            "based on users goal, collect data",
+            "for example for weight loss collect current weight, target weight, age, height etc to calchulate health metrics",
+            "once all information is provided, validate the goal",
+            "once validation passes, save the goal and mark the session as completed"
         ),
-        collectData = listOf(
-            "weight",
-            "gender",
+        data_to_be_collected = listOf(
             "current_weight",
             "target_weight",
             "target_date",
@@ -40,25 +26,24 @@ object GoalSettingSessionConfig {
             "user_overridden",
             "user_daily_calories"
         ),
-        collectMetrics = listOf(
+        data_to_be_calculated = listOf(
             "bmr",
             "tdee",
             "daily_calories",
-            "user_daily_calories",
             "weekly_weight_change"
         ),
-        initialMessage = "I'd like to set a weight_loss goal",
+        initial_message = "I'd like to set a weight_loss goal",
         notes = listOf(
-            "CRITICAL: Never show placeholders like [BMR] or [TDEE] - always call the calculation functions first",
-            "Function sequence is MANDATORY: get_profile → collect 3 fields → calculate_bmr → calculate_tdee → calculate_daily_calories → validate_goal",
-            "If validate_goal returns is_valid=false, present all 3 suggestions to the user with clear options",
-            "When explaining override option, be clear: 'Override allows you to keep your original timeline with custom daily calories. You set your own calorie target instead of our recommended [X] calories. This may affect safety and effectiveness.'",
-            "If user chooses override, collect their preferred daily calories and save both recommended (calculated_daily_calories) and user values (user_daily_calories)",
-            "CRITICAL: save_goal call MUST include user_daily_calories parameter when user_overridden=true",
-            "Always show both recommended and user calories in summary when user_overridden=true",
-            "user_overridden should be true only if user explicitly chooses the override option",
-            "Do not skip any function in the sequence",
-            "Do not generate JSON between function calls in the sequence"
+            "CRITICAL: Call get_profile FIRST before asking any questions — profile data drives all calculations.",
+            "CRITICAL: Never show placeholders like [BMR] or [TDEE] — always call the calculation functions first and use their returned values.",
+            "CRITICAL: Function call sequence is MANDATORY and must not be skipped: get_profile → calculate_bmr → calculate_tdee → calculate_daily_calories → validate_goal → save_goal.",
+            "CRITICAL: Do NOT generate any JSON between consecutive function calls in the sequence.",
+            "Parameter names for calculate_bmr: weight_kg, height_cm, age, gender.",
+            "Parameter names for calculate_tdee: bmr (from calculate_bmr result), activity_level (from get_profile).",
+            "Parameter names for calculate_daily_calories: goal_type, tdee, current_weight_kg, target_weight_kg, target_date.",
+            "Parameter names for validate_goal: goal_type, daily_calories, gender, current_weight_kg, target_weight_kg, target_date, tdee.",
+            "user_overridden must be true ONLY if user explicitly chose the override option.",
+            "When user_overridden=true, user_daily_calories is MANDATORY in save_goal."
         )
     )
 }

@@ -3,17 +3,19 @@ package com.amigo.shared.ai
 import com.amigo.shared.ai.sessions.OnboardingSessionConfig
 import com.amigo.shared.ai.sessions.GoalSettingSessionConfig
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
  * Configuration for an AI conversation session.
  */
 @Serializable
 data class SessionConfig(
-    val cap: String,
+    val hat: String,
     val responsibilities: List<String>,
-    val collectData: List<String>,
-    val collectMetrics: List<String> = emptyList(),
-    val initialMessage: String,
+    val data_to_be_collected: List<String>,
+    val data_to_be_calculated: List<String> = emptyList(),
+    @Transient
+    val initial_message: String = "",
     val notes: List<String> = emptyList()
 )
 
@@ -36,19 +38,19 @@ object SessionConfigs {
     val GOAL_SETTING = GoalSettingSessionConfig.config
     
     /**
-     * Get a session config by cap name.
+     * Get a session config by hat name.
      */
-    fun getConfig(cap: String): SessionConfig? {
-        val config = when (cap.lowercase()) {
+    fun getConfig(hat: String): SessionConfig? {
+        val config = when (hat.lowercase()) {
             "onboarding" -> ONBOARDING
             "goal_setting" -> GOAL_SETTING
             else -> null
         }
         
         if (config != null) {
-            println("✅ Successfully loaded session config '$cap' with ${config.responsibilities.size} responsibilities")
+            println("✅ Successfully loaded session config '$hat' with ${config.responsibilities.size} responsibilities")
         } else {
-            println("❌ No config found for '$cap'")
+            println("❌ No config found for '$hat'")
         }
         
         return config

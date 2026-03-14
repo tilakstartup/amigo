@@ -14,6 +14,7 @@ import io.ktor.util.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -31,7 +32,7 @@ class AmigoAgentConversation(
         val BEDROCK_AGENT_ID = AppConfig.BEDROCK_AGENT_ID
         val BEDROCK_AGENT_ALIAS_ID = AppConfig.BEDROCK_AGENT_ALIAS_ID
         const val JSON_CONTRACT_HINT = "Respond ONLY in valid JSON with keys: type, version, session_context{cap,responsibilities,collect_data,collect_metrics}, aimofchat{name,status}, ui{render{type,text,data[]},tone,next_question}, input{type,options}, data{collected,metrics}, missing_fields, error. Do NOT include actions. Input rules: if options count <= 5 use input.type=quick_pills; use input.type=list only when options count > 5. For yes/no style questions use input.type=yes_no and provide exactly 2 option labels (labels may vary, e.g., Want/Don't want, Like/Unlike), and each yes/no label must be under 20 characters. For date fields use input.type=date and expect value in yyyy-MM-dd. For weight fields use input.type=weight and expect numeric value in kg."
-        const val MAX_INFO_AUTO_ACK_CHAIN = 6
+        const val MAX_INFO_AUTO_ACK_CHAIN = 2
     }
 
     private val _conversationState = MutableStateFlow<OnboardingState>(OnboardingState.Initial)
@@ -53,8 +54,12 @@ class AmigoAgentConversation(
     private var agentSessionId: String = ""
     private var sessionCap: String = "onboarding"
     private var sessionContextJson: String = "{}"
+    // New: holds the SessionConfigPayload for the first message; null after first call
+    private var pendingSessionConfig: SessionConfigPayload? = null
     private var invocationRecursionDepth: Int = 0
     private val MAX_INVOCATION_RECURSION_DEPTH = 5
+    // Accumulated data_collected across turns (sent back to Lambda each turn)
+    private var accumulatedDataCollected: kotlinx.serialization.json.JsonObject? = null
 
     /**
      * Start a session using a predefined SessionConfig.
@@ -62,11 +67,11 @@ class AmigoAgentConversation(
      */
     suspend fun startSessionWithConfig(config: SessionConfig): Result<Unit> {
         return startSession(
-            cap = config.cap,
+            hat = config.hat,
             responsibilities = config.responsibilities,
-            collectData = config.collectData,
-            collectMetrics = config.collectMetrics,
-            initialMessage = config.initialMessage
+            data_to_be_collected = config.data_to_be_collected,
+            data_to_be_calculated = config.data_to_be_calculated,
+            initial_message = config.initial_message
         )
     }
 
@@ -81,40 +86,53 @@ class AmigoAgentConversation(
     }
 
     suspend fun startSession(
-        cap: String,
+        hat: String,
         responsibilities: List<String>,
-        collectData: List<String>,
-        collectMetrics: List<String> = emptyList(),
-        initialMessage: String = "Let's start this session."
+        data_to_be_collected: List<String>,
+        data_to_be_calculated: List<String> = emptyList(),
+        initial_message: String = "Let's start this session."
     ): Result<Unit> {
         return try {
             Logger.i("AmigoAgentConversation", "🚀 ========== START SESSION ==========")
-            Logger.i("AmigoAgentConversation", "🚀 Cap: $cap")
+            Logger.i("AmigoAgentConversation", "🚀 Hat: $hat")
             Logger.i("AmigoAgentConversation", "🚀 Responsibilities: ${responsibilities.size} items")
-            Logger.i("AmigoAgentConversation", "🚀 Collect data: ${collectData.size} fields")
-            Logger.i("AmigoAgentConversation", "🚀 Collect metrics: ${collectMetrics.size} metrics")
-            Logger.i("AmigoAgentConversation", "🚀 Initial message: $initialMessage")
+            Logger.i("AmigoAgentConversation", "🚀 Collect data: ${data_to_be_collected.size} fields")
+            Logger.i("AmigoAgentConversation", "🚀 Collect metrics: ${data_to_be_calculated.size} metrics")
+            Logger.i("AmigoAgentConversation", "🚀 Initial message: $initial_message")
             
             _conversationState.value = OnboardingState.Collecting
             conversationHistory.clear()
             profileData.clear()
             _messages.value = emptyList()
+            accumulatedDataCollected = null
 
-            sessionCap = cap
-            agentSessionId = "${cap}-${TimeProvider.currentTimeMillis()}"
+            sessionCap = hat
+            agentSessionId = "${hat}-${TimeProvider.currentTimeMillis()}"
             Logger.i("AmigoAgentConversation", "🚀 Generated session ID: $agentSessionId")
-            
-            sessionContextJson = buildSessionContext(
-                cap = cap,
+
+            // Build SessionConfigPayload for the first message
+            pendingSessionConfig = SessionConfigPayload(
+                hat = hat,
                 responsibilities = responsibilities,
-                collectData = collectData,
-                collectMetrics = collectMetrics
+                dataToBeCollected = data_to_be_collected,
+                dataToBeCalculated = data_to_be_calculated,
+                notes = emptyList(),
+                initial_message = initial_message
+            )
+            Logger.i("AmigoAgentConversation", "🚀 SessionConfigPayload built for hat=$hat")
+
+            // Keep legacy sessionContextJson for backward compat with buildSessionContext
+            sessionContextJson = buildSessionContext(
+                hat = hat,
+                responsibilities = responsibilities,
+                data_to_be_collected = data_to_be_collected,
+                data_to_be_calculated = data_to_be_calculated
             )
             Logger.i("AmigoAgentConversation", "🚀 Session context JSON length: ${sessionContextJson.length} chars")
 
             Logger.i("AmigoAgentConversation", "🚀 Calling requestAgent...")
             val response = requestAgent(
-                userMessage = initialMessage,
+                userMessage = initial_message,
                 includeSessionPrefix = true
             )
             Logger.i("AmigoAgentConversation", "🚀 requestAgent returned, handling response...")
@@ -164,11 +182,7 @@ class AmigoAgentConversation(
         userMessage: String,
         includeSessionPrefix: Boolean = false
     ): AmigoAgentApiResponse {
-        val agentMessage = if (includeSessionPrefix) {
-            "SESSION_CONTEXT:$sessionContextJson\n\n$JSON_CONTRACT_HINT\n\nUser message: $userMessage"
-        } else {
-            "$JSON_CONTRACT_HINT\n\nUser message: $userMessage"
-        }
+        val agentMessage = userMessage
 
         val firstCompletion = invokeAgentForCompletion(agentMessage)
             ?: return AmigoAgentApiResponse(
@@ -188,7 +202,7 @@ class AmigoAgentConversation(
         }
 
         Logger.w("AmigoAgentConversation", "Agent response was not valid JSON. Requesting JSON-only retry.")
-        val jsonOnlyMessage = "Your last response was not valid JSON. send json response only. $JSON_CONTRACT_HINT"
+        val jsonOnlyMessage = "Your last response was not valid JSON. Please respond with a JSON object only."
         val retryCompletion = invokeAgentForCompletion(jsonOnlyMessage)
         val retryParsed = retryCompletion?.let { parseAgentResponse(it) }
         if (retryParsed != null) {
@@ -225,8 +239,8 @@ class AmigoAgentConversation(
         Logger.i("AmigoAgentConversation", "📞 Agent ID: $BEDROCK_AGENT_ID")
         Logger.i("AmigoAgentConversation", "📞 Agent Alias ID: $BEDROCK_AGENT_ALIAS_ID")
         Logger.i("AmigoAgentConversation", "📞 Session ID: $agentSessionId")
-        Logger.i("AmigoAgentConversation", "📞 Cap: $sessionCap")
-        
+        Logger.i("AmigoAgentConversation", "📞 Hat: $sessionCap")
+
         // Build returnControlInvocationResults if we have results to send back
         val returnControlResults = if (invocationId != null && invocationResults != null && invocationResults.isNotEmpty()) {
             Logger.i("AmigoAgentConversation", "📋 Building returnControlInvocationResults for invocationId: $invocationId with ${invocationResults.size} results")
@@ -249,15 +263,22 @@ class AmigoAgentConversation(
             }
             null
         }
-        
+
+        // Consume pendingSessionConfig on first call; null on subsequent calls
+        val sessionConfigToSend = pendingSessionConfig
+        if (sessionConfigToSend != null) {
+            pendingSessionConfig = null
+            Logger.i("AmigoAgentConversation", "📞 Sending sessionConfig (first message) for hat=${sessionConfigToSend.hat}")
+        }
+
         val result = bedrockClient.invokeAgent(
             message = messageToSend,
             sessionId = agentSessionId,
             agentId = BEDROCK_AGENT_ID,
             agentAliasId = BEDROCK_AGENT_ALIAS_ID,
-            cap = sessionCap,
-            sessionContext = sessionContextJson,
-            returnControlInvocationResults = returnControlResults
+            sessionConfig = sessionConfigToSend,
+            returnControlInvocationResults = returnControlResults,
+            dataCollected = if (sessionConfigToSend == null) accumulatedDataCollected else null
         )
 
         if (result.isFailure) {
@@ -275,24 +296,30 @@ class AmigoAgentConversation(
         }
 
         Logger.i("AmigoAgentConversation", "✅ Agent call succeeded")
-        
+
+        // Check for error field in response
+        if (bedrockResponse.error != null) {
+            Logger.e("AmigoAgentConversation", "❌ Agent returned error: ${bedrockResponse.error}")
+            return null
+        }
+
         // Handle RETURN_CONTROL invocations if present
         if (!bedrockResponse.invocations.isNullOrEmpty()) {
             Logger.i("AmigoAgentConversation", "📋 Processing ${bedrockResponse.invocations.size} action invocations (recursion depth: $invocationRecursionDepth/$MAX_INVOCATION_RECURSION_DEPTH)")
-            
+
             if (invocationRecursionDepth >= MAX_INVOCATION_RECURSION_DEPTH) {
                 Logger.e("AmigoAgentConversation", "❌ Max invocation recursion depth exceeded! Stopping to prevent infinite loop.")
                 invocationRecursionDepth = 0
-                return bedrockResponse.completion
+                // Serialize completion JsonObject back to string for parseAgentResponse
+                return bedrockResponse.completion?.let { json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), it) }
             }
-            
+
             invocationRecursionDepth++
             val processedResults = processActionInvocations(bedrockResponse.invocations)
-            
+
             Logger.i("AmigoAgentConversation", "📋 Sending invocation results back to agent via returnControlInvocationResults...")
-            // Recursive call with returnControlInvocationResults
             val recursiveResult = invokeAgentForCompletion(
-                agentMessage = "",  // Empty message - results go via returnControlInvocationResults
+                agentMessage = "",
                 invocationId = bedrockResponse.invocationId,
                 invocationResults = processedResults
             )
@@ -300,10 +327,19 @@ class AmigoAgentConversation(
             return recursiveResult
         }
 
-        val completion = bedrockResponse.completion
-        logLargePayload("RESPONSE", completion)
+        // Serialize completion JsonObject back to string for parseAgentResponse
+        val completionString = bedrockResponse.completion?.let {
+            json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), it)
+        }
+
+        // Update accumulated data_collected from Lambda response
+        if (bedrockResponse.dataCollected != null) {
+            accumulatedDataCollected = bedrockResponse.dataCollected
+        }
+
+        logLargePayload("RESPONSE", completionString ?: "<null completion>")
         Logger.i("AmigoAgentConversation", "📞 ========== INVOKE AGENT SUCCESS ==========")
-        return completion
+        return completionString
     }
 
     /**
@@ -415,8 +451,6 @@ class AmigoAgentConversation(
             FUNCTION_RESULTS: [
               $resultsJson
             ]
-            
-            $JSON_CONTRACT_HINT
             
             Continue the conversation based on these function results.
         """.trimIndent()
@@ -605,13 +639,37 @@ class AmigoAgentConversation(
             renderItems = renderItems
         )
 
-        val status = response.aimofchat?.status?.lowercase().orEmpty()
-        val shouldComplete = status in setOf("complete", "completed", "done", "closed")
+        // Check completion from new schema (status_of_aim) or legacy schema (aimofchat.status)
+        val statusOfAim = response.statusOfAim?.lowercase().orEmpty()
+        val legacyStatus = response.aimofchat?.status?.lowercase().orEmpty()
+        val shouldComplete = statusOfAim == "completed" || legacyStatus in setOf("complete", "completed", "done", "closed")
         _conversationState.value = if (shouldComplete) OnboardingState.Complete else OnboardingState.Collecting
 
-        if (renderType == "info" && !shouldComplete && infoAutoAckDepth < MAX_INFO_AUTO_ACK_CHAIN) {
-            val followUp = requestAgent(userMessage = "ok")
-            handleAgentResponse(followUp, infoAutoAckDepth + 1)
+        if (renderType == "info" && !shouldComplete) {
+            if (infoAutoAckDepth < MAX_INFO_AUTO_ACK_CHAIN) {
+                val followUp = requestAgent(userMessage = "ok")
+                handleAgentResponse(followUp, infoAutoAckDepth + 1)
+            } else {
+                // Max auto-ack chain hit — agent is stuck in info loop.
+                // Show a user-facing error instead of silently hanging.
+                Logger.w("AmigoAgentConversation", "⚠️ Max info auto-ack chain ($MAX_INFO_AUTO_ACK_CHAIN) hit — showing error to user")
+                val errorResponse = AmigoAgentApiResponse(
+                    ui = AmigoAgentUi(
+                        render = AmigoAgentRender(
+                            type = "message",
+                            text = "I'm having trouble connecting right now. Please try again."
+                        )
+                    ),
+                    input = AmigoAgentInput(type = "text"),
+                    error = "Max info auto-ack chain exceeded"
+                )
+                addAmigoMessage(
+                    text = errorResponse.ui?.render?.text ?: "I'm having trouble connecting right now. Please try again.",
+                    replyType = "text",
+                    replies = null,
+                    renderType = "message"
+                )
+            }
         }
     }
 
@@ -752,31 +810,31 @@ class AmigoAgentConversation(
     }
 
     private suspend fun buildSessionContext(
-        cap: String,
+        hat: String,
         responsibilities: List<String>,
-        collectData: List<String>,
-        collectMetrics: List<String>
+        data_to_be_collected: List<String>,
+        data_to_be_calculated: List<String>
     ): String {
         // Get user ID from SessionManager (which handles the SDK 3.x workaround internally)
         val userId = sessionManager.getCurrentUser()?.id.orEmpty()
         
         val responsibilitiesJson = responsibilities.joinToString(",\n") { "\"$it\"" }
-        val collectDataJson = collectData.joinToString(",\n") { "\"$it\"" }
-        val metricsJson = collectMetrics.joinToString(",\n") { "\"$it\"" }
-        val metricsBlock = if (collectMetrics.isNotEmpty()) {
-            ",\n  \"collect_metrics\": [\n    $metricsJson\n  ]"
+        val collectDataJson = data_to_be_collected.joinToString(",\n") { "\"$it\"" }
+        val metricsJson = data_to_be_calculated.joinToString(",\n") { "\"$it\"" }
+        val metricsBlock = if (data_to_be_calculated.isNotEmpty()) {
+            ",\n  \"data_to_be_calculated\": [\n    $metricsJson\n  ]"
         } else {
             ""
         }
 
         return """
             {
-              "cap": "$cap",
+              "hat": "$hat",
               "user_id": "$userId",
               "responsibilities": [
                 $responsibilitiesJson
               ],
-              "collect_data": [
+              "data_to_be_collected": [
                 $collectDataJson
               ]$metricsBlock
             }
@@ -791,10 +849,14 @@ class AmigoAgentConversation(
 @Serializable
 private data class AmigoAgentApiResponse(
     val type: String? = null,
+    @SerialName("status_of_aim")
+    val statusOfAim: String? = null,
     val ui: AmigoAgentUi? = null,
     val input: AmigoAgentInput? = null,
     val data: AmigoAgentData? = null,
     val aimofchat: AmigoAgentAimOfChat? = null,
+    @SerialName("previous_field_collected")
+    val previousFieldCollected: AmigoAgentFieldCollected? = null,
     val actions: List<JsonElement>? = null,
     val missing_fields: List<String>? = null,
     val error: String? = null
@@ -828,6 +890,13 @@ private data class AmigoAgentData(
 private data class AmigoAgentAimOfChat(
     val name: String? = null,
     val status: String? = null
+)
+
+@Serializable
+private data class AmigoAgentFieldCollected(
+    val field: String? = null,
+    val label: String? = null,
+    val value: String? = null
 )
 
 /**

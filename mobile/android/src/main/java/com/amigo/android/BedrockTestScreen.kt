@@ -220,7 +220,7 @@ class BedrockTestViewModel : ViewModel() {
                 )
                 
                 result.onSuccess { bedrockResponse ->
-                    response = bedrockResponse.completion
+                    response = bedrockResponse.completionText
                     usage = bedrockResponse.usage
                 }.onFailure { exception ->
                     error = exception.message ?: "Unknown error"

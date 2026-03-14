@@ -848,11 +848,11 @@ struct PermissionCardCompactView: View {
     let secureStorage = SecureStorage()
     let sessionManager = AuthFactory.shared.createSessionManager(secureStorage: secureStorage)
     let previewConfig = ChatSessionConfig(
-        cap: "preview",
+        hat: "preview",
         responsibilities: ["Collect minimal profile details"],
-        collectData: ["first_name"],
-        collectMetrics: [],
-        initialMessage: "Let's start."
+        data_to_be_collected: ["first_name"],
+        data_to_be_calculated: [],
+        initial_message: "Let's start."
     )
     AgentConversationView(sessionManager: sessionManager, chatConfig: previewConfig, onComplete: { _ in })
 }

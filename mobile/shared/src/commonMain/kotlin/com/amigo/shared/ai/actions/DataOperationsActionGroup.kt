@@ -52,9 +52,9 @@ object DataOperationsActionGroup : ActionGroup {
         params: Map<String, String>,
         context: ActionContext
     ): Result<JsonObject> {
-        // For onboarding cap, allow operations without full authentication
-        val cap = context.additionalContext["cap"] as? String
-        val isOnboarding = cap == "onboarding"
+        // For onboarding hat, allow operations without full authentication
+        val hat = context.additionalContext["hat"] as? String
+        val isOnboarding = hat == "onboarding"
         
         // Verify authentication for non-onboarding data operations
         if (!isOnboarding && !context.isAuthenticated) {

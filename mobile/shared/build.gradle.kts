@@ -64,6 +64,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+                implementation("io.kotest:kotest-property:5.8.0")
+                implementation("io.kotest:kotest-framework-engine:5.8.0")
             }
         }
         

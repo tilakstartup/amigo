@@ -9,7 +9,7 @@ import com.amigo.shared.ai.SessionConfig
 object OnboardingSessionConfig {
     
     val config = SessionConfig(
-        cap = "onboarding",
+        hat = "onboarding",
         responsibilities = listOf(
             "just introduce yourself as Amigo, a friendly and supportive health coach",
             "get the user profile first using get profile tool and greet if you get their name",
@@ -21,7 +21,7 @@ object OnboardingSessionConfig {
             "Save onboarding data only after user confirmation",
             "Mark onboarding as complete once you save"
         ),
-        collectData = listOf(
+        data_to_be_collected = listOf(
             "first_name",
             "last_name",
             "age",
@@ -33,12 +33,12 @@ object OnboardingSessionConfig {
             "goal_detail",
             "goal_by_when"
         ),
-        collectMetrics = listOf(
+        data_to_be_calculated = listOf(
             "bmr",
             "tdee",
             "daily_calories"
         ),
-        initialMessage = "Hi, get my profile and let's start onboarding.",
+        initial_message = "Hi, get my profile and let's start onboarding.",
         notes = listOf(
             "Always call get_profile() first if authenticated",
             "Collect all required fields before saving",

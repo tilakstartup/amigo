@@ -77,7 +77,7 @@ export class BedrockAgentStack extends cdk.Stack {
       agentName: `amigo-${environment}`,
       description: 'Amigo AI Health Coach - Conversational agent for health tracking and coaching',
       agentResourceRoleArn: agentRole.roleArn,
-      foundationModel: 'anthropic.claude-3-haiku-20240307-v1:0',
+      foundationModel: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
       instruction,
       idleSessionTtlInSeconds: 600,
     });

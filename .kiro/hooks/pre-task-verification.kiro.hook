@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Pre-Task Verification and Setup",
+  "description": "Before starting a new spec task, verify that all checklist items from previous tasks are complete, attempt to automate verification through tests, read spec docs requirements, design and whole tasks and understand, only then and mark the task as in_progress.",
+  "version": "2",
+  "when": {
+    "type": "preTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Before starting this task, perform the following steps in order:\n\n1. READ SPEC CONTEXT:\n   - Read .kiro/specs/{spec-name}/requirements.md to understand the overall goals and requirements\n   - Read .kiro/specs/{spec-name}/design.md to understand the design approach and architecture decisions\n   - Read .kiro/specs/{spec-name}/tasks.md to see the current status of all tasks and understand where this task fits in the overall plan\n   - Summarize the key context relevant to this specific task\n\n2. VERIFY PREVIOUS TASKS:\n   - Check if there are previous tasks in the spec by looking at tasks/spec/{spec-name}/{previous-task-number}/verification_checklist.md files\n   - For each previous task found:\n     a. Read the verification_checklist.md file\n     b. Check which items are marked incomplete (not checked off)\n     c. For incomplete items:\n        - Determine if they can be verified automatically through integration or unit tests\n        - If automatable: Create or run the appropriate tests to verify the item\n        - If not automatable: List these items and ask the user to verify them manually\n   - Only proceed once all previous task checklist items are either automatically verified and marked complete, or manually verified by the user\n   - Report your findings and any automated tests you created or ran\n\n3. MARK TASK IN PROGRESS:\n   - After verification is complete, mark this task as in_progress using the taskStatus tool"
+  },
+  "workspaceFolderName": "healthamigoai",
+  "shortName": "pre-task-verification"
+}
