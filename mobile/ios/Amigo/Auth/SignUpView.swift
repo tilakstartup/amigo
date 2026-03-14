@@ -14,9 +14,7 @@ struct SignUpView: View {
                     VStack(spacing: 24) {
                         // Logo and title
                         VStack(spacing: 12) {
-                            Image(systemName: "heart.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(.pink)
+                            SVGImageView(name: "amigo_profile", size: 80)
                             
                             // Show success screen if email confirmation is required
                             if let successMessage = viewModel.successMessage {

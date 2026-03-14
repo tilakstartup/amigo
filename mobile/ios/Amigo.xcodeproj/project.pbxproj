@@ -9,21 +9,26 @@
 /* Begin PBXBuildFile section */
 		046CBD79DA6F8740DEFFA8CD /* ConversationalOnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869D2555E55A4E957A14A78E /* ConversationalOnboardingViewModel.swift */; };
 		052EE3AE8A4856D3524B5394 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA351020F48AAEB24F28875 /* ContentView.swift */; };
+		0AF3D820AC7592CB8FBAF217 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 92B55D9D1FE8AEC5AE1FFD27 /* Assets.xcassets */; };
 		0C478C45CC1982AC0E26A23D /* SmartGoalPlanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 856E5BD9E87566C1CAC71FA8 /* SmartGoalPlanningView.swift */; };
 		18297FAFC2C7CC604A99770B /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B36739444AF490E7D1A65588 /* ErrorView.swift */; };
 		241CFAC9A32285E7DF2C87DF /* ProfileSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D893EB649C468CEB5FB2B9FD /* ProfileSetupView.swift */; };
 		2A61E94A7CB4BCAD94D7694D /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 365B7CD982B22CA98EFB2187 /* ProfileView.swift */; };
+		2FF2C38738440B0991C101C0 /* onboarding.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 74C142A5BBE5DCD4D858EB76 /* onboarding.yaml */; };
 		491596C1C555A8C67109D18E /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C0529393A18D1C1433F67 /* LoadingView.swift */; };
 		5553E25C3C5B7B00656BA32A /* SessionInitializationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160E5D0F227791E6661A034C /* SessionInitializationViewModel.swift */; };
 		5A6171455060BDA858F886C5 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25F9A7B2666F62C63322E72 /* OnboardingCoordinator.swift */; };
 		6616FD403EE8128F4C78D86A /* GoalSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88F53A35CD647C97D11DB60F /* GoalSelectionView.swift */; };
+		722F4959A7FC679DC4B9DF38 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0246911DE839C944D9B1EA /* ChatView.swift */; };
 		7600A09E7C7D23D70A0CD5B3 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6CA8FCCEB894A0DFAB738F /* LoginView.swift */; };
 		7E62FCEDA148E32A662C9A93 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80DECC1C1F7E8667BD37F5F /* AuthViewModel.swift */; };
+		8604B9044DD6697E7BFC90D5 /* SVGImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C3953C75C8FB92227693B7E /* SVGImageView.swift */; };
 		973E3C3747329ABE7C868C99 /* SignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3795444891A845954C7EA39D /* SignUpView.swift */; };
 		ACE4F32893987B55D7DB4BDB /* PermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BA39EA583A661A89384C931 /* PermissionsView.swift */; };
 		BEFA5A0CCE28AA69D09CC7DB /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687E2254EA7C599417E70EE9 /* MainTabView.swift */; };
 		BF81FB6B60EFCC1BA604B9C2 /* SessionCoordinatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEACED6688F942F6483A0DB1 /* SessionCoordinatorView.swift */; };
 		CA58EDE998027CB6104C7BF8 /* BedrockTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4AE547B95DFBAB0A34F0277 /* BedrockTestView.swift */; };
+		CC2E48095A186CE5EDD0F9DB /* goal_setting.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 56272D8A9DEF590630A72938 /* goal_setting.yaml */; };
 		DFACECD5E4F8BADCEDE0181B /* GoalManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A449ADBA4627DC98CC9B60 /* GoalManagementView.swift */; };
 		E630575F64746F4E9E033AA0 /* AgentConversationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF245DDD8B268271545CFBB4 /* AgentConversationViewModel.swift */; };
 		E7DDF6A2B5E4CC8588251D52 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C153B460A6B20DF05D3F24C8 /* WelcomeView.swift */; };
@@ -37,15 +42,19 @@
 		091C0529393A18D1C1433F67 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		0BA39EA583A661A89384C931 /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
 		160E5D0F227791E6661A034C /* SessionInitializationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionInitializationViewModel.swift; sourceTree = "<group>"; };
+		2C3953C75C8FB92227693B7E /* SVGImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGImageView.swift; sourceTree = "<group>"; };
 		3305E04868BC111AB25AEB08 /* Amigo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Amigo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		365B7CD982B22CA98EFB2187 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		3795444891A845954C7EA39D /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
 		443A80772400C2129D9E54F7 /* ConversationalOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationalOnboardingView.swift; sourceTree = "<group>"; };
 		4BA351020F48AAEB24F28875 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		56272D8A9DEF590630A72938 /* goal_setting.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = goal_setting.yaml; sourceTree = "<group>"; };
 		687E2254EA7C599417E70EE9 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		74C142A5BBE5DCD4D858EB76 /* onboarding.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = onboarding.yaml; sourceTree = "<group>"; };
 		856E5BD9E87566C1CAC71FA8 /* SmartGoalPlanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartGoalPlanningView.swift; sourceTree = "<group>"; };
 		869D2555E55A4E957A14A78E /* ConversationalOnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationalOnboardingViewModel.swift; sourceTree = "<group>"; };
 		88F53A35CD647C97D11DB60F /* GoalSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalSelectionView.swift; sourceTree = "<group>"; };
+		92B55D9D1FE8AEC5AE1FFD27 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9E6CA8FCCEB894A0DFAB738F /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		B36739444AF490E7D1A65588 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
 		B80DECC1C1F7E8667BD37F5F /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
@@ -55,6 +64,7 @@
 		D4AE547B95DFBAB0A34F0277 /* BedrockTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BedrockTestView.swift; sourceTree = "<group>"; };
 		D5386EA3ED62E01A615ACD5B /* AgentConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentConversationView.swift; sourceTree = "<group>"; };
 		D893EB649C468CEB5FB2B9FD /* ProfileSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSetupView.swift; sourceTree = "<group>"; };
+		DE0246911DE839C944D9B1EA /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		E79E57DD71B2E862187BB38C /* AmigoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmigoApp.swift; sourceTree = "<group>"; };
 		FEACED6688F942F6483A0DB1 /* SessionCoordinatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinatorView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -79,6 +89,15 @@
 				3795444891A845954C7EA39D /* SignUpView.swift */,
 			);
 			path = Auth;
+			sourceTree = "<group>";
+		};
+		505091F0E2EB90464998A76D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				92B55D9D1FE8AEC5AE1FFD27 /* Assets.xcassets */,
+				BEB3D2D84EB5F512D6E943EA /* session-configs */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		6C342F9E6DDD525B1A0C394B /* Products */ = {
@@ -115,8 +134,10 @@
 				4BA351020F48AAEB24F28875 /* ContentView.swift */,
 				687E2254EA7C599417E70EE9 /* MainTabView.swift */,
 				33D80055B0D7278B54C658FE /* Auth */,
+				DF01F4B0745F2FA01ECDD487 /* Chat */,
 				B9E200332F83211E05B87B3B /* Onboarding */,
 				94C4AC59C75A41F755744C3B /* Profile */,
+				505091F0E2EB90464998A76D /* Resources */,
 				2F4935CC641261716086E2FA /* Session */,
 				CF92FAF2FBE8EF4606E09344 /* Shared */,
 			);
@@ -137,13 +158,31 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
+		BEB3D2D84EB5F512D6E943EA /* session-configs */ = {
+			isa = PBXGroup;
+			children = (
+				56272D8A9DEF590630A72938 /* goal_setting.yaml */,
+				74C142A5BBE5DCD4D858EB76 /* onboarding.yaml */,
+			);
+			path = "session-configs";
+			sourceTree = "<group>";
+		};
 		CF92FAF2FBE8EF4606E09344 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
 				D5386EA3ED62E01A615ACD5B /* AgentConversationView.swift */,
 				BF245DDD8B268271545CFBB4 /* AgentConversationViewModel.swift */,
+				2C3953C75C8FB92227693B7E /* SVGImageView.swift */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		DF01F4B0745F2FA01ECDD487 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				DE0246911DE839C944D9B1EA /* ChatView.swift */,
+			);
+			path = Chat;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -155,6 +194,7 @@
 			buildPhases = (
 				22619CB386B5B2343E269342 /* Build KMP Framework */,
 				EE0BC0308D0FB0D5ED7F4F35 /* Sources */,
+				CD9C9E9AC0B4B54D832ADBEE /* Resources */,
 			);
 			buildRules = (
 			);
@@ -197,6 +237,19 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		CD9C9E9AC0B4B54D832ADBEE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0AF3D820AC7592CB8FBAF217 /* Assets.xcassets in Resources */,
+				CC2E48095A186CE5EDD0F9DB /* goal_setting.yaml in Resources */,
+				2FF2C38738440B0991C101C0 /* onboarding.yaml in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXShellScriptBuildPhase section */
 		22619CB386B5B2343E269342 /* Build KMP Framework */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -229,6 +282,7 @@
 				F3CD57C143FB853C489FBCC8 /* AmigoApp.swift in Sources */,
 				7E62FCEDA148E32A662C9A93 /* AuthViewModel.swift in Sources */,
 				CA58EDE998027CB6104C7BF8 /* BedrockTestView.swift in Sources */,
+				722F4959A7FC679DC4B9DF38 /* ChatView.swift in Sources */,
 				052EE3AE8A4856D3524B5394 /* ContentView.swift in Sources */,
 				E86987E7A3CEE1152ADFAEEB /* ConversationalOnboardingView.swift in Sources */,
 				046CBD79DA6F8740DEFFA8CD /* ConversationalOnboardingViewModel.swift in Sources */,
@@ -242,6 +296,7 @@
 				ACE4F32893987B55D7DB4BDB /* PermissionsView.swift in Sources */,
 				241CFAC9A32285E7DF2C87DF /* ProfileSetupView.swift in Sources */,
 				2A61E94A7CB4BCAD94D7694D /* ProfileView.swift in Sources */,
+				8604B9044DD6697E7BFC90D5 /* SVGImageView.swift in Sources */,
 				BF81FB6B60EFCC1BA604B9C2 /* SessionCoordinatorView.swift in Sources */,
 				5553E25C3C5B7B00656BA32A /* SessionInitializationViewModel.swift in Sources */,
 				973E3C3747329ABE7C868C99 /* SignUpView.swift in Sources */,

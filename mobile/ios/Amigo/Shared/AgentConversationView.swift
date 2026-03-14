@@ -4,7 +4,8 @@ import shared
 struct AgentConversationView: View {
     @StateObject private var viewModel: AgentConversationViewModel
     let onComplete: ([String: String]) -> Void
-    
+
+    /// Creates the view and owns the ViewModel internally (default usage).
     init(
         sessionManager: SessionManager,
         chatConfig: ChatSessionConfig,
@@ -12,6 +13,16 @@ struct AgentConversationView: View {
     ) {
         self.onComplete = onComplete
         _viewModel = StateObject(wrappedValue: AgentConversationViewModel(sessionManager: sessionManager, chatConfig: chatConfig))
+    }
+
+    /// Accepts an externally-owned ViewModel so the caller can hoist state
+    /// and prevent recreation on tab switches.
+    init(
+        existingViewModel: AgentConversationViewModel,
+        onComplete: @escaping ([String: String]) -> Void
+    ) {
+        self.onComplete = onComplete
+        _viewModel = StateObject(wrappedValue: existingViewModel)
     }
     
     var body: some View {
@@ -39,9 +50,8 @@ struct AgentConversationView: View {
                     Spacer()
                     
                     // Amigo avatar
-                    Image(systemName: "heart.circle.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.pink)
+                    SVGImageView(name: "amigo_profile", size: 40)
+                        .clipShape(Circle())
                 }
                 .padding()
                 .background(Color(.systemBackground))
@@ -138,9 +148,8 @@ struct MessageBubbleView: View {
             if message.isFromAmigo {
                 // Amigo avatar (only show if there's actual content)
                 if !message.text.isEmpty || message.isFeatureIntro {
-                    Image(systemName: "heart.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(.pink)
+                    SVGImageView(name: "amigo_profile", size: 32)
+                        .clipShape(Circle())
                 }
             } else {
                 Spacer()
@@ -638,9 +647,8 @@ struct TypingIndicatorView: View {
     
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            Image(systemName: "heart.circle.fill")
-                .font(.system(size: 32))
-                .foregroundColor(.pink)
+            SVGImageView(name: "amigo_profile", size: 32)
+                .clipShape(Circle())
             
             HStack(spacing: 4) {
                 ForEach(0..<3) { index in

@@ -2,6 +2,7 @@ package com.amigo.shared.ai
 
 import com.amigo.shared.ai.sessions.OnboardingSessionConfig
 import com.amigo.shared.ai.sessions.GoalSettingSessionConfig
+import com.amigo.shared.ai.sessions.GeneralChatSessionConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
@@ -36,6 +37,12 @@ object SessionConfigs {
      * See: GoalSettingSessionConfig.kt
      */
     val GOAL_SETTING = GoalSettingSessionConfig.config
+
+    /**
+     * General chat session for the main chat tab.
+     * See: GeneralChatSessionConfig.kt
+     */
+    val GENERAL_CHAT = GeneralChatSessionConfig.config
     
     /**
      * Get a session config by hat name.
@@ -44,6 +51,7 @@ object SessionConfigs {
         val config = when (hat.lowercase()) {
             "onboarding" -> ONBOARDING
             "goal_setting" -> GOAL_SETTING
+            "general_chat" -> GENERAL_CHAT
             else -> null
         }
         
@@ -60,6 +68,6 @@ object SessionConfigs {
      * Get all available session configs.
      */
     fun getAllConfigs(): List<SessionConfig> {
-        return listOf(ONBOARDING, GOAL_SETTING)
+        return listOf(ONBOARDING, GOAL_SETTING, GENERAL_CHAT)
     }
 }

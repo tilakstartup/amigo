@@ -1,20 +1,22 @@
 package com.amigo.android.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.amigo.android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,11 +61,10 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(20.dp))
             
             // Logo and title
-            Icon(
-                imageVector = Icons.Default.Favorite,
+            Image(
+                painter = painterResource(id = R.drawable.ic_amigo_profile),
                 contentDescription = "Amigo Logo",
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary
+                modifier = Modifier.size(80.dp)
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -82,11 +83,10 @@ fun SignUpScreen(
                     
                     Spacer(modifier = Modifier.height(32.dp))
                     
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_amigo_profile),
                         contentDescription = "Success",
-                        modifier = Modifier.size(100.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        modifier = Modifier.size(100.dp)
                     )
                     
                     Spacer(modifier = Modifier.height(32.dp))

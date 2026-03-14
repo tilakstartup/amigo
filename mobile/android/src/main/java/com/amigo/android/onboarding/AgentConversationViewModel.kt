@@ -15,11 +15,11 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
-class AgentConversationViewModel(
-    private val sessionManager: SessionManager
+open class AgentConversationViewModel(
+    protected val sessionManager: SessionManager
 ) : ViewModel() {
     
-    private val engine: AmigoAgentConversation by lazy {
+    protected val engine: AmigoAgentConversation by lazy {
         AmigoAgentConversationFactory.createWithDefaultClient(
             AppConfig.BEDROCK_API_ENDPOINT,
             sessionManager
@@ -97,7 +97,7 @@ class AgentConversationViewModel(
     
     private var isSubmitting = false
     
-    fun startOnboarding() {
+    open fun startOnboarding() {
         viewModelScope.launch {
             try {
                 // Use the predefined onboarding session config

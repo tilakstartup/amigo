@@ -4,7 +4,7 @@ import shared
 struct MainTabView: View {
     @ObservedObject var viewModel: AuthViewModel
     @State private var selectedTab = 0
-    
+
     var body: some View {
         TabView(selection: $selectedTab) {
             ContentView(viewModel: viewModel)
@@ -12,12 +12,18 @@ struct MainTabView: View {
                     Label("Home", systemImage: "house.fill")
                 }
                 .tag(0)
-            
+
+            ChatView(sessionManager: viewModel.sessionManager)
+                .tabItem {
+                    Label("Chat", systemImage: "message.fill")
+                }
+                .tag(1)
+
             ProfileView(viewModel: viewModel)
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
-                .tag(1)
+                .tag(2)
         }
     }
 }
@@ -35,6 +41,6 @@ struct MainTabView: View {
         oauthAuthenticator: oauthAuthenticator,
         sessionManager: sessionManager
     )
-    
+
     return MainTabView(viewModel: viewModel)
 }

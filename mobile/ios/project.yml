@@ -14,6 +14,11 @@ targets:
       - path: Amigo
         includes:
           - "**/*.swift"
+          - "**/*.xcassets"
+          - "**/*.yaml"
+          - "**/*.json"
+          - "Images/**"
+          - "**/*.svg"
     info:
       path: Amigo/Info.plist
       properties:

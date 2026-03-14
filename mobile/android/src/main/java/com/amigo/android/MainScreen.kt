@@ -1,11 +1,13 @@
 package com.amigo.android
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -14,12 +16,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.amigo.android.auth.AuthViewModel
+import com.amigo.android.chat.ChatScreen
+import com.amigo.android.chat.ChatViewModel
 import com.amigo.android.profile.ProfileScreen
 import com.amigo.shared.auth.SessionManager
 
-sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    object Home : Screen("home", "Home", Icons.Filled.Home)
-    object Profile : Screen("profile", "Profile", Icons.Filled.Person)
+sealed class Screen(val route: String, val title: String) {
+    object Home : Screen("home", "Home")
+    object Chat : Screen("chat", "Chat")
+    object Profile : Screen("profile", "Profile")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,19 +35,32 @@ fun MainScreen(
     onSignOut: () -> Unit
 ) {
     val navController = rememberNavController()
-    val items = listOf(Screen.Home, Screen.Profile)
-    
+    val items = listOf(Screen.Home, Screen.Chat, Screen.Profile)
+    // Hoist ChatViewModel here so it survives tab switches
+    val chatViewModel = remember { ChatViewModel(sessionManager) }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
-                
+
                 items.forEach { screen ->
+                    val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                     NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
+                        icon = {
+                            when (screen) {
+                                Screen.Home -> Icon(Icons.Filled.Home, contentDescription = screen.title)
+                                Screen.Chat -> Image(
+                                    painter = painterResource(id = R.drawable.ic_amigo_chat),
+                                    contentDescription = screen.title,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Screen.Profile -> Icon(Icons.Filled.Person, contentDescription = screen.title)
+                            }
+                        },
                         label = { Text(screen.title) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        selected = selected,
                         onClick = {
                             navController.navigate(screen.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
@@ -64,6 +82,9 @@ fun MainScreen(
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(authViewModel = authViewModel)
+            }
+            composable(Screen.Chat.route) {
+                ChatScreen(viewModel = chatViewModel)
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(
@@ -100,16 +121,16 @@ fun HomeScreen(authViewModel: AuthViewModel) {
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "Welcome to Amigo!",
                 style = MaterialTheme.typography.headlineMedium
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             authViewModel.getCurrentUser()?.let { user ->
                 Text(
                     text = "Signed in as:",
@@ -121,9 +142,9 @@ fun HomeScreen(authViewModel: AuthViewModel) {
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "Your AI health coach is ready to help you achieve your goals.",
                 style = MaterialTheme.typography.bodyMedium,

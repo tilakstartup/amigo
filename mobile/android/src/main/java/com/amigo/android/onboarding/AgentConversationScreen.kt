@@ -3,6 +3,7 @@ package com.amigo.android.onboarding
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,8 +23,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.amigo.android.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -161,15 +164,10 @@ fun OnboardingHeader() {
                 )
             }
             
-            Icon(
-                imageVector = Icons.Default.Favorite,
+            Image(
+                painter = painterResource(R.drawable.ic_amigo_profile),
                 contentDescription = "Amigo",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE91E63))
-                    .padding(8.dp),
-                tint = Color.White
+                modifier = Modifier.size(40.dp)
             )
         }
     }
@@ -201,15 +199,10 @@ fun MessageBubble(
             horizontalArrangement = if (message.isFromAmigo) Arrangement.Start else Arrangement.End
         ) {
             if (message.isFromAmigo && (message.text.isNotEmpty() || message.isFeatureIntro)) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
+                Image(
+                    painter = painterResource(R.drawable.ic_amigo_profile),
                     contentDescription = "Amigo",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE91E63))
-                        .padding(6.dp),
-                    tint = Color.White
+                    modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
@@ -627,15 +620,10 @@ fun TypingIndicator() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.Favorite,
+        Image(
+            painter = painterResource(R.drawable.ic_amigo_profile),
             contentDescription = "Amigo",
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE91E63))
-                .padding(6.dp),
-            tint = Color.White
+            modifier = Modifier.size(32.dp)
         )
         
         Surface(

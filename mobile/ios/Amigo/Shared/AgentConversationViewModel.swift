@@ -50,6 +50,18 @@ extension ChatSessionConfig {
             initial_message: kotlinConfig.initial_message
         )
     }
+
+    /// Predefined general chat config for the main chat tab
+    static var generalChat: ChatSessionConfig {
+        let kotlinConfig = SessionConfigs.shared.GENERAL_CHAT
+        return ChatSessionConfig(
+            hat: kotlinConfig.hat,
+            responsibilities: kotlinConfig.responsibilities.map { $0 as String },
+            data_to_be_collected: kotlinConfig.data_to_be_collected.map { $0 as String },
+            data_to_be_calculated: kotlinConfig.data_to_be_calculated.map { $0 as String },
+            initial_message: kotlinConfig.initial_message
+        )
+    }
 }
 
 @MainActor
@@ -68,6 +80,7 @@ class AgentConversationViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let sessionManager: SessionManager
     private let chatConfig: ChatSessionConfig
+    private var hasStarted = false
     
     init(sessionManager: SessionManager, chatConfig: ChatSessionConfig) {
         print("🔧 iOS: Initializing AgentConversationViewModel")
@@ -93,6 +106,8 @@ class AgentConversationViewModel: ObservableObject {
     }
     
     func startChat() async {
+        guard !hasStarted else { return }
+        hasStarted = true
         print("🚀 iOS: startChat() called")
         guard let engine = engine else {
             print("❌ iOS: Engine is nil!")
