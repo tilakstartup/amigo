@@ -1,0 +1,18 @@
+{
+  "imports": {
+    "npm:fast-check": "npm:fast-check@3.22.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "@strands-agents/sdk": "npm:@strands-agents/sdk@latest",
+    "@strands-agents/sdk/openai": "npm:@strands-agents/sdk@latest/openai",
+    "@strands-agents/sdk/bedrock": "npm:@strands-agents/sdk@latest/bedrock",
+    "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3@^3.1009.0",
+    "@smithy/node-http-handler": "npm:@smithy/node-http-handler@^4",
+    "openai": "npm:openai@^6.29.0",
+    "zod": "npm:zod@4"
+  },
+  "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.window"]
+  }
+}

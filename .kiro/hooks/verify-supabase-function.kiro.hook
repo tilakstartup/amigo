@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Verify Supabase Function After Task",
+  "description": "After a task completes, if it involves updating a Supabase function, generates and runs a curl-based verification script saved to verification/{task-name}.sh and documents results in verification/{task-name}.md",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A task just completed. Check if this task involved updating or creating a Supabase edge function or database function.\n\nIf it did:\n1. Identify the task name from the spec task that was just completed (use a kebab-case slug of the task title)\n2. Create a shell script at `verification/{task-name}.sh` with curl commands to verify the Supabase function works correctly. The script should:\n   - Load environment variables from `.env` if it exists (SUPABASE_URL, SUPABASE_ANON_KEY, etc.)\n   - Include curl commands that call the function endpoint(s) with realistic test payloads\n   - Check HTTP response codes and print pass/fail results\n   - Be executable (include `#!/bin/bash` header and `set -e`)\n3. Run the verification script using bash\n4. Verify anything you can using the supabase test details in .env\n5. Create a markdown file at `verification/{task-name}.md` documenting:\n   - What function was verified\n   - The curl commands used\n   - The actual output/results from running the script\n   - Pass/fail status\n\nIf the task did NOT involve a Supabase function, do nothing."
+  },
+  "workspaceFolderName": "healthamigoai",
+  "shortName": "verify-supabase-function"
+}
