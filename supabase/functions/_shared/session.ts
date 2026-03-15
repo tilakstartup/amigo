@@ -205,13 +205,11 @@ export function buildSystemPromptBlocks(
 ): SystemBlock[] {
   const blocks: SystemBlock[] = [
     new TextBlock(buildStaticPrefix()),
+    new CachePointBlock({ cacheType: 'default' }),
+    new TextBlock(buildSessionConfigBlock(sessionConfig)),
+    new CachePointBlock({ cacheType: 'default' }),
   ]
-  if (isPro) {
-    blocks.push(new CachePointBlock({ cacheType: 'default' }));
-    blocks.push(new TextBlock(buildSessionConfigBlock(sessionConfig)));
-    blocks.push(new CachePointBlock({ cacheType: 'default' }));
-  } else {
-    blocks.push(new TextBlock(buildSessionConfigBlock(sessionConfig)));
+  if (!isPro) {
     const dataBlock = buildDataCollectedBlock(dataCollected)
     if (dataBlock) blocks.push(new TextBlock(dataBlock))
   }
