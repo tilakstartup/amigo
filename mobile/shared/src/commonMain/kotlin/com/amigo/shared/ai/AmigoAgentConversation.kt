@@ -29,8 +29,7 @@ class AmigoAgentConversation(
     private val supabaseClient: SupabaseClient? = null
 ) {
     private companion object {
-        val BEDROCK_AGENT_ID = AppConfig.BEDROCK_AGENT_ID
-        val BEDROCK_AGENT_ALIAS_ID = AppConfig.BEDROCK_AGENT_ALIAS_ID
+        // Agent IDs are resolved server-side by the Lambda — no client-side IDs needed
         const val JSON_CONTRACT_HINT = "Respond ONLY in valid JSON with keys: type, version, session_context{cap,responsibilities,collect_data,collect_metrics}, aimofchat{name,status}, ui{render{type,text,data[]},tone,next_question}, input{type,options}, data{collected,metrics}, missing_fields, error. Do NOT include actions. Input rules: if options count <= 5 use input.type=quick_pills; use input.type=list only when options count > 5. For yes/no style questions use input.type=yes_no and provide exactly 2 option labels (labels may vary, e.g., Want/Don't want, Like/Unlike), and each yes/no label must be under 20 characters. For date fields use input.type=date and expect value in yyyy-MM-dd. For weight fields use input.type=weight and expect numeric value in kg."
         const val MAX_INFO_AUTO_ACK_CHAIN = 2
     }
@@ -59,7 +58,10 @@ class AmigoAgentConversation(
     private var invocationRecursionDepth: Int = 0
     private val MAX_INVOCATION_RECURSION_DEPTH = 5
     // Accumulated data_collected across turns (sent back to Lambda each turn)
-    private var accumulatedDataCollected: kotlinx.serialization.json.JsonObject? = null
+    private var accumulatedDataCollected: kotlinx.serialization.json.JsonElement? = null
+    // Subscription status received from Lambda (defaults to "free")
+    var subscriptionStatus: String = "free"
+        private set
 
     /**
      * Start a session using a predefined SessionConfig.
@@ -236,8 +238,6 @@ class AmigoAgentConversation(
         logLargePayload("PROMPT", messageToSend.ifEmpty { "[empty - using returnControlInvocationResults]" })
 
         Logger.i("AmigoAgentConversation", "📞 Calling bedrockClient.invokeAgent...")
-        Logger.i("AmigoAgentConversation", "📞 Agent ID: $BEDROCK_AGENT_ID")
-        Logger.i("AmigoAgentConversation", "📞 Agent Alias ID: $BEDROCK_AGENT_ALIAS_ID")
         Logger.i("AmigoAgentConversation", "📞 Session ID: $agentSessionId")
         Logger.i("AmigoAgentConversation", "📞 Hat: $sessionCap")
 
@@ -274,8 +274,8 @@ class AmigoAgentConversation(
         val result = bedrockClient.invokeAgent(
             message = messageToSend,
             sessionId = agentSessionId,
-            agentId = BEDROCK_AGENT_ID,
-            agentAliasId = BEDROCK_AGENT_ALIAS_ID,
+            agentId = "",
+            agentAliasId = "",
             sessionConfig = sessionConfigToSend,
             returnControlInvocationResults = returnControlResults,
             dataCollected = if (sessionConfigToSend == null) accumulatedDataCollected else null
@@ -335,6 +335,12 @@ class AmigoAgentConversation(
         // Update accumulated data_collected from Lambda response
         if (bedrockResponse.dataCollected != null) {
             accumulatedDataCollected = bedrockResponse.dataCollected
+        }
+
+        // Update subscription status from Lambda response
+        if (bedrockResponse.subscriptionStatus != null) {
+            subscriptionStatus = bedrockResponse.subscriptionStatus
+            Logger.i("AmigoAgentConversation", "📋 Subscription status updated: $subscriptionStatus")
         }
 
         logLargePayload("RESPONSE", completionString ?: "<null completion>")

@@ -79,11 +79,19 @@ class SessionManager(
      */
     suspend fun getAccessToken(): String? {
         return try {
+            // Refresh session first to ensure token is valid
+            supabase.auth.refreshCurrentSession()
             val session = supabase.auth.currentSessionOrNull()
             session?.accessToken
         } catch (e: Exception) {
-            println("❌ Could not retrieve session: ${e.message}")
-            null
+            println("⚠️ Token refresh failed, returning existing token: ${e.message}")
+            // Fall back to current session even if refresh failed
+            try {
+                supabase.auth.currentSessionOrNull()?.accessToken
+            } catch (e2: Exception) {
+                println("❌ Could not retrieve session: ${e2.message}")
+                null
+            }
         }
     }
 

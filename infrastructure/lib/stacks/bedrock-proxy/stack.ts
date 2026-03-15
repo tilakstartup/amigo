@@ -9,6 +9,11 @@ export interface BedrockProxyStackProps extends cdk.StackProps {
   environment: string;
   supabaseUrl: string;
   supabaseAnonKey: string;
+  supabaseJwtPublicKey: string;
+  proAgentId: string;
+  proAgentAliasId: string;
+  freeAgentId: string;
+  freeAgentAliasId: string;
 }
 
 export class BedrockProxyStack extends cdk.Stack {
@@ -19,7 +24,16 @@ export class BedrockProxyStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: BedrockProxyStackProps) {
     super(scope, id, props);
 
-    const { environment, supabaseUrl, supabaseAnonKey } = props;
+    const {
+      environment,
+      supabaseUrl,
+      supabaseAnonKey,
+      supabaseJwtPublicKey,
+      proAgentId,
+      proAgentAliasId,
+      freeAgentId,
+      freeAgentAliasId,
+    } = props;
 
     // Lambda Execution Role
     const lambdaRole = new iam.Role(this, 'BedrockLambdaRole', {
@@ -48,17 +62,15 @@ export class BedrockProxyStack extends cdk.Stack {
       })
     );
 
-    // Add Bedrock Agent Runtime permissions (separate statement with correct resource format)
+    // Add Bedrock Agent Runtime permissions
     lambdaRole.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: [
           'bedrock-agent-runtime:InvokeAgent',
-          'bedrock:InvokeAgent', // Some regions/versions may use this action name
+          'bedrock:InvokeAgent',
         ],
-        resources: [
-          '*', // Bedrock Agent Runtime requires wildcard or specific agent-alias ARN
-        ],
+        resources: ['*'],
       })
     );
 
@@ -74,12 +86,21 @@ export class BedrockProxyStack extends cdk.Stack {
       })
     );
 
+    // Lambda Layer: PyJWT + cryptography (Linux x86_64 wheels, pre-built for python3.11)
+    const pyJwtLayer = new lambda.LayerVersion(this, 'PyJwtLayer', {
+      layerVersionName: `amigo-pyjwt-${environment}`,
+      code: lambda.Code.fromAsset(path.join(__dirname, 'layer')),
+      compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+      description: 'PyJWT and cryptography for ES256 JWT verification',
+    });
+
     // Lambda Function
     this.lambdaFunction = new lambda.Function(this, 'BedrockProxyFunction', {
       functionName: `amigo-bedrock-proxy-${environment}`,
       runtime: lambda.Runtime.PYTHON_3_11,
       handler: 'index.lambda_handler',
       code: lambda.Code.fromAsset(path.join(__dirname, 'lambda')),
+      layers: [pyJwtLayer],
       role: lambdaRole,
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
@@ -88,6 +109,11 @@ export class BedrockProxyStack extends cdk.Stack {
         SUPABASE_ANON_KEY: supabaseAnonKey,
         SUPABASE_EDGE_BASE: `${supabaseUrl}/functions/v1`,
         ENVIRONMENT: environment,
+        SUPABASE_JWT_PUBLIC_KEY: supabaseJwtPublicKey,
+        BEDROCK_PRO_AGENT_ID: proAgentId,
+        BEDROCK_PRO_AGENT_ALIAS_ID: proAgentAliasId,
+        BEDROCK_FREE_AGENT_ID: freeAgentId,
+        BEDROCK_FREE_AGENT_ALIAS_ID: freeAgentAliasId,
       },
     });
 

@@ -94,8 +94,6 @@ class AgentConversationViewModel: ObservableObject {
         // Use the correct API endpoint from AppConfig
         let apiEndpoint = AppConfig.shared.BEDROCK_API_ENDPOINT
         print("🔧 iOS: Setting up engine with endpoint: \(apiEndpoint)")
-        print("📍 iOS: Agent ID: \(AppConfig.shared.BEDROCK_AGENT_ID)")
-        print("📍 iOS: Agent Alias: \(AppConfig.shared.BEDROCK_AGENT_ALIAS_ID)")
         
         engine = AmigoAgentConversationFactory.shared.create(
             apiEndpoint: apiEndpoint,

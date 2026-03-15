@@ -1,0 +1,36 @@
+{
+  "version": "52.0.0",
+  "files": {
+    "07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57": {
+      "displayName": "DataOperationsProvider/framework-onEvent/Code",
+      "source": {
+        "path": "asset.07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "334856751928-us-east-1-ca58b905": {
+          "bucketName": "cdk-hnb659fds-assets-334856751928-us-east-1",
+          "objectKey": "07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57.zip",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::334856751928:role/cdk-hnb659fds-file-publishing-role-334856751928-us-east-1"
+        }
+      }
+    },
+    "ca73e7ad231baf9d4372d4a07605a3ce6d2764c68a680bc6f763fcaf7201790d": {
+      "displayName": "AmigoBedrockAgentStack-dev Template",
+      "source": {
+        "path": "AmigoBedrockAgentStack-dev.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "334856751928-us-east-1-966727f6": {
+          "bucketName": "cdk-hnb659fds-assets-334856751928-us-east-1",
+          "objectKey": "ca73e7ad231baf9d4372d4a07605a3ce6d2764c68a680bc6f763fcaf7201790d.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::334856751928:role/cdk-hnb659fds-file-publishing-role-334856751928-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

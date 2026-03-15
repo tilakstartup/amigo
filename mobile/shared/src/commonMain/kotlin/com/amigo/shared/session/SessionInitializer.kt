@@ -38,6 +38,13 @@ class SessionInitializer(
         Logger.i("SessionInitializer", "🚀 Initializing session for user: $userId")
         _state.value = InitializationState.Loading
         
+        // Ensure we have a fresh token before any DB calls
+        try {
+            sessionManager.getAccessToken()
+        } catch (e: Exception) {
+            Logger.w("SessionInitializer", "⚠️ Token refresh failed, proceeding anyway: ${e.message}")
+        }
+        
         // Check cache first
         val cachedProfile = profileCache.get(userId)
         if (cachedProfile != null && !cachedProfile.isStale()) {

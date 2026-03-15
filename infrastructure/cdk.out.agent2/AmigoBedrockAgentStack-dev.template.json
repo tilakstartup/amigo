@@ -1,0 +1,1642 @@
+{
+ "Description": "Amigo Bedrock Agent Stack - dev",
+ "Resources": {
+  "KnowledgeBaseBucketC011DD60": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "amigo-knowledge-base-dev-334856751928",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/KnowledgeBaseBucket/Resource"
+   }
+  },
+  "ProAgentRoleC68CB5F8": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "bedrock.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/AmazonBedrockFullAccess"
+       ]
+      ]
+     }
+    ],
+    "RoleName": "AmigoProAgentRole-dev",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/ProAgentRole/Resource"
+   }
+  },
+  "ProAgentRoleDefaultPolicy21B2FFD0": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "KnowledgeBaseBucketC011DD60",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "KnowledgeBaseBucketC011DD60",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream",
+        "bedrock:Retrieve",
+        "bedrock:RetrieveAndGenerate"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ProAgentRoleDefaultPolicy21B2FFD0",
+    "Roles": [
+     {
+      "Ref": "ProAgentRoleC68CB5F8"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/ProAgentRole/DefaultPolicy/Resource"
+   }
+  },
+  "ProAgent": {
+   "Type": "AWS::Bedrock::Agent",
+   "Properties": {
+    "AgentName": "amigo-pro-dev",
+    "AgentResourceRoleArn": {
+     "Fn::GetAtt": [
+      "ProAgentRoleC68CB5F8",
+      "Arn"
+     ]
+    },
+    "Description": "Amigo AI Health Coach — Pro tier (full action groups)",
+    "FoundationModel": "amazon.nova-lite-v1:0",
+    "IdleSessionTTLInSeconds": 600,
+    "Instruction": "# AMIGO — Agent Instructions\n\n---\n\n## Identity\n\nYou are **Amigo**, a warm AI health coach. You are a coach, not a doctor — always refer clinical concerns to a healthcare professional.\n\n**Style:** First person. One question at a time. DO NOT do Acknowledgements before calling functions. No filler phrases like \"Let's continue!\" or \"Great question!\"\n\n---\n\n## Three Absolute Rules\n\n### Rule 1 — Functions before JSON\n\nBefore every response, ask: *do I need to call a function?*\n\n```\nYES → INVOKE via RETURN_CONTROL. No JSON. No announcement. Just invoke.\nNO  → Generate JSON response.\n```\n\nThese are violations — never do them:\n- Writing `\"Let me calculate...\"` then invoking a function\n- Writing `\"I'll save that now...\"` then invoking a function\n- Any JSON where `ui.render.text` describes a pending function call\n\n### Rule 2 — Pure JSON only\n\nEvery response is one JSON object: starts with `{`, ends with `}`. Nothing before or after. No markdown, no code fences, no explanations. `ui.render.text` is never empty.\n\n### Rule 3 — Never fabricate\n\n- Never claim data was saved unless `save_*()` returned success\n- Never claim a value was calculated unless a function returned it\n- Never set `status_of_aim = \"completed\"` until every responsibility has fully executed\n\n---\n\n## Authentication\n\nUser auth is determined by `is_authenticated` in the session attributes.\n\n| `is_authenticated` value | Status | Action |\n|--------------------------|--------|--------|\n| `\"true\"` | Authenticated | Call all functions normally |\n| `\"false\"` or absent | Not authenticated | Skip all `[AUTHENTICATED_ONLY]` functions |\n| Any function returns auth error | Not authenticated | Skip all remaining `[AUTHENTICATED_ONLY]` functions, continue |\n\nUnauthenticated users complete the session normally; their data is saved after sign-up.\n\n---\n\n## Response Schema\n\n**CRITICAL: Your response must ONLY contain these exact fields. Do NOT include any other fields.**\n\n```json\n{\n  \"status_of_aim\": \"not_set | in_progress | completed\",\n  \"ui\": {\n    \"render\": {\n      \"type\": \"info | message | message_with_summary\",\n      \"text\": \"non-empty string\"\n    },\n    \"tone\": \"supportive | neutral | celebratory\"\n  },\n  \"input\": {\n    \"type\": \"text | weight | date | quick_pills | yes_no | dropdown\",\n    \"options\": [{ \"label\": \"\", \"value\": \"\" }]\n  },\n  \"previous_field_collected\": {\n    \"field\": \"field_name\",\n    \"label\": \"display_name\",\n    \"value\": \"collected_value or null\"\n  }\n}\n```\n\n### Response Format Rules\n\n- **`status_of_aim`**: Use this field (not `aimofchat.status`). Values: \"not_set\", \"in_progress\", or \"completed\"\n  - \"not_set\": Session started, no progress yet\n  - \"in_progress\": Currently collecting data or calculating metrics\n  - \"completed\": All responsibilities finished, all required functions returned success\n- **`previous_field_collected`**: The field that was just collected from the user in this turn. Include:\n  - `field`: The field name (e.g., \"name\", \"weight\", \"target_date\") — must be non-empty string\n  - `label`: The display name for this field (e.g., \"Name\", \"Current Weight\", \"Target Date\") — must be non-empty string, not the field name\n  - `value`: The collected value (string or null, never empty string)\n  - Set to `null` when no field was collected this turn (e.g., first message, info display, or completed session)\n- **Do NOT echo session context**: Never include session attributes, responsibilities, data_to_be_collected, or hat in your response\n- **Do NOT echo previous data**: Only return the `previous_field_collected` for the field just collected this turn\n- **Do NOT echo session attributes**: The Lambda function handles returning accumulated data to the client\n\n**All collected and calculated data is stored in session attributes in data_collected and returned to client in the response by Lambda.**\n\n---\n\n## Schema Rules\n\n### render.type\n\n| Value | Meaning | input.type | options |\n|-------|---------|------------|---------|\n| `\"info\"` | Displaying results, no input needed | `\"text\"` | `[]` |\n| `\"message\"` | Asking a question | any valid type | per field |\n| `\"message_with_summary\"` | Final confirmation before save | `\"yes_no\"` | exactly 2 |\n\n`\"info\"` triggers auto-acknowledgement — the client replies `\"ok\"` automatically (up to 6 times). Use it only when you have results to show before the next question.\n\n### input.type\n\n| Value | Use when | options |\n|-------|----------|---------|\n| `text` | Free text or info display | `[]` |\n| `weight` | Weight field | `[]` |\n| `date` | Date field (yyyy-MM-dd) | `[]` |\n| `quick_pills` | 2–5 choices | required |\n| `dropdown` | 6+ choices | required |\n| `yes_no` | Binary choice, labels ≤20 chars | exactly 2 |\n\n### Consistency rule (absolute)\n\n`ui.render.text` and `input.type` must refer to the **same field**.\n\nViolations: asking for height but using `input.type = \"weight\"` · asking for gender but using `input.type = \"date\"`\n\n### Previous Field Collected Format Requirements\n\n**CRITICAL: The `previous_field_collected` object must follow these rules exactly:**\n\n1. **`field` (field name)**:\n   - Must be a non-empty string\n   - Use the exact field name from `data_to_be_collected` (e.g., \"name\", \"age\", \"target_weight\")\n   - Never use empty string or null\n\n2. **`label` (display name)**:\n   - Must be a non-empty string\n   - Use the display name for UI rendering (e.g., \"Name\", \"Age\", \"Target Weight\")\n   - This is what the user sees, not the field name\n   - Never use empty string or null\n\n3. **`value` (collected value)**:\n   - Must be either a string or null\n   - **CRITICAL: When the user provides a value in their message, you MUST set `value` to that exact value as a string**\n   - If the user hasn't provided a value yet (you are asking the question), use null\n   - Never use empty string (\"\") — treat empty strings as null\n   - Never use numbers, booleans, or objects — always convert to string (e.g., `70.0` → `\"70.0\"`)\n   - Never leave value as null when the user has just provided data in their message\n\n**Example: Asking for name (no field collected yet this turn)**\n```json\n{\n  \"previous_field_collected\": null\n}\n```\n\n**Example: After user provides name**\n```json\n{\n  \"previous_field_collected\": {\n    \"field\": \"name\",\n    \"label\": \"Name\",\n    \"value\": \"John\"\n  }\n}\n```\n\n**Example: After user provides weight (70.0 kg)**\n```json\n{\n  \"previous_field_collected\": {\n    \"field\": \"current_weight\",\n    \"label\": \"Current Weight\",\n    \"value\": \"70.0\"\n  }\n}\n```\n\n**Example: Completed session**\n```json\n{\n  \"status_of_aim\": \"completed\",\n  \"previous_field_collected\": null\n}\n```\n\n### message_with_summary\n\nUse only when: every `collect_data` field is non-null in `data.collected` AND you are asking for save confirmation. `input.type` must be `\"yes_no\"`. Never use for intermediate steps.\n\n### Data preservation\n\nCarry forward all `data.collected` values across every turn. Never null out a field that already has a value unless the user explicitly corrected it.\n\n### Empty strings\n\n`\"\"` is not a valid field value — treat it as `null`. If a profile returns `\"\"` for a field, store `null`.\n\n---\n\n## Functions\n\nFunctions are defined in external action group schemas. These rules apply to all of them.\n\n- **Name:** use the `operationId` exactly as defined in the schema\n- **Auth gate:** if the function's `summary` includes `[AUTHENTICATED_ONLY]`, only call it when `is_authenticated` session attribute equals `\"true\"`\n- **Parameters:** use exact names and enum values from the schema. Never pass null or `\"\"` values. If a required parameter is missing, collect it first.\n- **When to call:** the session `responsibilities` list is your guide.\n\n### Idempotency — call each function exactly once per trigger\n\nBefore invoking any function, check `data.collected` for an existing result:\n\n```\nresult already in data.collected?\n  YES → skip the call, use the stored value, move to next step\n  NO  → invoke the function\n```\n\nOnce a metric (e.g. `bmr`, `tdee`) is stored in `data.collected`, never call its function again in the same session unless the user has explicitly changed an input value (e.g. corrected their weight).\n\n**After receiving any function result:**\n1. Store the result in `data.collected`\n2. Is there another pending function required by the current responsibility?\n   - YES → invoke it immediately (no JSON yet)\n   - NO → generate your JSON response and advance to the next responsibility\n\nNever re-invoke a function out of uncertainty. Trust what is in `data.collected`.\n\n### Failure handling\n\n| Error type | Action |\n|------------|--------|\n| Auth error | Skip all remaining `[AUTHENTICATED_ONLY]` functions, continue session |\n| Server error | Inform user briefly, retry once, continue without saving if retry fails |\n| Validation warning | Show message to user, offer to adjust, re-invoke after revision |\n\n---\n\n## Session Context\n\n### Reading Session Attributes\n\nOn every invocation, read these fields from session attributes (they are the authoritative source):\n- `hat`: Session type identifier (e.g., \"onboarding\", \"goal_setting\")\n- `responsibilities`: Ordered list of tasks to complete\n- `data_to_be_collected`: List of field names to collect from user\n- `data_to_be_calculated`: List of metrics to calculate via functions\n- `data_collected`: Accumulated field values from previous turns (use as reference, don't echo back)\n\nUse these attributes as your complete specification for what to do in this session. Never invent responsibilities or fields not in the session attributes.\n\n**CRITICAL: Session attributes are the authoritative source for what to collect and calculate.** Read them on every invocation and use them to guide your responsibilities execution. Do not rely on instructions or context outside of session attributes.\n\n### Layering\n\n| Layer | Owns |\n|-------|------|\n| Agent instructions (this file) | Rules, schema, function behavior, edge cases |\n| Session attributes (first message) | What to do: hat, responsibilities, data_to_be_collected, data_to_be_calculated, notes |\n\nThe session attributes are the complete specification for what this session must accomplish. Agent instructions never define hat-specific sequences — any hat name is valid.\n\n### On receiving the session context\n\n1. Set `status_of_aim` = `\"in_progress\"` (the `hat` value from session attributes identifies the session's purpose)\n2. Execute `responsibilities` from session attributes as a strict ordered task list — no steps skipped, no steps reordered without reason\n3. Set `status_of_aim` = `\"completed\"` only after every responsibility is done and every required function returned success\n\n### Responsibility rules\n\n- Every responsibility is mandatory\n- Function call required → invoke via RETURN_CONTROL before generating any JSON\n- Field collection required → ask, receive answer, store it before moving on\n- Do not advance to the next responsibility until the current one is fully complete\n- Notes in the session context are hard constraints for this session, not suggestions\n\n---\n\n## Edge Cases\n\n| Scenario | Behavior |\n|----------|----------|\n| Required calc param is null before invoking function | Collect it first, then invoke |\n| User gives out-of-range or nonsensical value | Ask to clarify gently |\n| User corrects a previous answer | Update field, re-validate if needed |\n| User says \"skip\" or \"I don't know\" | Store null, move to next field |\n| User confirms summary (\"yes\", \"looks good\") | Invoke save function immediately — no intermediate JSON |\n| All collect_data fields already in profile | Skip questions, go to confirmation |\n| Target date in the past or <2 weeks away | Ask for a more realistic date |\n| Goal target inconsistent with goal type | Clarify before accepting |\n| validate_goal returns warning | Show it, offer to revise, re-invoke after changes |",
+    "Tags": {
+     "Environment": "dev",
+     "ManagedBy": "CDK",
+     "Project": "Amigo"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/ProAgent"
+   }
+  },
+  "ActionGroupManagerRole7BA1BA0A": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "RoleName": "AmigoActionGroupManagerRole-dev",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/ActionGroupManagerRole/Resource"
+   }
+  },
+  "ActionGroupManagerRoleDefaultPolicy3B15B05A": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "bedrock:CreateAgentActionGroup",
+        "bedrock:DeleteAgentActionGroup",
+        "bedrock:GetAgentActionGroup",
+        "bedrock:ListAgentActionGroups",
+        "bedrock:UpdateAgentActionGroup"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ActionGroupManagerRoleDefaultPolicy3B15B05A",
+    "Roles": [
+     {
+      "Ref": "ActionGroupManagerRole7BA1BA0A"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/ActionGroupManagerRole/DefaultPolicy/Resource"
+   }
+  },
+  "ActionGroupManagerFunction860E0653": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "import boto3\nimport json\nimport urllib.request\n\nbedrock = boto3.client('bedrock-agent')\n\ndef send(event, context, status, data, physical_id):\n    body = {\n        \"Status\": status,\n        \"Reason\": f\"See CloudWatch Log Stream: {context.log_stream_name}\",\n        \"PhysicalResourceId\": physical_id or context.log_stream_name,\n        \"StackId\": event[\"StackId\"],\n        \"RequestId\": event[\"RequestId\"],\n        \"LogicalResourceId\": event[\"LogicalResourceId\"],\n        \"Data\": data,\n    }\n    req = urllib.request.Request(\n        event[\"ResponseURL\"],\n        data=json.dumps(body).encode(\"utf-8\"),\n        method=\"PUT\",\n        headers={\"Content-Type\": \"\"},\n    )\n    urllib.request.urlopen(req)\n\ndef handler(event, context):\n    print(json.dumps(event))\n    props = event.get(\"ResourceProperties\", {})\n    agent_id = props[\"AgentId\"]\n    action_group_name = props[\"ActionGroupName\"]\n    description = props.get(\"Description\", \"\")\n    api_schema = props.get(\"ApiSchema\", \"\")\n    \n    physical_id = event.get(\"PhysicalResourceId\", f\"{agent_id}:pending\")\n\n    try:\n        req_type = event[\"RequestType\"]\n        \n        if req_type == \"Create\":\n            response = bedrock.create_agent_action_group(\n                agentId=agent_id,\n                agentVersion='DRAFT',\n                actionGroupName=action_group_name,\n                description=description,\n                actionGroupExecutor={'customControl': 'RETURN_CONTROL'},\n                apiSchema={'payload': api_schema},\n                actionGroupState='ENABLED'\n            )\n            action_group_id = response['agentActionGroup']['actionGroupId']\n            new_physical_id = f\"{agent_id}:{action_group_id}\"\n            send(event, context, \"SUCCESS\", {\"ActionGroupId\": action_group_id}, new_physical_id)\n            return\n        \n        if req_type == \"Update\":\n            if ':' in physical_id:\n                _, action_group_id = physical_id.split(':', 1)\n            else:\n                print(f\"WARNING: Old physical ID format detected: {physical_id}\")\n                list_response = bedrock.list_agent_action_groups(\n                    agentId=agent_id,\n                    agentVersion='DRAFT',\n                    maxResults=100\n                )\n                action_groups = list_response.get('actionGroupSummaries', [])\n                matching_group = next((ag for ag in action_groups if ag['actionGroupName'] == action_group_name), None)\n                if matching_group:\n                    action_group_id = matching_group['actionGroupId']\n                else:\n                    raise Exception(f\"Could not find action group with name: {action_group_name}\")\n            \n            response = bedrock.update_agent_action_group(\n                agentId=agent_id,\n                agentVersion='DRAFT',\n                actionGroupId=action_group_id,\n                actionGroupName=action_group_name,\n                description=description,\n                actionGroupExecutor={'customControl': 'RETURN_CONTROL'},\n                apiSchema={'payload': api_schema},\n                actionGroupState='ENABLED'\n            )\n            new_physical_id = f\"{agent_id}:{action_group_id}\"\n            send(event, context, \"SUCCESS\", {\"ActionGroupId\": action_group_id}, new_physical_id)\n            return\n        \n        if req_type == \"Delete\":\n            try:\n                if ':' in physical_id:\n                    _, action_group_id = physical_id.split(':', 1)\n                else:\n                    action_group_id = physical_id\n                \n                bedrock.delete_agent_action_group(\n                    agentId=agent_id,\n                    agentVersion='DRAFT',\n                    actionGroupId=action_group_id\n                )\n            except Exception as e:\n                print(f\"Delete error (may be already deleted): {e}\")\n            send(event, context, \"SUCCESS\", {\"Deleted\": True}, physical_id)\n            return\n\n        send(event, context, \"FAILED\", {\"Error\": \"Unsupported RequestType\"}, physical_id)\n    except Exception as e:\n        print(f\"Error: {e}\")\n        send(event, context, \"FAILED\", {\"Error\": str(e)}, physical_id)"
+    },
+    "FunctionName": "amigo-action-group-manager-dev",
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "ActionGroupManagerRole7BA1BA0A",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.11",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "Timeout": 60
+   },
+   "DependsOn": [
+    "ActionGroupManagerRoleDefaultPolicy3B15B05A",
+    "ActionGroupManagerRole7BA1BA0A"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/ActionGroupManagerFunction/Resource"
+   }
+  },
+  "DataOperationsProviderframeworkonEventServiceRole23FE73B5": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/DataOperationsProvider/framework-onEvent/ServiceRole/Resource"
+   }
+  },
+  "DataOperationsProviderframeworkonEventServiceRoleDefaultPolicy92E24C82": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ActionGroupManagerFunction860E0653",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ActionGroupManagerFunction860E0653",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:GetFunction",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "ActionGroupManagerFunction860E0653",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "DataOperationsProviderframeworkonEventServiceRoleDefaultPolicy92E24C82",
+    "Roles": [
+     {
+      "Ref": "DataOperationsProviderframeworkonEventServiceRole23FE73B5"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/DataOperationsProvider/framework-onEvent/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "DataOperationsProviderframeworkonEventC5EBE9EE": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-334856751928-us-east-1",
+     "S3Key": "07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57.zip"
+    },
+    "Description": "AWS CDK resource provider framework - onEvent (AmigoBedrockAgentStack-dev/DataOperationsProvider)",
+    "Environment": {
+     "Variables": {
+      "USER_ON_EVENT_FUNCTION_ARN": {
+       "Fn::GetAtt": [
+        "ActionGroupManagerFunction860E0653",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "Handler": "framework.onEvent",
+    "LoggingConfig": {
+     "ApplicationLogLevel": "FATAL",
+     "LogFormat": "JSON"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "DataOperationsProviderframeworkonEventServiceRole23FE73B5",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "DataOperationsProviderframeworkonEventServiceRoleDefaultPolicy92E24C82",
+    "DataOperationsProviderframeworkonEventServiceRole23FE73B5"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/DataOperationsProvider/framework-onEvent/Resource",
+    "aws:asset:path": "asset.07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "DataOperationsActionGroup": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "DataOperationsProviderframeworkonEventC5EBE9EE",
+      "Arn"
+     ]
+    },
+    "AgentId": {
+     "Fn::GetAtt": [
+      "ProAgent",
+      "AgentId"
+     ]
+    },
+    "ActionGroupName": "data_operations",
+    "Description": "Profile and onboarding data operations with RETURN_CONTROL",
+    "ApiSchema": "{\n  \"openapi\": \"3.0.0\",\n  \"info\": {\n    \"title\": \"Data Operations\",\n    \"version\": \"1.0.1\",\n    \"description\": \"Profile and onboarding data operations\"\n  },\n  \"paths\": {\n    \"/get-profile\": {\n      \"get\": {\n        \"summary\": \"[AUTHENTICATED_ONLY] Get user profile\",\n        \"description\": \"Fetch authenticated user profile. Only call when is_authenticated='true'.\",\n        \"operationId\": \"get_profile\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Success\"\n          }\n        }\n      }\n    },\n    \"/save-onboarding-data\": {\n      \"post\": {\n        \"summary\": \"[AUTHENTICATED_ONLY] Save onboarding data\",\n        \"description\": \"Save or update user onboarding fields. Only call when is_authenticated='true'.\",\n        \"operationId\": \"save_onboarding_data\",\n        \"requestBody\": {\n          \"required\": true,\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"first_name\": {\n                    \"type\": \"string\",\n                    \"description\": \"User's first name\"\n                  },\n                  \"last_name\": {\n                    \"type\": \"string\",\n                    \"description\": \"User's last name\"\n                  },\n                  \"age\": {\n                    \"type\": \"integer\",\n                    \"description\": \"User's age in years\"\n                  },\n                  \"weight\": {\n                    \"type\": \"number\",\n                    \"description\": \"User's weight in kg\"\n                  },\n                  \"height\": {\n                    \"type\": \"number\",\n                    \"description\": \"User's height in cm\"\n                  },\n                  \"gender\": {\n                    \"type\": \"string\",\n                    \"enum\": [\"male\", \"female\", \"other\"],\n                    \"description\": \"User's gender\"\n                  },\n                  \"activity_level\": {\n                    \"type\": \"string\",\n                    \"enum\": [\"sedentary\", \"lightly_active\", \"moderately_active\", \"very_active\", \"extremely_active\"],\n                    \"description\": \"User's activity level\"\n                  },\n                  \"goal_type\": {\n                    \"type\": \"string\",\n                    \"enum\": [\"weight_loss\", \"muscle_gain\", \"maintenance\", \"improved_energy\", \"better_sleep\"],\n                    \"description\": \"User's health goal type\"\n                  },\n                  \"goal_detail\": {\n                    \"type\": \"string\",\n                    \"description\": \"Additional details about the goal\"\n                  },\n                  \"goal_by_when\": {\n                    \"type\": \"string\",\n                    \"format\": \"date\",\n                    \"description\": \"Target date for achieving the goal (YYYY-MM-DD)\"\n                  },\n                  \"bmr\": {\n                    \"type\": \"number\",\n                    \"description\": \"Calculated Basal Metabolic Rate\"\n                  },\n                  \"tdee\": {\n                    \"type\": \"number\",\n                    \"description\": \"Calculated Total Daily Energy Expenditure\"\n                  },\n                  \"daily_calories\": {\n                    \"type\": \"number\",\n                    \"description\": \"Calculated daily calorie target\"\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Success\"\n          }\n        }\n      }\n    },\n    \"/get-onboarding-status\": {\n      \"get\": {\n        \"summary\": \"[AUTHENTICATED_ONLY] Get onboarding status\",\n        \"description\": \"Check onboarding progress. Only call when is_authenticated='true'.\",\n        \"operationId\": \"get_onboarding_status\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Success\"\n          }\n        }\n      }\n    }\n  }\n}\n",
+    "SchemaHash": "d7c0f339"
+   },
+   "DependsOn": [
+    "ProAgent"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/DataOperationsActionGroup/Default"
+   }
+  },
+  "HealthCalculationsProviderframeworkonEventServiceRole592723BE": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/HealthCalculationsProvider/framework-onEvent/ServiceRole/Resource"
+   }
+  },
+  "HealthCalculationsProviderframeworkonEventServiceRoleDefaultPolicyF894A32C": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ActionGroupManagerFunction860E0653",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ActionGroupManagerFunction860E0653",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:GetFunction",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "ActionGroupManagerFunction860E0653",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "HealthCalculationsProviderframeworkonEventServiceRoleDefaultPolicyF894A32C",
+    "Roles": [
+     {
+      "Ref": "HealthCalculationsProviderframeworkonEventServiceRole592723BE"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/HealthCalculationsProvider/framework-onEvent/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "HealthCalculationsProviderframeworkonEvent4FDFC392": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-334856751928-us-east-1",
+     "S3Key": "07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57.zip"
+    },
+    "Description": "AWS CDK resource provider framework - onEvent (AmigoBedrockAgentStack-dev/HealthCalculationsProvider)",
+    "Environment": {
+     "Variables": {
+      "USER_ON_EVENT_FUNCTION_ARN": {
+       "Fn::GetAtt": [
+        "ActionGroupManagerFunction860E0653",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "Handler": "framework.onEvent",
+    "LoggingConfig": {
+     "ApplicationLogLevel": "FATAL",
+     "LogFormat": "JSON"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "HealthCalculationsProviderframeworkonEventServiceRole592723BE",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "HealthCalculationsProviderframeworkonEventServiceRoleDefaultPolicyF894A32C",
+    "HealthCalculationsProviderframeworkonEventServiceRole592723BE"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/HealthCalculationsProvider/framework-onEvent/Resource",
+    "aws:asset:path": "asset.07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "HealthCalculationsActionGroup": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "HealthCalculationsProviderframeworkonEvent4FDFC392",
+      "Arn"
+     ]
+    },
+    "AgentId": {
+     "Fn::GetAtt": [
+      "ProAgent",
+      "AgentId"
+     ]
+    },
+    "ActionGroupName": "health_calculations",
+    "Description": "BMR, TDEE, and goal validation calculations with RETURN_CONTROL",
+    "ApiSchema": "{\n  \"openapi\": \"3.0.0\",\n  \"info\": {\n    \"title\": \"Health Calculations\",\n    \"version\": \"1.0.0\",\n    \"description\": \"BMR, TDEE, and goal validation\"\n  },\n  \"paths\": {\n    \"/calculate-bmr\": {\n      \"post\": {\n        \"summary\": \"Calculate BMR\",\n        \"description\": \"Calculate Basal Metabolic Rate\",\n        \"operationId\": \"calculate_bmr\",\n        \"requestBody\": {\n          \"required\": true,\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"weight_kg\": {\n                    \"type\": \"number\"\n                  },\n                  \"height_cm\": {\n                    \"type\": \"number\"\n                  },\n                  \"age\": {\n                    \"type\": \"number\"\n                  },\n                  \"gender\": {\n                    \"type\": \"string\"\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Success\"\n          }\n        }\n      }\n    },\n    \"/calculate-tdee\": {\n      \"post\": {\n        \"summary\": \"Calculate TDEE\",\n        \"description\": \"Calculate Total Daily Energy Expenditure. Requires either (bmr + activity_level) OR (weight_kg + height_cm + age + gender + activity_level)\",\n        \"operationId\": \"calculate_tdee\",\n        \"requestBody\": {\n          \"required\": true,\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"bmr\": {\n                    \"type\": \"number\",\n                    \"description\": \"Pre-calculated BMR (optional if weight/height/age/gender provided)\"\n                  },\n                  \"weight_kg\": {\n                    \"type\": \"number\",\n                    \"description\": \"Weight in kg (optional if bmr provided)\"\n                  },\n                  \"height_cm\": {\n                    \"type\": \"number\",\n                    \"description\": \"Height in cm (optional if bmr provided)\"\n                  },\n                  \"age\": {\n                    \"type\": \"number\",\n                    \"description\": \"Age in years (optional if bmr provided)\"\n                  },\n                  \"gender\": {\n                    \"type\": \"string\",\n                    \"description\": \"Gender (optional if bmr provided)\"\n                  },\n                  \"activity_level\": {\n                    \"type\": \"string\",\n                    \"description\": \"Activity level (required)\"\n                  }\n                },\n                \"required\": [\"activity_level\"]\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Success\"\n          }\n        }\n      }\n    },\n    \"/calculate-daily-calories\": {\n      \"post\": {\n        \"summary\": \"Calculate daily calories\",\n        \"description\": \"Calculate daily calorie target for goal with safety limits\",\n        \"operationId\": \"calculate_daily_calories\",\n        \"requestBody\": {\n          \"required\": true,\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"goal_type\": {\n                    \"type\": \"string\",\n                    \"enum\": [\"weight_loss\", \"muscle_gain\", \"maintenance\", \"improved_energy\", \"better_sleep\"],\n                    \"description\": \"Type of health goal\"\n                  },\n                  \"tdee\": {\n                    \"type\": \"number\"\n                  },\n                  \"current_weight_kg\": {\n                    \"type\": \"number\"\n                  },\n                  \"target_weight_kg\": {\n                    \"type\": \"number\"\n                  },\n                  \"target_date\": {\n                    \"type\": \"string\"\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Success\"\n          }\n        }\n      }\n    },\n    \"/validate-goal\": {\n      \"post\": {\n        \"summary\": \"Validate goal\",\n        \"description\": \"Validate if goal is realistic and provide suggestions if unsafe\",\n        \"operationId\": \"validate_goal\",\n        \"requestBody\": {\n          \"required\": true,\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"required\": [\"goal_type\", \"daily_calories\", \"gender\", \"current_weight_kg\", \"target_weight_kg\", \"target_date\", \"tdee\"],\n                \"properties\": {\n                  \"goal_type\": {\n                    \"type\": \"string\",\n                    \"enum\": [\"weight_loss\", \"muscle_gain\", \"maintenance\", \"improved_energy\", \"better_sleep\"],\n                    \"description\": \"Type of health goal\"\n                  },\n                  \"daily_calories\": {\n                    \"type\": \"number\"\n                  },\n                  \"gender\": {\n                    \"type\": \"string\"\n                  },\n                  \"current_weight_kg\": {\n                    \"type\": \"number\"\n                  },\n                  \"target_weight_kg\": {\n                    \"type\": \"number\"\n                  },\n                  \"target_date\": {\n                    \"type\": \"string\"\n                  },\n                  \"tdee\": {\n                    \"type\": \"number\"\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Success\"\n          }\n        }\n      }\n    }\n  }\n}\n",
+    "SchemaHash": "29faf8fe"
+   },
+   "DependsOn": [
+    "ProAgent"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/HealthCalculationsActionGroup/Default"
+   }
+  },
+  "GoalManagementProviderframeworkonEventServiceRole4E973C97": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/GoalManagementProvider/framework-onEvent/ServiceRole/Resource"
+   }
+  },
+  "GoalManagementProviderframeworkonEventServiceRoleDefaultPolicy623CC500": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ActionGroupManagerFunction860E0653",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ActionGroupManagerFunction860E0653",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:GetFunction",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "ActionGroupManagerFunction860E0653",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "GoalManagementProviderframeworkonEventServiceRoleDefaultPolicy623CC500",
+    "Roles": [
+     {
+      "Ref": "GoalManagementProviderframeworkonEventServiceRole4E973C97"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/GoalManagementProvider/framework-onEvent/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "GoalManagementProviderframeworkonEventC44E2971": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-334856751928-us-east-1",
+     "S3Key": "07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57.zip"
+    },
+    "Description": "AWS CDK resource provider framework - onEvent (AmigoBedrockAgentStack-dev/GoalManagementProvider)",
+    "Environment": {
+     "Variables": {
+      "USER_ON_EVENT_FUNCTION_ARN": {
+       "Fn::GetAtt": [
+        "ActionGroupManagerFunction860E0653",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "Handler": "framework.onEvent",
+    "LoggingConfig": {
+     "ApplicationLogLevel": "FATAL",
+     "LogFormat": "JSON"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "GoalManagementProviderframeworkonEventServiceRole4E973C97",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "GoalManagementProviderframeworkonEventServiceRoleDefaultPolicy623CC500",
+    "GoalManagementProviderframeworkonEventServiceRole4E973C97"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/GoalManagementProvider/framework-onEvent/Resource",
+    "aws:asset:path": "asset.07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "GoalManagementActionGroup": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "GoalManagementProviderframeworkonEventC44E2971",
+      "Arn"
+     ]
+    },
+    "AgentId": {
+     "Fn::GetAtt": [
+      "ProAgent",
+      "AgentId"
+     ]
+    },
+    "ActionGroupName": "goal_management",
+    "Description": "Save and manage user health goals with RETURN_CONTROL",
+    "ApiSchema": "{\n  \"openapi\": \"3.0.0\",\n  \"info\": {\n    \"title\": \"Goal Management\",\n    \"version\": \"1.0.4\",\n    \"description\": \"Save and manage user health goals\"\n  },\n  \"paths\": {\n    \"/save-goal\": {\n      \"post\": {\n        \"summary\": \"[AUTHENTICATED_ONLY] Save health goal\",\n        \"description\": \"Save a health goal to the database. Only call when is_authenticated='true'.\",\n        \"operationId\": \"save_goal\",\n        \"requestBody\": {\n          \"required\": true,\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"required\": [\"goal_type\", \"current_weight\", \"target_weight\", \"target_date\"],\n                \"properties\": {\n                  \"goal_type\": {\n                    \"type\": \"string\",\n                    \"enum\": [\"weight_loss\", \"muscle_gain\", \"maintenance\", \"improved_energy\", \"better_sleep\"]\n                  },\n                  \"current_weight\": {\n                    \"type\": \"number\"\n                  },\n                  \"target_weight\": {\n                    \"type\": \"number\"\n                  },\n                  \"target_date\": {\n                    \"type\": \"string\",\n                    \"format\": \"date\"\n                  },\n                  \"current_height\": {\n                    \"type\": \"number\"\n                  },\n                  \"activity_level\": {\n                    \"type\": \"string\"\n                  },\n                  \"calculated_bmr\": {\n                    \"type\": \"number\"\n                  },\n                  \"calculated_tdee\": {\n                    \"type\": \"number\"\n                  },\n                  \"calculated_daily_calories\": {\n                    \"type\": \"number\"\n                  },\n                  \"user_daily_calories\": {\n                    \"type\": \"number\",\n                    \"description\": \"MANDATORY when user_overridden=true. The specific daily calorie amount the user wants when they override recommendations. Example: if user wants 1100 calories instead of recommended 1500, this field must be 1100.\"\n                  },\n                  \"is_realistic\": {\n                    \"type\": \"boolean\"\n                  },\n                  \"validation_reason\": {\n                    \"type\": \"string\"\n                  },\n                  \"user_overridden\": {\n                    \"type\": \"boolean\",\n                    \"description\": \"Whether user chose to override safety recommendations\"\n                  },\n                  \"notes\": {\n                    \"type\": \"string\",\n                    \"description\": \"Optional notes about the goal\"\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Success\"\n          }\n        }\n      }\n    }\n  }\n}\n",
+    "SchemaHash": "48eba8b8"
+   },
+   "DependsOn": [
+    "ProAgent"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/GoalManagementActionGroup/Default"
+   }
+  },
+  "PrepareProAgentRoleC94C3A7F": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "RoleName": "AmigoPrepareProAgentRole-dev",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareProAgentRole/Resource"
+   }
+  },
+  "PrepareProAgentRoleDefaultPolicyCD7FCE9A": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "bedrock:PrepareAgent",
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "PrepareProAgentRoleDefaultPolicyCD7FCE9A",
+    "Roles": [
+     {
+      "Ref": "PrepareProAgentRoleC94C3A7F"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareProAgentRole/DefaultPolicy/Resource"
+   }
+  },
+  "PrepareProAgentFunction258970D1": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "import boto3\nimport json\nimport urllib.request\n\nbedrock = boto3.client('bedrock-agent')\n\ndef send(event, context, status, data, physical_id):\n    body = {\n        \"Status\": status,\n        \"Reason\": f\"See CloudWatch Log Stream: {context.log_stream_name}\",\n        \"PhysicalResourceId\": physical_id or context.log_stream_name,\n        \"StackId\": event[\"StackId\"],\n        \"RequestId\": event[\"RequestId\"],\n        \"LogicalResourceId\": event[\"LogicalResourceId\"],\n        \"Data\": data,\n    }\n    req = urllib.request.Request(\n        event[\"ResponseURL\"],\n        data=json.dumps(body).encode(\"utf-8\"),\n        method=\"PUT\",\n        headers={\"Content-Type\": \"\"},\n    )\n    urllib.request.urlopen(req)\n\ndef handler(event, context):\n    print(json.dumps(event))\n    props = event.get(\"ResourceProperties\", {})\n    agent_id = props[\"AgentId\"]\n    physical_id = event.get(\"PhysicalResourceId\", \"prepare-agent\")\n\n    try:\n        req_type = event[\"RequestType\"]\n        \n        if req_type in [\"Create\", \"Update\"]:\n            bedrock.prepare_agent(agentId=agent_id)\n            send(event, context, \"SUCCESS\", {\"Prepared\": True}, physical_id)\n            return\n        \n        if req_type == \"Delete\":\n            send(event, context, \"SUCCESS\", {\"Deleted\": True}, physical_id)\n            return\n\n        send(event, context, \"FAILED\", {\"Error\": \"Unsupported RequestType\"}, physical_id)\n    except Exception as e:\n        print(f\"Error: {e}\")\n        send(event, context, \"FAILED\", {\"Error\": str(e)}, physical_id)"
+    },
+    "FunctionName": "amigo-prepare-pro-agent-dev",
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "PrepareProAgentRoleC94C3A7F",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.11",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "Timeout": 60
+   },
+   "DependsOn": [
+    "PrepareProAgentRoleDefaultPolicyCD7FCE9A",
+    "PrepareProAgentRoleC94C3A7F"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareProAgentFunction/Resource"
+   }
+  },
+  "PrepareProAgentProviderframeworkonEventServiceRoleDFA7115B": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareProAgentProvider/framework-onEvent/ServiceRole/Resource"
+   }
+  },
+  "PrepareProAgentProviderframeworkonEventServiceRoleDefaultPolicy1B02D40C": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "PrepareProAgentFunction258970D1",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "PrepareProAgentFunction258970D1",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:GetFunction",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "PrepareProAgentFunction258970D1",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "PrepareProAgentProviderframeworkonEventServiceRoleDefaultPolicy1B02D40C",
+    "Roles": [
+     {
+      "Ref": "PrepareProAgentProviderframeworkonEventServiceRoleDFA7115B"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareProAgentProvider/framework-onEvent/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "PrepareProAgentProviderframeworkonEvent0767E238": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-334856751928-us-east-1",
+     "S3Key": "07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57.zip"
+    },
+    "Description": "AWS CDK resource provider framework - onEvent (AmigoBedrockAgentStack-dev/PrepareProAgentProvider)",
+    "Environment": {
+     "Variables": {
+      "USER_ON_EVENT_FUNCTION_ARN": {
+       "Fn::GetAtt": [
+        "PrepareProAgentFunction258970D1",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "Handler": "framework.onEvent",
+    "LoggingConfig": {
+     "ApplicationLogLevel": "FATAL",
+     "LogFormat": "JSON"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "PrepareProAgentProviderframeworkonEventServiceRoleDFA7115B",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "PrepareProAgentProviderframeworkonEventServiceRoleDefaultPolicy1B02D40C",
+    "PrepareProAgentProviderframeworkonEventServiceRoleDFA7115B"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareProAgentProvider/framework-onEvent/Resource",
+    "aws:asset:path": "asset.07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "PrepareProAgent": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "PrepareProAgentProviderframeworkonEvent0767E238",
+      "Arn"
+     ]
+    },
+    "AgentId": {
+     "Fn::GetAtt": [
+      "ProAgent",
+      "AgentId"
+     ]
+    }
+   },
+   "DependsOn": [
+    "DataOperationsActionGroup",
+    "GoalManagementActionGroup",
+    "HealthCalculationsActionGroup"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareProAgent/Default"
+   }
+  },
+  "FreeAgentRole7BBEBFC6": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "bedrock.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/AmazonBedrockFullAccess"
+       ]
+      ]
+     }
+    ],
+    "RoleName": "AmigoFreeAgentRole-dev",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/FreeAgentRole/Resource"
+   }
+  },
+  "FreeAgentRoleDefaultPolicyE8D22FBD": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "FreeAgentRoleDefaultPolicyE8D22FBD",
+    "Roles": [
+     {
+      "Ref": "FreeAgentRole7BBEBFC6"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/FreeAgentRole/DefaultPolicy/Resource"
+   }
+  },
+  "FreeAgent": {
+   "Type": "AWS::Bedrock::Agent",
+   "Properties": {
+    "AgentName": "amigo-free-dev",
+    "AgentResourceRoleArn": {
+     "Fn::GetAtt": [
+      "FreeAgentRole7BBEBFC6",
+      "Arn"
+     ]
+    },
+    "Description": "Amigo AI Health Coach — Free tier (no action groups)",
+    "FoundationModel": "amazon.nova-lite-v1:0",
+    "IdleSessionTTLInSeconds": 600,
+    "Instruction": "# AMIGO — Free Tier Agent Instructions\n\n---\n\n## Identity\n\nYou are **Amigo**, a warm AI health coach. You are a coach, not a doctor — always refer clinical concerns to a healthcare professional.\n\n**Style:** First person. One question at a time. No filler phrases like \"Let's continue!\" or \"Great question!\"\n\n---\n\n## Three Absolute Rules\n\n### Rule 1 — Pure JSON only\n\nEvery response is one JSON object: starts with `{`, ends with `}`. Nothing before or after. No markdown, no code fences, no XML tags, no `<response>` wrappers, no explanations. `ui.render.text` is never empty.\n\n**FORBIDDEN:** `<response>{...}</response>`, ` ```json {...} ``` `, `Response: {...}`, or any text outside the JSON object.\n\n### Rule 2 — Never fabricate\n\n- Never claim data was saved\n- Never claim a value was calculated\n- Never set `status_of_aim = \"completed\"` until every responsibility has fully executed\n\n### Rule 3 — No function calls\n\nThis is the free tier agent. You do not have access to action groups or external functions. Respond conversationally based on the session context provided.\n\n---\n\n## Response Schema\n\n**CRITICAL: Every single response MUST contain ALL of these exact fields. No exceptions.**\n\n```json\n{\n  \"status_of_aim\": \"not_set | in_progress | completed\",\n  \"ui\": {\n    \"render\": {\n      \"type\": \"info | message | message_with_summary\",\n      \"text\": \"non-empty string\"\n    },\n    \"tone\": \"supportive | neutral | celebratory\"\n  },\n  \"input\": {\n    \"type\": \"text | weight | date | quick_pills | yes_no | dropdown\",\n    \"options\": [{ \"label\": \"\", \"value\": \"\" }]\n  },\n  \"previous_field_collected\": null\n}\n```\n\n**`previous_field_collected` is MANDATORY in every response.** It must always be present. Set it to `null` when no field was collected this turn. Set it to an object when the user just provided a value.\n\n---\n\n## previous_field_collected Rules\n\n**CRITICAL: This field must appear in EVERY response without exception.**\n\nWhen the user has just provided a value for a field:\n```json\n{\n  \"previous_field_collected\": {\n    \"field\": \"field_name_from_data_to_be_collected\",\n    \"label\": \"Human Readable Label\",\n    \"value\": \"the value the user provided\"\n  }\n}\n```\n\nWhen you are asking a question (no value collected yet this turn), or on the first message, or when session is completed:\n```json\n{\n  \"previous_field_collected\": null\n}\n```\n\nRules:\n- `field`: exact field name from `data_to_be_collected` — non-empty string, never null\n- `label`: human-readable display name — non-empty string, never null\n- `value`: the collected value as a string, or `null` if user said \"skip\" / \"I don't know\"\n- Never use empty string `\"\"` for value — use `null` instead\n- Never omit this field — always include it, even as `null`\n\n---\n\n## Session Context\n\n**CRITICAL: Session attributes are the authoritative source for what to collect.**\n\nOn every invocation, read these fields from session attributes:\n- `hat`: Session type identifier\n- `responsibilities`: Ordered list of tasks to complete\n- `data_to_be_collected`: List of field names to collect from user\n- `data_collected`: Accumulated field values from previous turns\n\n**Never invent responsibilities or fields not in the session attributes.** Only ask about fields listed in `data_to_be_collected`. Do not ask about anything else.\n\nUse these attributes as your complete specification for what to do in this session.\n\n---\n\n## Schema Rules\n\n### render.type\n\n| Value | Meaning | input.type |\n|-------|---------|------------|\n| `\"info\"` | Displaying results, no input needed | `\"text\"` |\n| `\"message\"` | Asking a question | any valid type |\n| `\"message_with_summary\"` | Final confirmation | `\"yes_no\"` |\n\n### input.type\n\n| Value | Use when |\n|-------|----------|\n| `text` | Free text |\n| `weight` | Weight field |\n| `date` | Date field (yyyy-MM-dd) |\n| `quick_pills` | 2–5 choices |\n| `dropdown` | 6+ choices |\n| `yes_no` | Binary choice, labels ≤20 chars |\n\n---\n\n## Responsibility Rules\n\n- Execute `responsibilities` from session attributes as a strict ordered task list\n- Only collect fields listed in `data_to_be_collected` — never ask about other fields\n- Set `status_of_aim = \"in_progress\"` once you start collecting data\n- Set `status_of_aim = \"completed\"` only after every field in `data_to_be_collected` has been collected\n\n---\n\n## Edge Cases\n\n| Scenario | Behavior |\n|----------|----------|\n| User gives out-of-range value | Ask to clarify gently |\n| User corrects a previous answer | Update field, move on |\n| User says \"skip\" or \"I don't know\" | Store null, move to next field |\n",
+    "Tags": {
+     "Environment": "dev",
+     "ManagedBy": "CDK",
+     "Project": "Amigo"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/FreeAgent"
+   }
+  },
+  "PrepareFreeAgentRole8A36BC2B": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "RoleName": "AmigoPrepareFreeAgentRole-dev",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareFreeAgentRole/Resource"
+   }
+  },
+  "PrepareFreeAgentRoleDefaultPolicyF3DABB25": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "bedrock:PrepareAgent",
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "PrepareFreeAgentRoleDefaultPolicyF3DABB25",
+    "Roles": [
+     {
+      "Ref": "PrepareFreeAgentRole8A36BC2B"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareFreeAgentRole/DefaultPolicy/Resource"
+   }
+  },
+  "PrepareFreeAgentFunction58302AF3": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "import boto3\nimport json\nimport urllib.request\n\nbedrock = boto3.client('bedrock-agent')\n\ndef send(event, context, status, data, physical_id):\n    body = {\n        \"Status\": status,\n        \"Reason\": f\"See CloudWatch Log Stream: {context.log_stream_name}\",\n        \"PhysicalResourceId\": physical_id or context.log_stream_name,\n        \"StackId\": event[\"StackId\"],\n        \"RequestId\": event[\"RequestId\"],\n        \"LogicalResourceId\": event[\"LogicalResourceId\"],\n        \"Data\": data,\n    }\n    req = urllib.request.Request(\n        event[\"ResponseURL\"],\n        data=json.dumps(body).encode(\"utf-8\"),\n        method=\"PUT\",\n        headers={\"Content-Type\": \"\"},\n    )\n    urllib.request.urlopen(req)\n\ndef handler(event, context):\n    print(json.dumps(event))\n    props = event.get(\"ResourceProperties\", {})\n    agent_id = props[\"AgentId\"]\n    physical_id = event.get(\"PhysicalResourceId\", \"prepare-agent\")\n\n    try:\n        req_type = event[\"RequestType\"]\n        \n        if req_type in [\"Create\", \"Update\"]:\n            bedrock.prepare_agent(agentId=agent_id)\n            send(event, context, \"SUCCESS\", {\"Prepared\": True}, physical_id)\n            return\n        \n        if req_type == \"Delete\":\n            send(event, context, \"SUCCESS\", {\"Deleted\": True}, physical_id)\n            return\n\n        send(event, context, \"FAILED\", {\"Error\": \"Unsupported RequestType\"}, physical_id)\n    except Exception as e:\n        print(f\"Error: {e}\")\n        send(event, context, \"FAILED\", {\"Error\": str(e)}, physical_id)"
+    },
+    "FunctionName": "amigo-prepare-free-agent-dev",
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "PrepareFreeAgentRole8A36BC2B",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.11",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "Timeout": 60
+   },
+   "DependsOn": [
+    "PrepareFreeAgentRoleDefaultPolicyF3DABB25",
+    "PrepareFreeAgentRole8A36BC2B"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareFreeAgentFunction/Resource"
+   }
+  },
+  "PrepareFreeAgentProviderframeworkonEventServiceRole9234ED08": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareFreeAgentProvider/framework-onEvent/ServiceRole/Resource"
+   }
+  },
+  "PrepareFreeAgentProviderframeworkonEventServiceRoleDefaultPolicy1A6CD399": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "PrepareFreeAgentFunction58302AF3",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "PrepareFreeAgentFunction58302AF3",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:GetFunction",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "PrepareFreeAgentFunction58302AF3",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "PrepareFreeAgentProviderframeworkonEventServiceRoleDefaultPolicy1A6CD399",
+    "Roles": [
+     {
+      "Ref": "PrepareFreeAgentProviderframeworkonEventServiceRole9234ED08"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareFreeAgentProvider/framework-onEvent/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "PrepareFreeAgentProviderframeworkonEvent85B2E172": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-334856751928-us-east-1",
+     "S3Key": "07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57.zip"
+    },
+    "Description": "AWS CDK resource provider framework - onEvent (AmigoBedrockAgentStack-dev/PrepareFreeAgentProvider)",
+    "Environment": {
+     "Variables": {
+      "USER_ON_EVENT_FUNCTION_ARN": {
+       "Fn::GetAtt": [
+        "PrepareFreeAgentFunction58302AF3",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "Handler": "framework.onEvent",
+    "LoggingConfig": {
+     "ApplicationLogLevel": "FATAL",
+     "LogFormat": "JSON"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "PrepareFreeAgentProviderframeworkonEventServiceRole9234ED08",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "Amigo"
+     }
+    ],
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "PrepareFreeAgentProviderframeworkonEventServiceRoleDefaultPolicy1A6CD399",
+    "PrepareFreeAgentProviderframeworkonEventServiceRole9234ED08"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareFreeAgentProvider/framework-onEvent/Resource",
+    "aws:asset:path": "asset.07a90cc3efdfc34da22208dcd9d211f06f5b0e01b21e778edc7c3966b1f61d57",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "PrepareFreeAgent": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "PrepareFreeAgentProviderframeworkonEvent85B2E172",
+      "Arn"
+     ]
+    },
+    "AgentId": {
+     "Fn::GetAtt": [
+      "FreeAgent",
+      "AgentId"
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/PrepareFreeAgent/Default"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/02O3QrCMAxGn8X7LOrUB1DBW2U+wOjaOOK2VppWkbJ3dz8KXn0nXw4hOebbNa4W6iWZNk3WcoXpGpRuYKjKJBtMh6gbCnC82S/NcVBCPbDqMBWupXE/5cW1rN/jOFMPFRnvdINDta/JBmhVVxmF6RStDuzsKP+4B9mUSoSC4H6MHnSU4LrSk7joNQlevHuyIQ+TMLxbs63hOGnF15r++eNzDI84HLPOEN5l+cx3mON6cRfmzEcbuCMs5vwASX4MPxYBAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "AmigoBedrockAgentStack-dev/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "ProAgentId": {
+   "Description": "Pro Bedrock Agent ID",
+   "Value": {
+    "Fn::GetAtt": [
+     "ProAgent",
+     "AgentId"
+    ]
+   },
+   "Export": {
+    "Name": "AmigoBedrockAgentStack-dev-ProAgentId"
+   }
+  },
+  "FreeAgentId": {
+   "Description": "Free Bedrock Agent ID",
+   "Value": {
+    "Fn::GetAtt": [
+     "FreeAgent",
+     "AgentId"
+    ]
+   },
+   "Export": {
+    "Name": "AmigoBedrockAgentStack-dev-FreeAgentId"
+   }
+  },
+  "KnowledgeBaseBucketOutput": {
+   "Description": "S3 bucket for knowledge base documents",
+   "Value": {
+    "Ref": "KnowledgeBaseBucketC011DD60"
+   },
+   "Export": {
+    "Name": "AmigoBedrockAgentStack-dev-KnowledgeBucket"
+   }
+  },
+  "SupabaseEdgeFunctionBaseOutput": {
+   "Description": "Base URL for Supabase edge functions",
+   "Value": "https://hibbnohfwvbglyxgyaav.supabase.co/functions/v1",
+   "Export": {
+    "Name": "AmigoBedrockAgentStack-dev-EdgeFunctionBase"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

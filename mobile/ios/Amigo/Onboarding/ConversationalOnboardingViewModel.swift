@@ -18,7 +18,6 @@ final class ConversationalOnboardingViewModel: ObservableObject {
     init(sessionManager: SessionManager) {
         print("🔧 iOS: Initializing ConversationalOnboardingViewModel")
         print("📍 iOS: API Endpoint: \(AppConfig.shared.BEDROCK_API_ENDPOINT)")
-        print("📍 iOS: Agent ID: \(AppConfig.shared.BEDROCK_AGENT_ID)")
         
         self.engine = AmigoAgentConversationFactory.shared.create(
             apiEndpoint: AppConfig.shared.BEDROCK_API_ENDPOINT,
@@ -114,8 +113,6 @@ final class ConversationalOnboardingViewModel: ObservableObject {
             do {
                 print("📞 iOS: Calling engine.startSessionByName()")
                 print("📍 iOS: API Endpoint: \(AppConfig.shared.BEDROCK_API_ENDPOINT)")
-                print("📍 iOS: Agent ID: \(AppConfig.shared.BEDROCK_AGENT_ID)")
-                print("📍 iOS: Agent Alias: \(AppConfig.shared.BEDROCK_AGENT_ALIAS_ID)")
                 
                 // Use the predefined onboarding session config
                 try await engine.startSessionByName(configName: "onboarding")

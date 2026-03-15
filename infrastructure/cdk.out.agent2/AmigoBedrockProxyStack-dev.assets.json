@@ -1,0 +1,51 @@
+{
+  "version": "52.0.0",
+  "files": {
+    "1c0883e91cc06b628296a6eb0121c36a8510b59b2ab7bad5a7ccd0451d36a1cb": {
+      "displayName": "PyJwtLayer/Code",
+      "source": {
+        "path": "asset.1c0883e91cc06b628296a6eb0121c36a8510b59b2ab7bad5a7ccd0451d36a1cb",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "334856751928-us-east-1-ae6bab8b": {
+          "bucketName": "cdk-hnb659fds-assets-334856751928-us-east-1",
+          "objectKey": "1c0883e91cc06b628296a6eb0121c36a8510b59b2ab7bad5a7ccd0451d36a1cb.zip",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::334856751928:role/cdk-hnb659fds-file-publishing-role-334856751928-us-east-1"
+        }
+      }
+    },
+    "01728a084fc5df514c56e1e1c74ffcf36fb4530568d1492e426df786eb655f0b": {
+      "displayName": "BedrockProxyFunction/Code",
+      "source": {
+        "path": "asset.01728a084fc5df514c56e1e1c74ffcf36fb4530568d1492e426df786eb655f0b",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "334856751928-us-east-1-662de756": {
+          "bucketName": "cdk-hnb659fds-assets-334856751928-us-east-1",
+          "objectKey": "01728a084fc5df514c56e1e1c74ffcf36fb4530568d1492e426df786eb655f0b.zip",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::334856751928:role/cdk-hnb659fds-file-publishing-role-334856751928-us-east-1"
+        }
+      }
+    },
+    "9ede89fe289ef15c053f5a8d4db571060038552f00d5dc9de231c2d178ea4f6a": {
+      "displayName": "AmigoBedrockProxyStack-dev Template",
+      "source": {
+        "path": "AmigoBedrockProxyStack-dev.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "334856751928-us-east-1-c2fc354a": {
+          "bucketName": "cdk-hnb659fds-assets-334856751928-us-east-1",
+          "objectKey": "9ede89fe289ef15c053f5a8d4db571060038552f00d5dc9de231c2d178ea4f6a.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::334856751928:role/cdk-hnb659fds-file-publishing-role-334856751928-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

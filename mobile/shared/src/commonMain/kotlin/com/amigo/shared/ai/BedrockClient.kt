@@ -11,6 +11,8 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlin.math.pow
 
@@ -116,7 +118,7 @@ class BedrockClient(
         agentAliasId: String,
         sessionConfig: SessionConfigPayload? = null,
         returnControlInvocationResults: List<ReturnControlResult>? = null,
-        dataCollected: kotlinx.serialization.json.JsonObject? = null
+        dataCollected: JsonElement? = null
     ): Result<BedrockResponse> {
         // Never retry return-control results — the invocationId is consumed on first attempt
         // and Bedrock will reject a second attempt with "no active invocationId found"
@@ -205,7 +207,8 @@ class BedrockClient(
                             dataCollected = lambdaResponse.dataCollected,
                             invocations = lambdaResponse.invocations,
                             invocationId = lambdaResponse.invocationId,
-                            error = null
+                            error = null,
+                            subscriptionStatus = lambdaResponse.subscriptionStatus
                         )
                     )
                 } else {
@@ -304,7 +307,7 @@ private data class LambdaRequest(
     val sessionConfig: SessionConfigPayload? = null,
     val returnControlInvocationResults: List<ReturnControlResult>? = null,
     @SerialName("data_collected")
-    val dataCollected: JsonObject? = null,
+    val dataCollected: JsonElement? = null,
     val prompt: String = "",
     val modelId: String = "",
     val maxTokens: Int = 2048,
@@ -327,12 +330,14 @@ private data class LambdaModelResponse(
 private data class LambdaAgentResponse(
     val completion: JsonObject? = null,
     @SerialName("data_collected")
-    val dataCollected: JsonObject? = null,
+    val dataCollected: JsonElement? = null,
     val invocations: List<FunctionInvocation>? = null,
     val invocationId: String? = null,
     val error: String? = null,
     val userId: String? = null,
-    val timestamp: String? = null
+    val timestamp: String? = null,
+    @SerialName("subscription_status")
+    val subscriptionStatus: String? = null
 )
 
 @Serializable
@@ -366,13 +371,16 @@ data class BedrockResponse(
     val completion: JsonObject? = null,
     /** Accumulated data collected across turns (null on error) */
     @SerialName("data_collected")
-    val dataCollected: JsonObject? = null,
+    val dataCollected: JsonElement? = null,
     /** Function invocations to execute client-side (null if none) */
     val invocations: List<FunctionInvocation>? = null,
     /** Invocation ID for subsequent returnControlInvocationResults */
     val invocationId: String? = null,
     /** Error message (null on success) */
     val error: String? = null,
+    /** Subscription status from Lambda response (e.g. "free" or "pro") */
+    @SerialName("subscription_status")
+    val subscriptionStatus: String? = null,
     // Legacy fields for model-mode (invokeModel)
     val stopReason: String? = null,
     val usage: BedrockUsage? = null,

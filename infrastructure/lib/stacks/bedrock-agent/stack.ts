@@ -13,16 +13,24 @@ export interface BedrockAgentStackProps extends cdk.StackProps {
   environment: string;
   supabaseUrl: string;
   supabaseAnonKey: string;
+  proFoundationModel?: string;
+  freeFoundationModel?: string;
 }
 
 export class BedrockAgentStack extends cdk.Stack {
-  public readonly agent: bedrock.CfnAgent;
+  public readonly proAgent: bedrock.CfnAgent;
+  public readonly freeAgent: bedrock.CfnAgent;
   public readonly knowledgeBaseBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: BedrockAgentStackProps) {
     super(scope, id, props);
 
-    const { environment, supabaseUrl } = props;
+    const {
+      environment,
+      supabaseUrl,
+      proFoundationModel = 'amazon.nova-lite-v1:0',
+      freeFoundationModel = 'amazon.nova-lite-v1:0',
+    } = props;
     const supabaseEdgeFunctionBase = `${supabaseUrl}/functions/v1`;
 
     // S3 Bucket for Knowledge Base
@@ -34,17 +42,17 @@ export class BedrockAgentStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    // IAM Role for Bedrock Agent
-    const agentRole = new iam.Role(this, 'AgentRole', {
-      roleName: `AmigoAgentRole-${environment}`,
+    // ─── Pro Agent ────────────────────────────────────────────────────────────
+
+    const proAgentRole = new iam.Role(this, 'ProAgentRole', {
+      roleName: `AmigoProAgentRole-${environment}`,
       assumedBy: new iam.ServicePrincipal('bedrock.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonBedrockFullAccess'),
       ],
     });
 
-    // Add S3 permissions for knowledge base
-    agentRole.addToPolicy(
+    proAgentRole.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['s3:GetObject', 's3:ListBucket'],
@@ -55,8 +63,7 @@ export class BedrockAgentStack extends cdk.Stack {
       })
     );
 
-    // Add Bedrock permissions
-    agentRole.addToPolicy(
+    proAgentRole.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: [
@@ -69,67 +76,98 @@ export class BedrockAgentStack extends cdk.Stack {
       })
     );
 
-    // Read agent instruction from file
-    const instruction = fs.readFileSync(path.join(__dirname, 'instruction.md'), 'utf-8');
+    const proInstruction = fs.readFileSync(path.join(__dirname, 'instruction-pro.md'), 'utf-8');
 
-    // Create Bedrock Agent
-    this.agent = new bedrock.CfnAgent(this, 'Agent', {
-      agentName: `amigo-${environment}`,
-      description: 'Amigo AI Health Coach - Conversational agent for health tracking and coaching',
-      agentResourceRoleArn: agentRole.roleArn,
-      // foundationModel: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-      foundationModel: 'amazon.nova-lite-v1:0',
-      instruction,
+    this.proAgent = new bedrock.CfnAgent(this, 'ProAgent', {
+      agentName: `amigo-pro-${environment}`,
+      description: 'Amigo AI Health Coach — Pro tier (full action groups)',
+      agentResourceRoleArn: proAgentRole.roleArn,
+      foundationModel: proFoundationModel,
+      instruction: proInstruction,
       idleSessionTtlInSeconds: 600,
     });
 
-    // Create custom resource for action groups with RETURN_CONTROL
+    // Action group manager (scoped to Pro Agent only)
     const actionGroupManager = this.createActionGroupManager(environment);
 
-    // Create Data Operations Action Group
     const dataOpsActionGroup = this.createActionGroup(
       'DataOperations',
       actionGroupManager,
+      this.proAgent,
       'data_operations',
       'Profile and onboarding data operations with RETURN_CONTROL',
       this.getDataOperationsSchema()
     );
 
-    // Create Health Calculations Action Group
     const healthCalcActionGroup = this.createActionGroup(
       'HealthCalculations',
       actionGroupManager,
+      this.proAgent,
       'health_calculations',
       'BMR, TDEE, and goal validation calculations with RETURN_CONTROL',
       this.getHealthCalculationsSchema()
     );
 
-    // Create Goal Management Action Group
     const goalMgmtActionGroup = this.createActionGroup(
       'GoalManagement',
       actionGroupManager,
+      this.proAgent,
       'goal_management',
       'Save and manage user health goals with RETURN_CONTROL',
       this.getGoalManagementSchema()
     );
 
-    // Create custom resource to prepare agent
-    const prepareAgent = this.createPrepareAgentResource(environment);
-    prepareAgent.node.addDependency(dataOpsActionGroup);
-    prepareAgent.node.addDependency(healthCalcActionGroup);
-    prepareAgent.node.addDependency(goalMgmtActionGroup);
+    const prepareProAgent = this.createPrepareAgentResource('Pro', environment, this.proAgent);
+    prepareProAgent.node.addDependency(dataOpsActionGroup);
+    prepareProAgent.node.addDependency(healthCalcActionGroup);
+    prepareProAgent.node.addDependency(goalMgmtActionGroup);
 
-    // Outputs
-    new cdk.CfnOutput(this, 'AgentIdOutput', {
-      value: this.agent.attrAgentId,
-      description: 'Bedrock Agent ID',
-      exportName: `${id}-AgentId`,
+    // ─── Free Agent ───────────────────────────────────────────────────────────
+
+    const freeAgentRole = new iam.Role(this, 'FreeAgentRole', {
+      roleName: `AmigoFreeAgentRole-${environment}`,
+      assumedBy: new iam.ServicePrincipal('bedrock.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonBedrockFullAccess'),
+      ],
     });
 
-    new cdk.CfnOutput(this, 'AgentArnOutput', {
-      value: this.agent.attrAgentArn,
-      description: 'Bedrock Agent ARN',
-      exportName: `${id}-AgentArn`,
+    freeAgentRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'bedrock:InvokeModel',
+          'bedrock:InvokeModelWithResponseStream',
+        ],
+        resources: ['*'],
+      })
+    );
+
+    const freeInstruction = fs.readFileSync(path.join(__dirname, 'instruction-free.md'), 'utf-8');
+
+    this.freeAgent = new bedrock.CfnAgent(this, 'FreeAgent', {
+      agentName: `amigo-free-${environment}`,
+      description: 'Amigo AI Health Coach — Free tier (no action groups)',
+      agentResourceRoleArn: freeAgentRole.roleArn,
+      foundationModel: freeFoundationModel,
+      instruction: freeInstruction,
+      idleSessionTtlInSeconds: 600,
+    });
+
+    const prepareFreAgent = this.createPrepareAgentResource('Free', environment, this.freeAgent);
+
+    // ─── Outputs ──────────────────────────────────────────────────────────────
+
+    new cdk.CfnOutput(this, 'ProAgentId', {
+      value: this.proAgent.attrAgentId,
+      description: 'Pro Bedrock Agent ID',
+      exportName: `${id}-ProAgentId`,
+    });
+
+    new cdk.CfnOutput(this, 'FreeAgentId', {
+      value: this.freeAgent.attrAgentId,
+      description: 'Free Bedrock Agent ID',
+      exportName: `${id}-FreeAgentId`,
     });
 
     new cdk.CfnOutput(this, 'KnowledgeBaseBucketOutput', {
@@ -178,9 +216,13 @@ export class BedrockAgentStack extends cdk.Stack {
     });
   }
 
-  private createPrepareAgentResource(environment: string): cdk.CustomResource {
-    const role = new iam.Role(this, 'PrepareAgentRole', {
-      roleName: `AmigoPrepareAgentRole-${environment}`,
+  private createPrepareAgentResource(
+    agentLabel: string,
+    environment: string,
+    agent: bedrock.CfnAgent
+  ): cdk.CustomResource {
+    const role = new iam.Role(this, `Prepare${agentLabel}AgentRole`, {
+      roleName: `AmigoPrepare${agentLabel}AgentRole-${environment}`,
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
@@ -195,8 +237,8 @@ export class BedrockAgentStack extends cdk.Stack {
       })
     );
 
-    const prepareFunction = new lambda.Function(this, 'PrepareAgentFunction', {
-      functionName: `amigo-prepare-agent-${environment}`,
+    const prepareFunction = new lambda.Function(this, `Prepare${agentLabel}AgentFunction`, {
+      functionName: `amigo-prepare-${agentLabel.toLowerCase()}-agent-${environment}`,
       runtime: lambda.Runtime.PYTHON_3_11,
       handler: 'index.handler',
       role,
@@ -204,14 +246,14 @@ export class BedrockAgentStack extends cdk.Stack {
       code: lambda.Code.fromInline(this.getPrepareAgentCode()),
     });
 
-    const provider = new cr.Provider(this, 'PrepareAgentProvider', {
+    const provider = new cr.Provider(this, `Prepare${agentLabel}AgentProvider`, {
       onEventHandler: prepareFunction,
     });
 
-    return new cdk.CustomResource(this, 'PrepareAgent', {
+    return new cdk.CustomResource(this, `Prepare${agentLabel}Agent`, {
       serviceToken: provider.serviceToken,
       properties: {
-        AgentId: this.agent.attrAgentId,
+        AgentId: agent.attrAgentId,
       },
     });
   }
@@ -219,6 +261,7 @@ export class BedrockAgentStack extends cdk.Stack {
   private createActionGroup(
     id: string,
     managerFunction: lambda.Function,
+    agent: bedrock.CfnAgent,
     actionGroupName: string,
     description: string,
     apiSchema: string
@@ -227,21 +270,20 @@ export class BedrockAgentStack extends cdk.Stack {
       onEventHandler: managerFunction,
     });
 
-    // Compute hash of schema to detect changes
     const schemaHash = crypto.createHash('sha256').update(apiSchema).digest('hex').substring(0, 8);
 
     const actionGroup = new cdk.CustomResource(this, `${id}ActionGroup`, {
       serviceToken: provider.serviceToken,
       properties: {
-        AgentId: this.agent.attrAgentId,
+        AgentId: agent.attrAgentId,
         ActionGroupName: actionGroupName,
         Description: description,
         ApiSchema: apiSchema,
-        SchemaHash: schemaHash, // This will change when schema changes
+        SchemaHash: schemaHash,
       },
     });
 
-    actionGroup.node.addDependency(this.agent);
+    actionGroup.node.addDependency(agent);
     return actionGroup;
   }
 
@@ -290,7 +332,6 @@ def handler(event, context):
     description = props.get("Description", "")
     api_schema = props.get("ApiSchema", "")
     
-    # Physical ID format: {agent_id}:{action_group_id}
     physical_id = event.get("PhysicalResourceId", f"{agent_id}:pending")
 
     try:
@@ -312,29 +353,21 @@ def handler(event, context):
             return
         
         if req_type == "Update":
-            # Extract action group ID from physical ID
             if ':' in physical_id:
                 _, action_group_id = physical_id.split(':', 1)
             else:
-                # Fallback for old format - look up the action group by name
                 print(f"WARNING: Old physical ID format detected: {physical_id}")
-                print(f"Looking up action group by name: {action_group_name}")
-                try:
-                    list_response = bedrock.list_agent_action_groups(
-                        agentId=agent_id,
-                        agentVersion='DRAFT',
-                        maxResults=100
-                    )
-                    action_groups = list_response.get('actionGroupSummaries', [])
-                    matching_group = next((ag for ag in action_groups if ag['actionGroupName'] == action_group_name), None)
-                    if matching_group:
-                        action_group_id = matching_group['actionGroupId']
-                        print(f"Found action group ID: {action_group_id}")
-                    else:
-                        raise Exception(f"Could not find action group with name: {action_group_name}")
-                except Exception as lookup_error:
-                    print(f"Failed to lookup action group: {lookup_error}")
-                    raise
+                list_response = bedrock.list_agent_action_groups(
+                    agentId=agent_id,
+                    agentVersion='DRAFT',
+                    maxResults=100
+                )
+                action_groups = list_response.get('actionGroupSummaries', [])
+                matching_group = next((ag for ag in action_groups if ag['actionGroupName'] == action_group_name), None)
+                if matching_group:
+                    action_group_id = matching_group['actionGroupId']
+                else:
+                    raise Exception(f"Could not find action group with name: {action_group_name}")
             
             response = bedrock.update_agent_action_group(
                 agentId=agent_id,
@@ -346,14 +379,12 @@ def handler(event, context):
                 apiSchema={'payload': api_schema},
                 actionGroupState='ENABLED'
             )
-            # Update to new physical ID format
             new_physical_id = f"{agent_id}:{action_group_id}"
             send(event, context, "SUCCESS", {"ActionGroupId": action_group_id}, new_physical_id)
             return
         
         if req_type == "Delete":
             try:
-                # Extract action group ID from physical ID
                 if ':' in physical_id:
                     _, action_group_id = physical_id.split(':', 1)
                 else:

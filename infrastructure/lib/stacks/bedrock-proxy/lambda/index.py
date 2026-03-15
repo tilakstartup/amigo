@@ -1,16 +1,31 @@
 import json
 import boto3
 import os
+import jwt
 from datetime import datetime
-from urllib import request as urllib_request
-from urllib.error import HTTPError, URLError
 
 # Initialize Bedrock client (AWS_REGION is automatically available in Lambda)
 bedrock_runtime = boto3.client('bedrock-runtime')
 bedrock_agent_runtime = boto3.client('bedrock-agent-runtime')
 
-# Supabase JWT verification
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
+# EC public key loaded at cold-start from SUPABASE_JWT_PUBLIC_KEY env var (JWK JSON string)
+_JWT_PUBLIC_KEY = None
+_JWT_KID = None
+
+
+def _load_jwt_public_key():
+    """Load EC public key JWK from env var at cold-start."""
+    global _JWT_PUBLIC_KEY, _JWT_KID
+    jwk_str = os.environ.get('SUPABASE_JWT_PUBLIC_KEY', '')
+    if not jwk_str:
+        print("WARNING: SUPABASE_JWT_PUBLIC_KEY not set; JWT verification will fail at runtime")
+        return
+    jwk = json.loads(jwk_str)
+    _JWT_KID = jwk.get('kid')
+    _JWT_PUBLIC_KEY = jwt.algorithms.ECAlgorithm.from_jwk(jwk)
+
+
+_load_jwt_public_key()
 
 
 def _merge_session_attributes(existing_attributes, updates):
@@ -48,7 +63,7 @@ def _merge_session_attributes(existing_attributes, updates):
     return merged
 
 
-def _build_success_response(completion, data_collected, invocation_id, user_id, invocations=None):
+def _build_success_response(completion, data_collected, invocation_id, user_id, invocations=None, subscription_status=None):
     """
     Build a unified success response structure.
 
@@ -58,6 +73,7 @@ def _build_success_response(completion, data_collected, invocation_id, user_id, 
         invocation_id: Invocation ID from agent response (string)
         user_id: User identifier (string)
         invocations: Optional list of function invocations (list or None)
+        subscription_status: Subscription tier ('free' or 'pro') (string or None)
 
     Returns:
         dict: Unified response with all required fields
@@ -71,6 +87,7 @@ def _build_success_response(completion, data_collected, invocation_id, user_id, 
         'invocationId': invocation_id,
         'error': None,
         'userId': user_id,
+        'subscription_status': subscription_status,
         'timestamp': datetime.utcnow().isoformat() + 'Z'
     }
     return response
@@ -141,6 +158,27 @@ def _sanitize_json_string(text):
     return ''.join(result)
 
 
+def _strip_markdown_fence(text):
+    """
+    Strip markdown code fences and XML wrapper tags from agent response.
+    Handles: ```json ... ```, ``` ... ```, <response>...</response>,
+    <answer>...</answer>, and leading/trailing whitespace.
+    Also handles 'Response: ```json ...' prefix the agent sometimes adds.
+    """
+    import re
+    text = text.strip()
+    # Strip <response>...</response> or <answer>...</answer> XML wrappers
+    text = re.sub(r'^<(?:response|answer)>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s*</(?:response|answer)>\s*$', '', text, flags=re.IGNORECASE)
+    text = text.strip()
+    # Remove optional "Response: " or similar prefix before the fence
+    text = re.sub(r'^[^\`{]*', '', text, count=1)
+    # Strip ```json ... ``` or ``` ... ``` fences
+    text = re.sub(r'^```(?:json)?\s*', '', text.strip())
+    text = re.sub(r'\s*```\s*$', '', text.strip())
+    return text.strip()
+
+
 def _validate_json_response(response_text):
     """
     Validate agent response is valid JSON with all required fields and correct types.
@@ -160,6 +198,9 @@ def _validate_json_response(response_text):
     
     Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11, 5.12, 5.13
     """
+    # Strip markdown code fences the agent sometimes wraps its response in
+    response_text = _strip_markdown_fence(response_text)
+
     # Requirement 5.1: Response must be valid JSON (parseable as JSON object)
     try:
         # Sanitize control characters before parsing (agent may return literal newlines in strings)
@@ -251,67 +292,51 @@ def _validate_json_response(response_text):
 
 def _accumulate_data_collected(current_field, session_attributes):
     """
-    Accumulate current_field into data_collected in session attributes.
-    
+    Accumulate current_field into data_collected in session attributes as flat key:value pairs.
+    e.g. {"first_name": "Tilak", "age": "30"}
+
     Rules:
-    - Store entire current_field object keyed by field name
-    - Overwrite existing fields (no append/merge)
+    - Store field_name: value (flat string value, not nested object)
+    - Overwrite existing fields
     - Preserve existing entry if new value is null
     - Treat empty string as null (not stored)
-    
+
     Args:
         current_field: Dict with 'field', 'label', 'value' keys
         session_attributes: Current session attributes dict
-    
+
     Returns:
         Updated session attributes dict with accumulated data_collected
-    
-    Requirements: 4.2, 4.3, 4.4, 4.5, 4.6, 4.7
     """
     if not current_field or not isinstance(current_field, dict):
         return session_attributes
-    
-    # Extract field information
+
     field_name = current_field.get('field')
-    field_label = current_field.get('label')
     field_value = current_field.get('value')
-    
-    # Validate field name and label are present
-    if not field_name or not field_label:
+
+    if not field_name:
         return session_attributes
-    
+
     # Get current data_collected from session attributes
     data_collected_str = session_attributes.get('data_collected', '{}')
     try:
         data_collected = json.loads(data_collected_str) if isinstance(data_collected_str, str) else data_collected_str
     except (json.JSONDecodeError, ValueError):
         data_collected = {}
-    
-    # Requirement 4.6: Treat empty string and string "null" as null
+
+    # Treat empty string and string "null" as null
     if field_value == '' or field_value == 'null':
         field_value = None
-    
-    # Requirement 4.5, 4.7: Preserve existing entry if new value is null
+
     if field_value is not None:
-        # Requirement 4.4: Store entire current_field object keyed by field name
-        # Requirement 4.5: Overwrite existing fields (no append/merge)
-        data_collected[field_name] = {
-            'field': field_name,
-            'label': field_label,
-            'value': field_value
-        }
+        # Store flat: field_name -> value string
+        data_collected[field_name] = field_value
     elif field_name not in data_collected:
-        # New field with null value - store it
-        data_collected[field_name] = {
-            'field': field_name,
-            'label': field_label,
-            'value': None
-        }
-    # else: field exists and new value is null - preserve existing entry
-    
-    # Update session attributes with accumulated data
+        # New field with null value — store null
+        data_collected[field_name] = None
+    # else: field exists and new value is null — preserve existing
+
     session_attributes['data_collected'] = json.dumps(data_collected)
-    
     return session_attributes
 
 
@@ -367,28 +392,63 @@ def _build_return_control_results_DEPRECATED(return_control, jwt_bearer):
     """
     pass
 
+def _resolve_agent(subscription_status: str, is_active: bool) -> tuple:
+    """
+    Resolve agent ID and alias ID based on subscription status and active flag.
+    Pro + active → pro agent; everything else → free agent.
+
+    Requirements: 4.1, 4.2, 4.3, 4.4
+    """
+    if subscription_status == 'pro' and is_active:
+        agent_id = os.environ.get('BEDROCK_PRO_AGENT_ID', '')
+        agent_alias_id = os.environ.get('BEDROCK_PRO_AGENT_ALIAS_ID', 'TSTALIASID')
+    else:
+        agent_id = os.environ.get('BEDROCK_FREE_AGENT_ID', '')
+        agent_alias_id = os.environ.get('BEDROCK_FREE_AGENT_ALIAS_ID', 'TSTALIASID')
+    return agent_id, agent_alias_id
+
+
 def verify_supabase_token(token):
-    """Verify Supabase JWT token by calling Supabase API"""
+    """
+    Verify a Supabase JWT locally using ES256 + EC public key JWK.
+    Returns decoded payload dict on success, None on failure.
+    Extracted fields: sub, subscription_status, is_active, credits
+    """
     try:
-        # Use Supabase's user endpoint to verify the token
-        # This endpoint validates the JWT and returns user info
-        url = f"{SUPABASE_URL}/auth/v1/user"
-        
-        req = urllib_request.Request(url)
-        req.add_header('Authorization', f'Bearer {token}')
-        req.add_header('apikey', os.environ.get('SUPABASE_ANON_KEY', ''))
-        
-        with urllib_request.urlopen(req, timeout=5) as response:
-            if response.status == 200:
-                user_data = json.loads(response.read().decode('utf-8'))
-                return {
-                    'sub': user_data.get('id'),
-                    'email': user_data.get('email'),
-                    'role': user_data.get('role', 'authenticated')
-                }
+        # Decode header without verification to check kid
+        header = jwt.get_unverified_header(token)
+        if header.get('kid') != _JWT_KID:
+            print(f"JWT kid mismatch: expected {_JWT_KID}, got {header.get('kid')}")
+            return None
+
+        # Verify signature and decode payload
+        payload = jwt.decode(
+            token,
+            _JWT_PUBLIC_KEY,
+            algorithms=['ES256'],
+            audience='authenticated',
+            options={"verify_exp": True}
+        )
+
+        sub = payload.get('sub')
+
+        # Extract user_subscription custom claim
+        user_subscription = payload.get('user_subscription', {})
+        subscription_status = user_subscription.get('subscription_status', 'free')
+        is_active = user_subscription.get('is_active', True)
+        credits = user_subscription.get('credits', {})
+
+        return {
+            'sub': sub,
+            'subscription_status': subscription_status,
+            'is_active': is_active,
+            'credits': credits,
+        }
+    except jwt.ExpiredSignatureError as e:
+        print(f"JWT expired: {e}")
         return None
-    except (HTTPError, URLError) as e:
-        print(f"Token verification failed: {e}")
+    except jwt.InvalidTokenError as e:
+        print(f"JWT invalid: {e}")
         return None
     except Exception as e:
         print(f"Unexpected error during token verification: {e}")
@@ -448,12 +508,18 @@ def lambda_handler(event, context):
                 if user_payload:
                     user_id = user_payload.get('sub')
                     token = token_from_header
+                    subscription_status = user_payload.get('subscription_status', 'free')
+                    is_active = user_payload.get('is_active', True)
                 else:
                     user_id = f"onboarding-anon-{int(datetime.utcnow().timestamp())}"
                     token = ""
+                    subscription_status = 'free'
+                    is_active = True
             else:
                 user_id = f"onboarding-anon-{int(datetime.utcnow().timestamp())}"
                 token = ""
+                subscription_status = 'free'
+                is_active = True
         else:
             # Require valid authentication for non-onboarding requests
             if not auth_header or not auth_header.startswith('Bearer '):
@@ -484,14 +550,24 @@ def lambda_handler(event, context):
                 }
             
             user_id = user_payload.get('sub')
+            subscription_status = user_payload.get('subscription_status', 'free')
+            is_active = user_payload.get('is_active', True)
         
         if mode == 'agent':
-            agent_id = body.get('agentId') or os.environ.get('BEDROCK_AGENT_ID')
-            agent_alias_id = body.get('agentAliasId') or os.environ.get('BEDROCK_AGENT_ALIAS_ID', 'TSTALIASID')
             session_id = body.get('sessionId') or f"mobile-{user_id}-{int(datetime.utcnow().timestamp())}"
             message = body.get('message') or body.get('prompt')
             return_control_invocation_results = body.get('returnControlInvocationResults')
             session_config = body.get('sessionConfig')
+
+            # On subsequent turns, read subscription from cached session attributes (Req 8.2)
+            # This must happen before _resolve_agent so routing uses the cached values
+            if not session_config:
+                client_session_attrs = body.get('sessionAttributes', {}) or {}
+                if 'subscription_status' in client_session_attrs and 'subscription_is_active' in client_session_attrs:
+                    subscription_status = client_session_attrs['subscription_status']
+                    is_active = client_session_attrs['subscription_is_active'] == 'true'
+
+            agent_id, agent_alias_id = _resolve_agent(subscription_status, is_active)
             
             # Extract initial_message from sessionConfig if present
             initial_message = None
@@ -554,6 +630,10 @@ def lambda_handler(event, context):
                 # Initialize json_validation_retry_count to 0 for new sessions
                 session_attributes['json_validation_retry_count'] = '0'
                 
+                # Cache subscription info in session attributes (Requirement 8.1)
+                session_attributes['subscription_status'] = subscription_status
+                session_attributes['subscription_is_active'] = 'true' if is_active else 'false'
+                
                 # Signal authentication status (no raw token in session attributes)
                 session_attributes['is_authenticated'] = 'true' if bearer_token else 'false'
             else:
@@ -564,24 +644,47 @@ def lambda_handler(event, context):
                     'auth_header_name': 'X-Amigo-Auth'
                 }
                 session_attributes['is_authenticated'] = 'true' if bearer_token else 'false'
+                # Re-cache subscription from JWT-derived values if not already in session attrs (Req 8.3)
+                client_session_attrs = body.get('sessionAttributes', {}) or {}
+                if 'subscription_status' not in client_session_attrs:
+                    session_attributes['subscription_status'] = subscription_status
+                    session_attributes['subscription_is_active'] = 'true' if is_active else 'false'
                 # Restore data_collected from client (client accumulates across turns in-memory)
                 client_data_collected = body.get('data_collected')
                 if client_data_collected is not None:
-                    if isinstance(client_data_collected, dict):
-                        raw = client_data_collected
-                    elif isinstance(client_data_collected, str):
-                        try:
-                            raw = json.loads(client_data_collected)
-                        except (json.JSONDecodeError, ValueError):
-                            raw = {}
+                    # Accept array format [{field, label, value}, ...] or flat dict {field: value}
+                    if isinstance(client_data_collected, list):
+                        # New array format — convert to flat dict for session attributes
+                        flattened = {}
+                        for item in client_data_collected:
+                            if isinstance(item, dict):
+                                k = item.get('field')
+                                v = item.get('value')
+                                if k:
+                                    flattened[k] = None if v == 'null' or v == '' else v
                     else:
-                        raw = {}
-                    # Sanitize: treat string "null" values as actual null
-                    for k, v in raw.items():
-                        if isinstance(v, dict) and v.get('value') == 'null':
-                            v['value'] = None
-                    session_attributes['data_collected'] = json.dumps(raw)
-                    print(f"📊 [session={session_id}] Restored data_collected from client: {len(raw)} field(s)")
+                        if isinstance(client_data_collected, dict):
+                            raw = client_data_collected
+                        elif isinstance(client_data_collected, str):
+                            try:
+                                raw = json.loads(client_data_collected)
+                            except (json.JSONDecodeError, ValueError):
+                                raw = {}
+                        else:
+                            raw = {}
+                        # Flatten: handle both new flat format {"name": "Tilak"} and
+                        # old nested format {"name": {"field": "name", "label": "Name", "value": "Tilak"}}
+                        flattened = {}
+                        for k, v in raw.items():
+                            if isinstance(v, dict) and 'value' in v:
+                                extracted = v.get('value')
+                                flattened[k] = None if extracted == 'null' or extracted == '' else extracted
+                            elif v == 'null' or v == '':
+                                flattened[k] = None
+                            else:
+                                flattened[k] = v
+                    session_attributes['data_collected'] = json.dumps(flattened)
+                    print(f"📊 [session={session_id}] Restored data_collected from client: {len(flattened)} field(s)")
             
             # Build invoke_agent parameters
             invoke_params = {
@@ -792,7 +895,7 @@ def lambda_handler(event, context):
                                 # Don't block on retry failure — pass through best-effort
                                 # Try to parse as JSON anyway for data accumulation
                                 try:
-                                    parsed_json = json.loads(text)
+                                    parsed_json = json.loads(_sanitize_json_string(_strip_markdown_fence(text)))
                                 except (json.JSONDecodeError, ValueError):
                                     parsed_json = None
                     else:
@@ -836,7 +939,7 @@ def lambda_handler(event, context):
                                 existing = {}
                             for k, v in old_collected.items():
                                 if v is not None and v != '':
-                                    existing[k] = {'field': k, 'label': k, 'value': str(v)}
+                                    existing[k] = str(v)
                             effective_session_attrs['data_collected'] = json.dumps(existing)
                             retrieved_session_attributes = effective_session_attrs
                             print(f"📊 [session={session_id}] Accumulated {len(old_collected)} field(s) (old format fallback)")
@@ -916,20 +1019,25 @@ def lambda_handler(event, context):
             # Requirement 4.8, 4.9, 7.4: Extract data_collected from session attributes
             # Use retrieved attrs if available, otherwise fall back to sent session_attributes
             effective_attrs_for_response = retrieved_session_attributes or session_attributes or {}
-            data_collected = {}
+            data_collected = []
             if 'data_collected' in effective_attrs_for_response:
                 data_collected_str = effective_attrs_for_response.get('data_collected', '{}')
                 try:
-                    data_collected = json.loads(data_collected_str) if isinstance(data_collected_str, str) else data_collected_str
+                    flat = json.loads(data_collected_str) if isinstance(data_collected_str, str) else data_collected_str
+                    # Convert flat dict to array of {field, label, value} objects for client
+                    data_collected = [
+                        {'field': k, 'label': k.replace('_', ' ').title(), 'value': v}
+                        for k, v in flat.items()
+                    ]
                     print(f"📊 [session={session_id}] Including data_collected with {len(data_collected)} field(s)")
                 except (json.JSONDecodeError, ValueError):
-                    data_collected = {}
+                    data_collected = []
 
             # Parse completion as JSON object if it's a string (Requirement 7.3)
             completion_obj = None
             if text:
                 try:
-                    completion_obj = json.loads(_sanitize_json_string(text))
+                    completion_obj = json.loads(_sanitize_json_string(_strip_markdown_fence(text)))
                 except (json.JSONDecodeError, ValueError):
                     completion_obj = text  # fallback: keep as string if not valid JSON
 
@@ -939,7 +1047,8 @@ def lambda_handler(event, context):
                 data_collected=data_collected,
                 invocation_id=invocation_id,
                 user_id=user_id,
-                invocations=invocations if invocations else None
+                invocations=invocations if invocations else None,
+                subscription_status=subscription_status
             )
 
             # Log what Lambda is sending to User

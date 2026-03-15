@@ -6,8 +6,7 @@ package com.amigo.shared.config
  */
 object AppConfig {
     // Bedrock Agent Configuration
-    const val BEDROCK_AGENT_ID = "FDONOFHDHR"
-    const val BEDROCK_AGENT_ALIAS_ID = "TSTALIASID"
+    // Agent IDs are resolved server-side by the Lambda — no client-side IDs needed
     const val BEDROCK_API_ENDPOINT = "https://vhz4of3ijg.execute-api.us-east-1.amazonaws.com/dev/invoke"
     
     // Supabase Configuration
