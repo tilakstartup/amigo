@@ -96,9 +96,14 @@ function buildAgent(params: {
       region: Deno.env.get('AWS_REGION') ?? 'us-east-1',
       // Force HTTP/1.1 — Deno's node:http2 polyfill is incomplete (kSessionFrameErrorListenerCount)
       clientConfig: { requestHandler: new NodeHttpHandler() },
-      // Cache tool definitions — static across all turns, saves tokens on every request
-      cacheTools: 'default',
     })
+    if (isPro) {
+      model.updateConfig({
+        // Cache tool definitions — static across all turns, saves tokens on every request
+        cacheTools: 'default',
+      })
+    }
+    
     // Block array with two cachePoints — static prefix cached globally, session config cached per-session.
     // For pro models dataCollected is omitted (model tracks from history), making both caches fully static.
     agentSystemPrompt = buildSystemPromptBlocks(params.sessionConfig, params.dataCollected, isPro)
